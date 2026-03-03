@@ -93,3 +93,8 @@
 - **Type**: Major
 - **Description**: Implemented partner management interface.
 - **Details**: Created `partners/page.tsx` and APIs for listing and creating partners.
+
+### [2026-03-03] Exports & Reports
+- **Type**: Major
+- **Description**: Implemented Excel and PDF exports.
+- **Details**: Created `lib/export.ts` using `xlsx` and `jspdf`. Added buttons to the dashboard.
