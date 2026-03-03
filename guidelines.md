@@ -43,3 +43,33 @@
 - **Type**: Medium
 - **Description**: Updated plan to use Cloudflare D1 and Edge runtime for Next.js.
 - **Details**: Integrated implementation plan for GitHub and Cloudflare Pages.
+
+### [2026-03-03] Git & Repository Setup
+- **Type**: Medium
+- **Description**: Initialized Git and linked to `SuesteCreative/dna-crm`.
+- **Details**: Added remote origin, created `.gitignore`, and performed initial commit.
+
+### [2026-03-03] Dependency Expansion
+- **Type**: Minor
+- **Description**: Added libraries for D1, Excel, and PDF exports.
+- **Details**: Added `@prisma/adapter-d1`, `xlsx`, `jspdf`, and `wrangler`.
+
+### [2026-03-03] Cloudflare Configuration
+- **Type**: Minor
+- **Description**: Created `wrangler.toml`.
+- **Details**: Configured Pages build output and D1 database binding.
+
+### [2026-03-03] Execution: Phase 1 Start
+- **Type**: Major
+- **Description**: Commenced implementation of core features.
+- **Details**: Plan approved by user. Starting with NextAuth.js setup and database integration.
+
+### [2026-03-03] Authentication System
+- **Type**: Major
+- **Description**: Configured NextAuth.js with Credentials Provider.
+- **Details**: Created edge-compatible `auth.ts`, Prisma utility with D1 adapter, route handler, and seeded initial admin user.
+
+### [2026-03-03] Shopify Integration (Initial)
+- **Type**: Major
+- **Description**: Created Shopify synchronization service.
+- **Details**: Implemented `syncShopifyOrders` and a protected API route for manual sync.
