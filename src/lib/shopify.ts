@@ -28,7 +28,25 @@ export async function syncShopifyOrders() {
         const orders = data.orders;
 
         for (const order of orders) {
-            // Basic sync logic - needs refinement for pax, activity date etc.
+            // Look for booking details in line items (standard for Miti/Sesami etc.)
+            const firstLineItem = order.line_items[0];
+            const properties = firstLineItem?.properties || [];
+
+            let activityDate = new Date(order.created_at);
+            let activityTime = null;
+            let pax = 1;
+
+            properties.forEach((prop: any) => {
+                const name = prop.name.toLowerCase();
+                const value = prop.value;
+
+                if (name.includes("date")) activityDate = new Date(value);
+                if (name.includes("time")) activityTime = value;
+                if (name.includes("people") || name.includes("pax") || name.includes("quant")) {
+                    pax = parseInt(value) || 1;
+                }
+            });
+
             await prisma.booking.upsert({
                 where: { shopifyId: order.id.toString() },
                 update: {
@@ -39,12 +57,13 @@ export async function syncShopifyOrders() {
                     customerName: `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || "Consumidor Final",
                     customerEmail: order.customer?.email,
                     customerPhone: order.customer?.phone,
-                    activityDate: new Date(order.created_at), // Placeholder, should be from line item properties
-                    pax: 1, // Placeholder
+                    activityDate,
+                    activityTime,
+                    pax,
                     status: order.financial_status === "paid" ? "CONFIRMED" : "PENDING",
                     source: "SHOPIFY",
                     totalPrice: parseFloat(order.total_price),
-                    createdById: "system", // Should be a system user
+                    createdById: "system",
                 },
             });
         }

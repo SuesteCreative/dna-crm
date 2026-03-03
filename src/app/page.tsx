@@ -11,8 +11,12 @@ import {
     Search,
     CheckCircle,
     Clock,
-    ExternalLink
+    ExternalLink,
+    X,
+    Download,
+    FileText
 } from "lucide-react";
+import { exportToExcel, exportToPDF } from "@/lib/export";
 
 interface Booking {
     id: string;
@@ -30,6 +34,18 @@ export default function Dashboard() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+
+    // Form State
+    const [formData, setFormData] = useState({
+        customerName: "",
+        customerEmail: "",
+        customerPhone: "",
+        activityDate: "",
+        activityTime: "",
+        pax: 1,
+        totalPrice: ""
+    });
 
     useEffect(() => {
         fetchBookings();
@@ -62,6 +78,22 @@ export default function Dashboard() {
         }
     };
 
+    const handleCreateBooking = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const res = await fetch("/api/bookings/create", {
+                method: "POST",
+                body: JSON.stringify(formData)
+            });
+            if (res.ok) {
+                setShowModal(false);
+                fetchBookings();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     return (
         <div className="dashboard">
             <nav className="sidebar">
@@ -91,14 +123,60 @@ export default function Dashboard() {
                         <p>Gerencie todas as atividades e agendamentos.</p>
                     </div>
                     <div className="header-actions">
+                        <button className="secondary-btn" onClick={() => exportToExcel(bookings, "reservas-dna")}>
+                            <Download size={18} /> Excel
+                        </button>
+                        <button className="secondary-btn" onClick={() => exportToPDF(bookings, "reservas-dna")}>
+                            <FileText size={18} /> PDF
+                        </button>
                         <button className="secondary-btn" onClick={handleSync} disabled={syncing}>
                             <RefreshCcw size={18} className={syncing ? "spin" : ""} /> {syncing ? "Sincronizando..." : "Sincronizar Shopify"}
                         </button>
-                        <button className="primary-btn">
+                        <button className="primary-btn" onClick={() => setShowModal(true)}>
                             <Plus size={18} /> Nova Reserva
                         </button>
                     </div>
                 </header>
+
+                {showModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h2>Nova Reserva Manual</h2>
+                                <button onClick={() => setShowModal(false)}><X /></button>
+                            </div>
+                            <form onSubmit={handleCreateBooking}>
+                                <div className="form-grid">
+                                    <div className="input-group">
+                                        <label>Nome do Cliente</label>
+                                        <input type="text" value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Email</label>
+                                        <input type="email" value={formData.customerEmail} onChange={e => setFormData({ ...formData, customerEmail: e.target.value })} />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Data</label>
+                                        <input type="date" value={formData.activityDate} onChange={e => setFormData({ ...formData, activityDate: e.target.value })} required />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Hora</label>
+                                        <input type="time" value={formData.activityTime} onChange={e => setFormData({ ...formData, activityTime: e.target.value })} />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Pax</label>
+                                        <input type="number" value={formData.pax} onChange={e => setFormData({ ...formData, pax: parseInt(e.target.value) })} required min="1" />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Preço (€)</label>
+                                        <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
+                                    </div>
+                                </div>
+                                <button type="submit" className="primary-btn full-width">Criar Reserva</button>
+                            </form>
+                        </div>
+                    </div>
+                )}
 
                 <section className="stats-grid">
                     <div className="stat-card">
@@ -410,6 +488,62 @@ export default function Dashboard() {
 
         .badge-status.confirmed { background: #ecfdf5; color: #059669; }
         .badge-status.pending { background: #fffbeb; color: #d97706; }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .modal-content {
+          background: white;
+          padding: 2.5rem;
+          border-radius: 24px;
+          width: 100%;
+          max-width: 600px;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+        }
+
+        .modal-header h2 { margin: 0; }
+        .modal-header button { background: none; border: none; cursor: pointer; color: #64748b; }
+
+        .form-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+          margin-bottom: 2rem;
+        }
+
+        .input-group label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+          color: #475569;
+        }
+
+        .input-group input {
+          width: 100%;
+          padding: 0.8rem;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          box-sizing: border-box;
+        }
+
+        .full-width { width: 100%; justify-content: center; margin-top: 1rem; }
 
         .small { font-size: 0.8rem; color: #94a3b8; }
 

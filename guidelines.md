@@ -73,3 +73,23 @@
 - **Type**: Major
 - **Description**: Created Shopify synchronization service.
 - **Details**: Implemented `syncShopifyOrders` and a protected API route for manual sync.
+
+### [2026-03-03] Dashboard & UI
+- **Type**: Major
+- **Description**: Implemented premium dashboard UI.
+- **Details**: Added stats cards, bookings table, and ocean-themed aesthetics with Vanilla CSS. Created `api/bookings` route.
+
+### [2026-03-03] Shopify & Sync Refinement
+- **Type**: Medium
+- **Description**: Refined Shopify sync logic.
+- **Details**: Added logic to extract activity date, time, and pax from line item properties.
+
+### [2026-03-03] Manual Bookings
+- **Type**: Major
+- **Description**: Implemented manual booking system.
+- **Details**: Created `api/bookings/create` and added a modal form to the dashboard.
+
+### [2026-03-03] Partner Management
+- **Type**: Major
+- **Description**: Implemented partner management interface.
+- **Details**: Created `partners/page.tsx` and APIs for listing and creating partners.
