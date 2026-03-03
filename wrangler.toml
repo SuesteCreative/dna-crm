@@ -5,4 +5,4 @@ pages_build_output_dir = ".next"
 [[d1_databases]]
 binding = "DB"
 database_name = "dna_crm_db"
-database_id = "YOUR_DATABASE_ID_FROM_CLOUDFLARE"
+database_id = "1560fc09-7a7f-49c5-a821-55fa753806e7"
