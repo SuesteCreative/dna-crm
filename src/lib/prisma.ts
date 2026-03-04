@@ -1,23 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaD1 } from "@prisma/adapter-d1";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-const prismaClientSingleton = () => {
-    // Check if we are in a Cloudflare environment (process.env.DB is actually the binding)
-    // For local development, we'll use standard Prisma
-    if (process.env.DB) {
-        const adapter = new PrismaD1(process.env.DB as any);
-        // @ts-ignore - Prisma D1 adapter types are still experimental
-        return new PrismaClient({ adapter });
+// Creates a Prisma client using the D1 binding from the Cloudflare request context.
+// Must be called inside a request handler.
+export async function getPrisma() {
+    try {
+        const { env } = await getCloudflareContext();
+        const adapter = new PrismaD1((env as any).DB);
+        return new PrismaClient({ adapter } as any);
+    } catch {
+        // Fallback for local development (no Cloudflare context)
+        return new PrismaClient();
     }
-    return new PrismaClient();
-};
-
-declare global {
-    var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
 }
-
-const prisma = globalThis.prisma ?? prismaClientSingleton();
-
-export default prisma;
-
-if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma;
