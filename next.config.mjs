@@ -1,26 +1,24 @@
 const nextConfig = {
     experimental: {
-        serverComponentsExternalPackages: ["next-auth", "openid-client", "oauth"],
+        serverComponentsExternalPackages: ["next-auth", "openid-client", "oauth", "@prisma/client"],
     },
-    webpack: (config, { isServer, webpack }) => {
+    webpack: (config, { isServer }) => {
         if (isServer) {
-            config.plugins.push(
-                new webpack.NormalModuleReplacementPlugin(
-                    /^(crypto|http|https|util|querystring|url|stream|buffer|zlib)$/,
-                    (resource) => {
-                        if (!resource.request.startsWith("node:")) {
-                            resource.request = `node:${resource.request}`;
-                        }
-                    }
-                )
-            );
-
-            config.externals.push(({ request }, callback) => {
-                if (/^node:/.test(request)) {
-                    return callback(null, `module ${request}`);
-                }
-                callback();
-            });
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                crypto: false,
+                http: false,
+                https: false,
+                util: false,
+                querystring: false,
+                url: false,
+                stream: false,
+                buffer: false,
+                zlib: false,
+                net: false,
+                tls: false,
+                fs: false,
+            };
         }
         return config;
     },

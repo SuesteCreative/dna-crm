@@ -3,6 +3,9 @@
 ## Project Description
 **Desportos Náuticos de Alvor CRM** is a centralized booking and management platform. It tracks online sales from Shopify, handles manual walk-in bookings, and provides a partner portal for external agencies to book directly into the system. All bookings are synchronized with a Google Calendar.
 
+> [!IMPORTANT]
+> **MANDATORY RULE**: The editor MUST update this document (Implementation Log) for every medium and major implementation. This is required in every session.
+
 ## Technical Stack
 - **Framework**: Next.js (App Router)
 - **Deployment**: Cloudflare Pages
@@ -98,3 +101,10 @@
 - **Type**: Major
 - **Description**: Implemented Excel and PDF exports.
 - **Details**: Created `lib/export.ts` using `xlsx` and `jspdf`. Added buttons to the dashboard.
+
+### [2026-03-04] Deployment & Compatibility Refinement
+- **Type**: Major
+- **Description**: Configured project for production environment on Cloudflare Pages.
+- **Details**: Updated `wrangler.toml` with final D1 `database_id`, set `compatibility_flags = ["nodejs_compat"]`, and updated build output directory to `.vercel/output/static`.
+- **System**: Added `system` user to `seed.js`.
+- **Compat**: Updated `next.config.mjs` with webpack shims for node built-ins and added `runtime = "edge"` to NextAuth route.
