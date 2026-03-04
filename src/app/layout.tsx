@@ -1,10 +1,9 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 const inter = Inter({ subsets: ["latin"] });
-
-import Providers from "./providers";
 
 export const metadata: Metadata = {
     title: "CRM | Desportos Náuticos de Alvor",
@@ -17,10 +16,12 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="pt">
-            <body className={inter.className}>
-                <Providers>{children}</Providers>
-            </body>
-        </html>
+        <ClerkProvider>
+            <html lang="pt">
+                <body className={inter.className}>
+                    {children}
+                </body>
+            </html>
+        </ClerkProvider>
     );
 }

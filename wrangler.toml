@@ -3,6 +3,9 @@ compatibility_date = "2024-11-18"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".open-next"
 
+[vars]
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_dGhhbmtmdWwtc3BvbmdlLTIxLmNsZXJrLmFjY291bnRzLmRldiQ"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "dna_crm_db"
