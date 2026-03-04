@@ -9,29 +9,31 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "next lint",
+        "deploy": "opennextjs-cloudflare"
     },
     "dependencies": {
-        "react": "^18",
-        "react-dom": "^18",
+        "@prisma/adapter-d1": "^5.14.0",
+        "@prisma/client": "^5.14.0",
+        "date-fns": "^3.6.0",
+        "jspdf": "^2.5.1",
+        "jspdf-autotable": "^3.8.2",
+        "lucide-react": "^0.378.0",
         "next": "14.2.3",
         "next-auth": "^4.24.7",
-        "@prisma/client": "^5.14.0",
-        "@prisma/adapter-d1": "^5.14.0",
-        "lucide-react": "^0.378.0",
-        "date-fns": "^3.6.0",
-        "xlsx": "^0.18.5",
-        "jspdf": "^2.5.1",
-        "jspdf-autotable": "^3.8.2"
+        "react": "^18",
+        "react-dom": "^18",
+        "xlsx": "^0.18.5"
     },
     "devDependencies": {
-        "typescript": "^5",
+        "@opennextjs/cloudflare": "^1.17.1",
         "@types/node": "^20",
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "eslint": "^8",
         "eslint-config-next": "14.2.3",
         "prisma": "^5.14.0",
+        "typescript": "^5",
         "wrangler": "^3.57.1"
     }
 }
