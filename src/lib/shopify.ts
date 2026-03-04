@@ -1,9 +1,9 @@
-import prisma from "./prisma";
+import { PrismaClient } from "@prisma/client";
 
 const SHOPIFY_STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 
-export async function syncShopifyOrders() {
+export async function syncShopifyOrders(prisma: InstanceType<typeof PrismaClient>) {
     if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_ACCESS_TOKEN) {
         console.warn("Shopify credentials missing");
         return;
