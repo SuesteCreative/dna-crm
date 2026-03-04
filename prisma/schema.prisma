@@ -48,12 +48,30 @@ model Booking {
   shopifyId     String?  @unique
   totalPrice    Float?
   notes         String?
-  
+  activityType  String?  // service name (denormalized for quick display)
+
   partner       Partner? @relation(fields: [partnerId], references: [id])
   partnerId     String?
-  
+
+  serviceId     String?
+
   createdById   String?
-  
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+model Service {
+  id            String   @id @default(cuid())
+  shopifyHandle String?
+  name          String   // product name, e.g. "Jetski Rental"
+  variant       String?  // e.g. "30 minutes"
+  sku           String?  @unique
+  price         Float?
+  imageUrl      String?
+  category      String?  // "Jetski", "Towable"
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
