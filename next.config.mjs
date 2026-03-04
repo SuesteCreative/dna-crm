@@ -1,4 +1,5 @@
 const nextConfig = {
+    transpilePackages: ["next-auth", "openid-client", "oauth"],
     experimental: {
         serverComponentsExternalPackages: ["next-auth", "openid-client", "oauth"],
     },
@@ -10,6 +11,11 @@ const nextConfig = {
                 http: false,
                 https: false,
                 util: false,
+                querystring: false,
+                url: false,
+                stream: false,
+                buffer: false,
+                zlib: false,
             };
         }
         return config;
