@@ -6,7 +6,7 @@ import {
   Calendar, Users, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
   TrendingUp, Activity, ShoppingBag, LayoutDashboard,
-  ChevronRight, AlertCircle
+  ChevronRight, AlertCircle, Waves
 } from "lucide-react";
 import { exportToExcel, exportToPDF } from "@/lib/export";
 import "./Dashboard.css";
@@ -23,15 +23,26 @@ interface Booking {
   source: string;
   totalPrice: number | null;
   notes?: string;
+  activityType?: string;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  variant: string | null;
+  sku: string | null;
+  price: number | null;
+  category: string | null;
 }
 
 const defaultForm = {
   customerName: "", customerEmail: "", customerPhone: "",
-  activityDate: "", activityTime: "", pax: 1, totalPrice: ""
+  activityDate: "", activityTime: "", pax: 1, totalPrice: "",
+  serviceId: "", activityType: ""
 };
 
 export default function Dashboard() {
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn } = useUser();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filtered, setFiltered] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,16 +53,21 @@ export default function Dashboard() {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [formData, setFormData] = useState(defaultForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
 
   useEffect(() => {
-    if (isSignedIn) fetchBookings();
+    if (isSignedIn) {
+      fetchBookings();
+      fetchServices();
+    }
   }, [isSignedIn]);
 
   useEffect(() => {
     const q = search.toLowerCase();
     setFiltered(bookings.filter(b =>
       b.customerName.toLowerCase().includes(q) ||
-      (b.customerEmail || "").toLowerCase().includes(q)
+      (b.customerEmail || "").toLowerCase().includes(q) ||
+      (b.activityType || "").toLowerCase().includes(q)
     ));
   }, [search, bookings]);
 
@@ -66,9 +82,18 @@ export default function Dashboard() {
     finally { setLoading(false); }
   };
 
+  const fetchServices = async () => {
+    try {
+      const res = await fetch("/api/services");
+      if (res.ok) {
+        const data = await res.json();
+        setServices(Array.isArray(data) ? data : []);
+      }
+    } catch { }
+  };
+
   const handleSync = async () => {
-    setSyncing(true);
-    setSyncMsg(null);
+    setSyncing(true); setSyncMsg(null);
     try {
       const res = await fetch("/api/shopify/sync", { method: "POST" });
       const data = await res.json();
@@ -79,15 +104,23 @@ export default function Dashboard() {
         setSyncMsg(`Erro: ${data.error || "Sync falhou"}`);
       }
     } catch { setSyncMsg("Erro de ligação"); }
-    finally {
-      setSyncing(false);
-      setTimeout(() => setSyncMsg(null), 4000);
-    }
+    finally { setSyncing(false); setTimeout(() => setSyncMsg(null), 4000); }
+  };
+
+  const handleServiceSelect = (serviceId: string) => {
+    const svc = services.find(s => s.id === serviceId);
+    if (!svc) { setFormData({ ...formData, serviceId: "", activityType: "", totalPrice: "" }); return; }
+    const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
+    setFormData({
+      ...formData,
+      serviceId: svc.id,
+      activityType: label,
+      totalPrice: svc.price?.toString() || ""
+    });
   };
 
   const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
+    e.preventDefault(); setFormError(null);
     try {
       const res = await fetch("/api/bookings/create", {
         method: "POST",
@@ -95,9 +128,7 @@ export default function Dashboard() {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        setShowModal(false);
-        setFormData(defaultForm);
-        fetchBookings();
+        setShowModal(false); setFormData(defaultForm); fetchBookings();
       } else {
         const d = await res.json();
         setFormError(d.error || "Erro ao criar reserva");
@@ -105,31 +136,31 @@ export default function Dashboard() {
     } catch { setFormError("Erro de ligação"); }
   };
 
+  // Group services by category for the modal select
+  const svcGroups: Record<string, Service[]> = {};
+  for (const s of services) {
+    const cat = s.category || "Outros";
+    if (!svcGroups[cat]) svcGroups[cat] = [];
+    svcGroups[cat].push(s);
+  }
+
   const confirmed = bookings.filter(b => b.status === "CONFIRMED").length;
   const pending = bookings.filter(b => b.status === "PENDING").length;
   const revenue = bookings.reduce((s, b) => s + (b.totalPrice || 0), 0);
 
   const statusBadge = (s: string) => {
-    const map: Record<string, string> = {
-      CONFIRMED: "badge-confirmed", PENDING: "badge-pending", CANCELLED: "badge-cancelled"
-    };
-    const label: Record<string, string> = {
-      CONFIRMED: "Confirmada", PENDING: "Pendente", CANCELLED: "Cancelada"
-    };
-    return <span className={`badge ${map[s] || "badge-pending"}`}>{label[s] || s}</span>;
+    const cls: Record<string, string> = { CONFIRMED: "badge-confirmed", PENDING: "badge-pending", CANCELLED: "badge-cancelled" };
+    const lbl: Record<string, string> = { CONFIRMED: "Confirmada", PENDING: "Pendente", CANCELLED: "Cancelada" };
+    return <span className={`badge ${cls[s] || "badge-pending"}`}>{lbl[s] || s}</span>;
   };
 
   const sourceBadge = (s: string) => {
-    const map: Record<string, string> = {
-      SHOPIFY: "src-shopify", MANUAL: "src-manual", PARTNER: "src-partner"
-    };
-    return <span className={`src-badge ${map[s] || "src-manual"}`}>{s}</span>;
+    const cls: Record<string, string> = { SHOPIFY: "src-shopify", MANUAL: "src-manual", PARTNER: "src-partner" };
+    return <span className={`src-badge ${cls[s] || "src-manual"}`}>{s}</span>;
   };
 
   if (!isLoaded || !isSignedIn) return (
-    <div className="loading-screen">
-      <div className="loader" />
-    </div>
+    <div className="loading-screen"><div className="loader" /></div>
   );
 
   return (
@@ -137,28 +168,25 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside className="crm-sidebar">
         <div className="brand">
-          <div className="brand-icon">
-            <Activity size={20} />
-          </div>
+          <div className="brand-icon"><Activity size={20} /></div>
           <span className="brand-name">DNA CRM</span>
         </div>
 
         <nav className="crm-nav">
           <p className="nav-label">Principal</p>
           <button className={`nav-item ${activeNav === "dashboard" ? "active" : ""}`} onClick={() => setActiveNav("dashboard")}>
-            <LayoutDashboard size={18} />
-            <span>Dashboard</span>
+            <LayoutDashboard size={18} /><span>Dashboard</span>
             {activeNav === "dashboard" && <ChevronRight size={14} className="nav-arrow" />}
           </button>
-          <button className={`nav-item ${activeNav === "partners" ? "active" : ""}`} onClick={() => setActiveNav("partners")}>
-            <Users size={18} />
-            <span>Parceiros</span>
-            {activeNav === "partners" && <ChevronRight size={14} className="nav-arrow" />}
+          <button className={`nav-item ${activeNav === "services" ? "active" : ""}`} onClick={() => { setActiveNav("services"); window.location.href = "/services"; }}>
+            <Waves size={18} /><span>Serviços</span>
+          </button>
+          <button className={`nav-item ${activeNav === "partners" ? "active" : ""}`} onClick={() => { setActiveNav("partners"); window.location.href = "/partners"; }}>
+            <Users size={18} /><span>Parceiros</span>
           </button>
           <p className="nav-label">Integrações</p>
-          <button className={`nav-item ${activeNav === "shopify" ? "active" : ""}`} onClick={() => { setActiveNav("shopify"); handleSync(); }}>
-            <ShoppingBag size={18} />
-            <span>Shopify</span>
+          <button className="nav-item" onClick={handleSync}>
+            <ShoppingBag size={18} /><span>Sync Shopify</span>
           </button>
         </nav>
 
@@ -167,22 +195,16 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      {/* Main area */}
+      {/* Main */}
       <main className="crm-main">
-
-        {/* Top bar */}
         <header className="crm-topbar">
           <div>
             <h1 className="page-title">Reservas</h1>
             <p className="page-sub">Gerencie todas as atividades e agendamentos.</p>
           </div>
           <div className="topbar-actions">
-            <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}>
-              <Download size={16} /> Excel
-            </button>
-            <button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}>
-              <FileText size={16} /> PDF
-            </button>
+            <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
+            <button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button>
             <button className={`btn-outline ${syncing ? "syncing" : ""}`} onClick={handleSync} disabled={syncing}>
               <RefreshCcw size={16} className={syncing ? "spin" : ""} />
               {syncing ? "Sincronizando..." : "Sync Shopify"}
@@ -204,34 +226,22 @@ export default function Dashboard() {
         <section className="stats-row">
           <div className="stat-tile blue">
             <div className="tile-ico"><Calendar size={22} /></div>
-            <div className="tile-info">
-              <span className="tile-val">{bookings.length}</span>
-              <span className="tile-lbl">Total de Reservas</span>
-            </div>
+            <div className="tile-info"><span className="tile-val">{bookings.length}</span><span className="tile-lbl">Total de Reservas</span></div>
             <TrendingUp size={40} className="tile-bg-ico" />
           </div>
           <div className="stat-tile green">
             <div className="tile-ico"><CheckCircle size={22} /></div>
-            <div className="tile-info">
-              <span className="tile-val">{confirmed}</span>
-              <span className="tile-lbl">Confirmadas</span>
-            </div>
+            <div className="tile-info"><span className="tile-val">{confirmed}</span><span className="tile-lbl">Confirmadas</span></div>
             <CheckCircle size={40} className="tile-bg-ico" />
           </div>
           <div className="stat-tile amber">
             <div className="tile-ico"><Clock size={22} /></div>
-            <div className="tile-info">
-              <span className="tile-val">{pending}</span>
-              <span className="tile-lbl">Pendentes</span>
-            </div>
+            <div className="tile-info"><span className="tile-val">{pending}</span><span className="tile-lbl">Pendentes</span></div>
             <Clock size={40} className="tile-bg-ico" />
           </div>
           <div className="stat-tile teal">
             <div className="tile-ico"><Activity size={22} /></div>
-            <div className="tile-info">
-              <span className="tile-val">{revenue.toFixed(0)}€</span>
-              <span className="tile-lbl">Receita Total</span>
-            </div>
+            <div className="tile-info"><span className="tile-val">{revenue.toFixed(0)}€</span><span className="tile-lbl">Receita Total</span></div>
             <TrendingUp size={40} className="tile-bg-ico" />
           </div>
         </section>
@@ -242,20 +252,15 @@ export default function Dashboard() {
             <h2>Reservas Recentes</h2>
             <div className="search-wrap">
               <Search size={16} className="search-icon" />
-              <input
-                className="search-input"
-                placeholder="Pesquisar cliente ou email..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+              <input className="search-input" placeholder="Pesquisar cliente, email ou atividade..." value={search} onChange={e => setSearch(e.target.value)} />
             </div>
           </div>
-
           <div className="table-wrap">
             <table className="crm-table">
               <thead>
                 <tr>
                   <th>Cliente</th>
+                  <th>Atividade</th>
                   <th>Data / Hora</th>
                   <th>Pax</th>
                   <th>Fonte</th>
@@ -265,14 +270,17 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} className="table-empty"><div className="loader-sm" /></td></tr>
+                  <tr><td colSpan={7} className="table-empty"><div className="loader-sm" /></td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="table-empty">Nenhuma reserva encontrada.</td></tr>
+                  <tr><td colSpan={7} className="table-empty">Nenhuma reserva encontrada.</td></tr>
                 ) : filtered.map(b => (
                   <tr key={b.id}>
                     <td>
                       <div className="cell-name">{b.customerName}</div>
                       <div className="cell-sub">{b.customerEmail || "—"}</div>
+                    </td>
+                    <td>
+                      <div className="cell-name">{b.activityType || b.notes || "—"}</div>
                     </td>
                     <td>
                       <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
@@ -290,7 +298,7 @@ export default function Dashboard() {
         </section>
       </main>
 
-      {/* Modal */}
+      {/* New Booking Modal */}
       {showModal && (
         <div className="modal-backdrop" onClick={() => setShowModal(false)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -301,6 +309,27 @@ export default function Dashboard() {
             <form onSubmit={handleCreate} className="modal-form">
               {formError && <div className="form-error"><AlertCircle size={14} />{formError}</div>}
               <div className="form-grid">
+                {/* Service picker */}
+                <div className="field full">
+                  <label>Atividade / Serviço</label>
+                  <select
+                    className="field-select"
+                    value={formData.serviceId}
+                    onChange={e => handleServiceSelect(e.target.value)}
+                  >
+                    <option value="">— Selecionar atividade —</option>
+                    {Object.entries(svcGroups).map(([cat, items]) => (
+                      <optgroup key={cat} label={cat}>
+                        {items.map(svc => (
+                          <option key={svc.id} value={svc.id}>
+                            {svc.name}{svc.variant ? ` — ${svc.variant}` : ""}{svc.price ? ` (${svc.price}€)` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="field">
                   <label>Nome do Cliente *</label>
                   <input value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />
@@ -325,7 +354,7 @@ export default function Dashboard() {
                   <label>Nº Pessoas *</label>
                   <input type="number" min="1" value={formData.pax} onChange={e => setFormData({ ...formData, pax: parseInt(e.target.value) })} required />
                 </div>
-                <div className="field full">
+                <div className="field">
                   <label>Preço Total (€)</label>
                   <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
                 </div>
