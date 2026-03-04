@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { syncShopifyOrders } from "@/lib/shopify";
 
-export const runtime = "edge";
 
 export async function POST() {
     try {

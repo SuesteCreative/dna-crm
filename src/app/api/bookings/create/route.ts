@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
-export const runtime = "edge";
 
 export async function POST(req: Request) {
     const token = await getToken({ req: req as any });
