@@ -11,7 +11,7 @@ async function verifyHmac(body: string, secret: string, hmacHeader: string): Pro
             false, ["sign"]
         );
         const sig = await crypto.subtle.sign("HMAC", key, enc.encode(body));
-        const computed = btoa(String.fromCharCode(...new Uint8Array(sig)));
+        const computed = Buffer.from(sig).toString("base64");
         return computed === hmacHeader;
     } catch {
         return false;
@@ -22,23 +22,48 @@ function parseOrderToBooking(order: any) {
     const firstLineItem = order.line_items?.[0];
     const properties: { name: string; value: string }[] = firstLineItem?.properties || [];
 
-    let activityDate = new Date(order.created_at);
-    let activityTime: string | null = null;
-    let pax = 1;
+    // Index all properties by name for quick lookup
+    const props: Record<string, string> = {};
+    for (const p of properties) props[p.name] = p.value;
 
-    for (const prop of properties) {
-        const name = prop.name.toLowerCase();
-        const value = prop.value;
-        if (name.includes("date")) { try { activityDate = new Date(value); } catch { } }
-        if (name.includes("time")) { activityTime = value; }
-        if (name.includes("people") || name.includes("pax") || name.includes("quant")) {
-            pax = parseInt(value) || 1;
+    // ── Meety date/time ──────────────────────────────────────────────
+    // _meety_from_time: "2025-10-09T14:10:00.000+01:00"
+    let activityDate: Date;
+    let activityTime: string | null = null;
+
+    if (props["_meety_from_time"]) {
+        const from = new Date(props["_meety_from_time"]);
+        activityDate = from;
+        const tz = props["_meety_timezone"] || "Europe/Lisbon";
+        activityTime = from.toLocaleTimeString("pt-PT", {
+            hour: "2-digit", minute: "2-digit", timeZone: tz
+        });
+    } else {
+        // Generic fallback for other booking apps
+        activityDate = new Date(order.created_at);
+        for (const p of properties) {
+            const n = p.name.toLowerCase();
+            if (n.includes("date") && !n.startsWith("_meety")) { try { activityDate = new Date(p.value); } catch { } }
+            if (n.includes("time") && !n.startsWith("_meety")) { activityTime = p.value; }
         }
     }
 
+    // ── Meety pax ────────────────────────────────────────────────────
+    // _meety_user_inputs_XXXXX: "How many people will be attending => 2"
+    let pax = parseInt(props["_meety_numslots"] || "1") || 1;
+    for (const [key, value] of Object.entries(props)) {
+        if (key.startsWith("_meety_user_inputs")) {
+            const match = value.match(/=>\s*(\d+)/);
+            if (match) { pax = parseInt(match[1]) || pax; break; }
+        }
+    }
+
+    // ── Status & activity name ────────────────────────────────────────
     const status = order.cancelled_at
         ? "CANCELLED"
         : order.financial_status === "paid" ? "CONFIRMED" : "PENDING";
+
+    const activityName = firstLineItem?.title || null;
 
     return {
         shopifyId: order.id.toString(),
@@ -52,8 +77,10 @@ function parseOrderToBooking(order: any) {
         source: "SHOPIFY",
         totalPrice: parseFloat(order.total_price || "0"),
         createdById: "shopify-webhook",
+        notes: activityName,
     };
 }
+
 
 export async function POST(req: NextRequest) {
     // Read raw body FIRST (needed for signature check)
