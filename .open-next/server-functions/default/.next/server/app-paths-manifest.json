@@ -1,9 +1,0 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/bookings/create/route": "app/api/bookings/create/route.js",
-  "/sign-in/[[...sign-in]]/page": "app/sign-in/[[...sign-in]]/page.js",
-  "/api/bookings/route": "app/api/bookings/route.js",
-  "/api/shopify/sync/route": "app/api/shopify/sync/route.js",
-  "/sign-up/[[...sign-up]]/page": "app/sign-up/[[...sign-up]]/page.js",
-  "/page": "app/page.js"
-}
