@@ -19,7 +19,6 @@ model User {
   image         String?
   partner       Partner?  @relation(fields: [partnerId], references: [id])
   partnerId     String?
-  bookings      Booking[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -53,8 +52,7 @@ model Booking {
   partner       Partner? @relation(fields: [partnerId], references: [id])
   partnerId     String?
   
-  createdBy     User     @relation(fields: [createdById], references: [id])
-  createdById   String
+  createdById   String?
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
