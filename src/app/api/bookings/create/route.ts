@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { getPrisma } from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 
+export const runtime = "edge";
 
 export async function POST(req: Request) {
-    const token = await getToken({ req: req as any });
+    const { userId } = await auth();
 
-    if (!token) {
+    if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
+        const prisma = await getPrisma();
         const data = await req.json();
         const booking = await prisma.booking.create({
             data: {
@@ -21,7 +23,7 @@ export async function POST(req: Request) {
                 activityTime: data.activityTime,
                 pax: parseInt(data.pax),
                 totalPrice: parseFloat(data.totalPrice || 0),
-                createdById: token.id as string,
+                createdById: userId,
                 source: "MANUAL",
                 status: "CONFIRMED",
             },
