@@ -1,18 +1,26 @@
 const nextConfig = {
-    webpack: (config, { isServer }) => {
+    experimental: {
+        serverComponentsExternalPackages: ["next-auth", "openid-client", "oauth"],
+    },
+    webpack: (config, { isServer, webpack }) => {
         if (isServer) {
-            config.resolve.alias = {
-                ...config.resolve.alias,
-                crypto: "node:crypto",
-                http: "node:http",
-                https: "node:https",
-                util: "node:util",
-                querystring: "node:querystring",
-                url: "node:url",
-                stream: "node:stream",
-                buffer: "node:buffer",
-                zlib: "node:zlib",
-            };
+            config.plugins.push(
+                new webpack.NormalModuleReplacementPlugin(
+                    /^(crypto|http|https|util|querystring|url|stream|buffer|zlib)$/,
+                    (resource) => {
+                        if (!resource.request.startsWith("node:")) {
+                            resource.request = `node:${resource.request}`;
+                        }
+                    }
+                )
+            );
+
+            config.externals.push(({ request }, callback) => {
+                if (/^node:/.test(request)) {
+                    return callback(null, `module ${request}`);
+                }
+                callback();
+            });
         }
         return config;
     },
