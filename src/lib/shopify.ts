@@ -40,25 +40,38 @@ export async function syncShopifyOrders(
             const firstLineItem = order.line_items?.[0];
             const properties = firstLineItem?.properties || [];
 
-            let activityDate = new Date(order.created_at);
-            let activityTime: string | null = null;
-            let pax = 1;
+            const props: Record<string, string> = {};
+            for (const p of properties) props[p.name] = p.value;
 
-            properties.forEach((prop: any) => {
-                const name = prop.name.toLowerCase();
-                const value = prop.value;
-                if (name.includes("date")) { try { activityDate = new Date(value); } catch { } }
-                if (name.includes("time")) activityTime = value;
-                if (name.includes("people") || name.includes("pax") || name.includes("quant")) {
-                    pax = parseInt(value) || 1;
+            // Meety date/time
+            let activityDate: Date;
+            let activityTime: string | null = null;
+            if (props["_meety_from_time"]) {
+                const from = new Date(props["_meety_from_time"]);
+                activityDate = from;
+                const tz = props["_meety_timezone"] || "Europe/Lisbon";
+                activityTime = from.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+            } else {
+                activityDate = new Date(order.created_at);
+                for (const p of properties) {
+                    const n = p.name.toLowerCase();
+                    if (n.includes("date") && !n.startsWith("_meety")) { try { activityDate = new Date(p.value); } catch { } }
+                    if (n.includes("time") && !n.startsWith("_meety")) { activityTime = p.value; }
                 }
-            });
+            }
+
+            // Meety pax
+            let pax = parseInt(props["_meety_numslots"] || "1") || 1;
+            for (const [key, value] of Object.entries(props)) {
+                if (key.startsWith("_meety_user_inputs")) {
+                    const match = value.match(/=>\s*(\d+)/);
+                    if (match) { pax = parseInt(match[1]) || pax; break; }
+                }
+            }
 
             await (prisma as any).booking.upsert({
                 where: { shopifyId: order.id.toString() },
-                update: {
-                    status: order.financial_status === "paid" ? "CONFIRMED" : "PENDING",
-                },
+                update: { status: order.financial_status === "paid" ? "CONFIRMED" : "PENDING" },
                 create: {
                     shopifyId: order.id.toString(),
                     customerName: `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || "Consumidor Final",
@@ -71,9 +84,11 @@ export async function syncShopifyOrders(
                     source: "SHOPIFY",
                     totalPrice: parseFloat(order.total_price),
                     createdById: "shopify-sync",
+                    notes: order.line_items?.[0]?.title || null,
                 },
             });
             upserted++;
+
         }
 
         return { success: true, count: upserted };
