@@ -1,0 +1,41 @@
+{
+    "name": "crm-desportos-nauticos",
+    "version": "0.1.0",
+    "private": true,
+    "engines": {
+        "node": ">=20.0.0 <21.0.0"
+    },
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint",
+        "cf-build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && cp .open-next/worker.js .open-next/_worker.js && cp -r .open-next/assets/. .open-next/",
+        "deploy": "opennextjs-cloudflare"
+    },
+    "dependencies": {
+        "@clerk/nextjs": "^7.0.1",
+        "@prisma/adapter-d1": "^5.14.0",
+        "@prisma/client": "^5.14.0",
+        "date-fns": "^3.6.0",
+        "jspdf": "^2.5.1",
+        "jspdf-autotable": "^3.8.2",
+        "lucide-react": "^0.378.0",
+        "next": "14.2.3",
+        "next-auth": "^4.24.7",
+        "react": "^18",
+        "react-dom": "^18",
+        "xlsx": "^0.18.5"
+    },
+    "devDependencies": {
+        "@opennextjs/cloudflare": "^1.17.1",
+        "@types/node": "^20",
+        "@types/react": "^18",
+        "@types/react-dom": "^18",
+        "eslint": "^8",
+        "eslint-config-next": "14.2.3",
+        "prisma": "^5.14.0",
+        "typescript": "^5",
+        "wrangler": "^4.70.0"
+    }
+}
