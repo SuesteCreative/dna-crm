@@ -1,0 +1,227 @@
+Handle,Title,Body (HTML),Vendor,Product Category,Type,Tags,Published,Option1 Name,Option1 Value,Option1 Linked To,Option2 Name,Option2 Value,Option2 Linked To,Option3 Name,Option3 Value,Option3 Linked To,Variant SKU,Variant Grams,Variant Inventory Tracker,Variant Inventory Qty,Variant Inventory Policy,Variant Fulfillment Service,Variant Price,Variant Compare At Price,Variant Requires Shipping,Variant Taxable,Unit Price Total Measure,Unit Price Total Measure Unit,Unit Price Base Measure,Unit Price Base Measure Unit,Variant Barcode,Image Src,Image Position,Image Alt Text,Gift Card,SEO Title,SEO Description,Google Shopping / Google Product Category,Google Shopping / Gender,Google Shopping / Age Group,Google Shopping / MPN,Google Shopping / Condition,Google Shopping / Custom Product,Google Shopping / Custom Label 0,Google Shopping / Custom Label 1,Google Shopping / Custom Label 2,Google Shopping / Custom Label 3,Google Shopping / Custom Label 4,Google: Custom Product (product.metafields.mm-google-shopping.custom_product),Accessory size (product.metafields.shopify.accessory-size),Activewear clothing features (product.metafields.shopify.activewear-clothing-features),Activity (product.metafields.shopify.activity),Age group (product.metafields.shopify.age-group),Color (product.metafields.shopify.color-pattern),Fabric (product.metafields.shopify.fabric),Fuel supply (product.metafields.shopify.fuel-supply),Headwear features (product.metafields.shopify.headwear-features),Neckline (product.metafields.shopify.neckline),Personal watercraft type (product.metafields.shopify.personal-watercraft-type),Size (product.metafields.shopify.size),Sleeve length type (product.metafields.shopify.sleeve-length-type),Target gender (product.metafields.shopify.target-gender),Watercraft features (product.metafields.shopify.watercraft-features),Variant Image,Variant Weight Unit,Variant Tax Code,Cost per item,Status
+jetski-rental,Jetski Rental,"<div style=""max-width:720px;margin:0 auto;padding:0;font-family:var(--font-body-family,Arial);color:rgba(var(--color-foreground,11,18,32),0.9);"">
+
+  <!-- Kicker -->
+  <div style=""font-weight:800;letter-spacing:.16em;font-size:12px;text-transform:uppercase;color:#0EA5B7;margin:0 0 12px;"">
+    ACTIVITIES
+  </div>
+
+  <!-- Title -->
+  <h2 id=""tinymce_scroll_sign"" style=""margin:0 0 14px;font-weight:800;letter-spacing:-0.02em;line-height:1.02;font-size:clamp(32px,4vw,48px);font-family:var(--font-heading-family,Arial);color:#0B1220;"">
+    Book a Jetski in
+    <span style=""
+      background:linear-gradient(90deg,#78BAC2,#4D9AB9);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      padding-left:8px;
+      display:inline-block;
+    "">
+      Alvor
+    </span>
+  </h2>
+
+  <!-- Main description card -->
+  <div style=""
+    border-radius:18px;
+    background:rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.18);
+    box-shadow:0 18px 44px rgba(0,0,0,0.10);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    padding:18px;
+    margin:0 0 14px;
+  "">
+    <div style=""font-size:15px;line-height:1.7;color:rgba(11,18,32,0.82);"">
+      Feel the adrenaline of riding a jetski along the stunning Algarve coastline. A fast and exciting experience, perfect for unforgettable holiday moments on the water.
+      <br><br>
+      With modern, high performance jetskis and a professionally supervised circuit, this activity combines speed, freedom and safety in one of the most iconic locations in Alvor.
+    </div>
+  </div>
+
+  <!-- Warning card -->
+  <div style=""
+    border-radius:16px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.18);
+    box-shadow:0 16px 38px rgba(0,0,0,0.08);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    padding:14px 16px;
+    margin:0 0 18px;
+    color:rgba(11,18,32,0.86);
+    font-weight:800;
+    font-size:14px;
+    line-height:1.5;
+  "">
+    ⚠️ Quantity corresponds to the number of jetskis
+  </div>
+
+  <!-- Section title -->
+  <div style=""margin:0 0 10px;font-weight:800;color:rgba(11,18,32,0.88);font-family:var(--font-heading-family,Arial);"">
+    Activity Details
+  </div>
+
+  <!-- Details card -->
+  <div style=""
+    border-radius:18px;
+    background:rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.18);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    padding:16px 18px;
+    margin:0 0 18px;
+  "">
+    <ul style=""margin:0;padding:0 0 0 18px;font-size:15px;line-height:1.7;color:rgba(11,18,32,0.82);"">
+      <li>
+<strong style=""font-weight:800;color:rgba(11,18,32,0.9);"">Duration:</strong> 10, 15, 20, 30 or 60 minutes</li>
+      <li>
+<strong style=""font-weight:800;color:rgba(11,18,32,0.9);"">Age:</strong> Minimum 16 years</li>
+      <li>
+<strong style=""font-weight:800;color:rgba(11,18,32,0.9);"">Children:</strong> Under 16 must be accompanied by an adult</li>
+      <li>
+<strong style=""font-weight:800;color:rgba(11,18,32,0.9);"">Availability:</strong> Daily</li>
+      <li>
+<strong style=""font-weight:800;color:rgba(11,18,32,0.9);"">Circuit:</strong> Closed and supervised area</li>
+    </ul>
+  </div>
+
+  <!-- Section title -->
+  <div style=""margin:0 0 10px;font-weight:800;color:rgba(11,18,32,0.88);font-family:var(--font-heading-family,Arial);"">
+    Why choose this experience?
+  </div>
+
+  <!-- Benefits card -->
+  <div style=""
+    border-radius:18px;
+    background:rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.18);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    padding:16px 18px;
+  "">
+    <ul style=""margin:0;padding:0 0 0 18px;font-size:15px;line-height:1.7;color:rgba(11,18,32,0.82);"">
+      <li>High performance jetskis</li>
+      <li>Safe and professional operation</li>
+      <li>Ideal for friends, couples or family fun</li>
+      <li>One of the most exciting watersports in Alvor</li>
+    </ul>
+  </div>
+
+</div>
+",Desportos Náuticos de Alvor,Vehicles & Parts > Vehicles > Watercraft > Personal Watercraft,Jetski,"algarve, alvor, jet ski, jetski, rental, Sofa, Towables, vacation, watersports",true,Time,10 minutes,,,,,,,,001-001,0,,,deny,manual,40,,false,true,,,,,'07045945,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg?v=1742288499,1,"A person enjoying a jetski rental on a sunny day, speeding across the water with a cityscape in the background.",false,Jetski Rental in Alvor Algarve,Experience thrilling jetski rentals in Alvor. Enjoy summer holidays and watersports at beautiful Alvor beach.,,,,,,TRUE,,,,,,TRUE,,,,,,,gasoline,,,luxury; sit-down; sport,,,,brake-system; other,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg?v=1742288499,kg,,,active
+jetski-rental,,,,,,,,,15 minutes,,,,,,,,001-002,0,,,deny,manual,55,,false,true,,,,,'67136282,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/jetski3_1716709b-4018-444d-9c5d-871944391814.jpg?v=1742288506,2,"A person riding a jet ski on clear water during a sunny day, showcasing the excitement of jetski rental activities.",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg?v=1742288499,kg,,,
+jetski-rental,,,,,,,,,20 minutes,,,,,,,,001-003,0,,,deny,manual,65,,false,true,,,,,'55318599,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/jetski2.jpg?v=1742288503,3,"Person enjoying a jetski rental, riding across the ocean with stunning cliffs in the background.",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg?v=1742288499,kg,,,
+jetski-rental,,,,,,,,,30 minutes,,,,,,,,001-004,0,,,deny,manual,85,,false,true,,,,,'71702885,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg?v=1742288499,kg,,,
+jetski-rental,,,,,,,,,1 hour,,,,,,,,001-005,0,,,deny,manual,160,,false,true,,,,,'00005,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg?v=1742288499,kg,,,
+crazy-sofa-inflatable-towable,Crazy Sofa - Inflatable Towable,"<div style=""max-width:720px;margin:0 auto;padding:0;font-family:var(--font-body-family,Arial);color:rgba(var(--color-foreground,11,18,32),0.9);"">
+
+  <div style=""font-weight:800;letter-spacing:.16em;font-size:12px;text-transform:uppercase;color:#0EA5B7;margin:0 0 12px;"">
+    ACTIVITIES
+  </div>
+
+  <h2 style=""margin:0 0 14px;font-weight:800;letter-spacing:-0.02em;line-height:1.02;font-size:clamp(32px,4vw,48px);font-family:var(--font-heading-family,Arial);color:#0B1220;"">
+    Inflatable
+    <span style=""
+      background:linear-gradient(90deg,#78BAC2,#4D9AB9);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      padding-left:8px;
+      display:inline-block;
+    "">
+      Sofa
+    </span>
+  </h2>
+
+  <div style=""
+    border-radius:18px;
+    background:rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.18);
+    box-shadow:0 18px 44px rgba(0,0,0,0.10);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    padding:18px;
+    margin:0 0 14px;
+  "">
+    <div style=""font-size:15px;line-height:1.7;color:rgba(11,18,32,0.82);"">
+      Enjoy moments of pure fun on the Crazy Sofa - Inflatable Towable with Desportos Náuticos de Alvor. A dynamic and energetic activity, perfect for those looking for laughter, excitement and shared experiences at sea.
+      <br><br>
+      Towed by a speedboat, the inflatable sofa glides over the waves delivering a fun and accessible experience, ideal for groups of friends, families and participants of different ages. The activity is always adapted to the sea conditions, ensuring enjoyment with total safety.
+      <br><br>
+      With a short but intense duration, the Crazy Sofa - Inflatable Towable is the perfect choice for anyone who wants to experience the best of the sea in Alvor in a relaxed, lively and unforgettable way.
+    </div>
+  </div>
+
+  <div style=""
+    border-radius:16px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.18);
+    box-shadow:0 16px 38px rgba(0,0,0,0.08);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    padding:14px 16px;
+    margin:0 0 18px;
+    color:rgba(11,18,32,0.86);
+    font-weight:800;
+    font-size:14px;
+    line-height:1.5;
+  "">
+    ⚠️ Quantity corresponds to the number of participants
+  </div>
+
+</div>
+",Desportos Náuticos de Alvor,Sporting Goods > Outdoor Recreation > Boating & Water Sports > Towed Water Sports > Towable Rafts & Tubes,Towable,"bookeasy, Rental, Sofa, Towables",true,Title,Default Title,,,,,,,,002-001,0,,,deny,manual,18,,false,true,,,,,'26614177,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/CrazySofa-InflatableTowable.png?v=1769024529,1,People on the Crazy Sofa - Inflatable Towable being pulled by a boat in the ocean with buildings in the background.,false,Crazy Sofa - Inflatable Towable Desportos Náuticos de Alvor,"Experience the thrill of our Crazy Sofa - Inflatable Towable! Fun for 2-6 people, enjoy laughter-filled moments on Alvor's waters.",,,,,,,,,,,,,,,,,,,,,,,,,,,,kg,,,active
+banana-slider-inflatable-towable,Banana Slider - Inflatable Towable,"<div style=""max-width:720px;margin:0 auto;padding:0;font-family:var(--font-body-family,Arial);color:rgba(var(--color-foreground,11,18,32),0.9);"">
+
+  <div style=""font-weight:800;letter-spacing:.16em;font-size:12px;text-transform:uppercase;color:#0ea5b7;margin:0 0 12px;"">
+    BANANA SLIDER - Inflatable Towable
+  </div>
+
+  <h2 style=""margin:0 0 14px;font-weight:800;letter-spacing:-0.02em;line-height:1.02;font-size:clamp(32px,4vw,48px);font-family:var(--font-heading-family,Arial);color:#0b1220;"">
+    Banana Slider in
+    <span style=""background:linear-gradient(90deg,#78BAC2,#4D9AB9);-webkit-background-clip:text;background-clip:text;color:transparent;padding-left:8px;display:inline-block;"">
+      Alvor
+    </span>
+  </h2>
+
+  <div style=""
+    border-radius:18px;
+    background:rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.18);
+    box-shadow:0 18px 44px rgba(0,0,0,0.10);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    padding:18px 18px;
+    margin:0 0 14px;
+  "">
+    <div style=""font-size:15px;line-height:1.7;color:rgba(11,18,32,0.82);"">
+      The Banana Slider Inflatable Towable is one of the most entertaining and accessible watersports experiences on the Algarve coast, perfect for those who want to combine fun, laughter and the thrill of being out at sea. Riding on an inflatable banana shaped slider, participants are pulled by a speedboat while bouncing over the waves, creating a shared experience full of excitement and unforgettable moments.
+      <br><br>
+      This activity is ideal for families, groups of friends and mixed age groups, as it does not require previous experience or special skills. Safety is always a priority, with life jackets provided and the ride adapted to the sea conditions on the day. The balance between fun and safety makes the Banana Slider in Alvor a great choice for both children and adults.
+      <br><br>
+      One of the main advantages of the Banana Slider is its social aspect. With space for several participants at once, everyone shares the same ride, laughs and splashes, making it a popular option for group activities, holidays and special occasions. The short duration delivers an intense and enjoyable experience without being too demanding, ideal for first time watersports participants.
+      <br><br>
+      Located in Alvor, this watersport also offers a unique perspective of the coastline, combining beautiful sea views with pure fun. Whether you want to add excitement to your beach day or create lasting holiday memories, the Banana Slider in Alvor is a must try activity that delivers smiles, adrenaline and shared joy on the water.
+    </div>
+  </div>
+
+  <div style=""
+    border-radius:16px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.18);
+    box-shadow:0 16px 38px rgba(0,0,0,0.08);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    padding:14px 16px;
+    margin:0;
+    color:rgba(11,18,32,0.86);
+    font-weight:800;
+    font-size:14px;
+    line-height:1.5;
+  "">
+    ⚠️ Quantity corresponds to the number of attendees.
+  </div>
+
+</div>
+",Desportos Náuticos de Alvor,Sporting Goods > Outdoor Recreation > Boating & Water Sports > Towed Water Sports > Towable Rafts & Tubes,Towable,"Banana Slider, bookeasy, Rental, Towables",true,Title,Default Title,,,,,,,,002-002,0,,,deny,manual,18,,false,true,,,,,'05795220,https://cdn.shopify.com/s/files/1/0818/0554/1723/files/BananaSlider-InflatableTowable.png?v=1769024472,1,"Group of people enjoying the Banana Slider - Inflatable Towable ride on the clear waters of Alvor, showcasing thrilling water fun.",false,Banana Slider - Inflatable Towable Exciting Fun in Alvor,"Join us for a thrilling 15-minute ride on the Banana Slider - Inflatable Towable in Alvor. Perfect for families and groups! Minimum 2, maximum 8 attendees.",,,,,,,,,,,,,,,,,,,,,,,,,,,,kg,,,active
