@@ -10,10 +10,11 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "cf-build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && cp .open-next/worker.js .open-next/_worker.js && cp -r .open-next/assets/. .open-next/",
+        "cf-build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && cp .open-next/worker.js .open-next/_worker.js && cp -r .open-next/assets/* .open-next/",
         "deploy": "opennextjs-cloudflare"
     },
     "dependencies": {
+        "@clerk/nextjs": "^7.0.1",
         "@prisma/adapter-d1": "^5.14.0",
         "@prisma/client": "^5.14.0",
         "date-fns": "^3.6.0",

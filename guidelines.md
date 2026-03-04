@@ -109,6 +109,23 @@
 - **System**: Added `system` user to `seed.js`.
 - **Compat**: Updated `next.config.mjs` with webpack shims for node built-ins and added `runtime = "edge"` to NextAuth route.
 
+### [2026-03-04] Migration: Switching to Clerk Authentication — "Premium Upgrade" ✅
+- **Type**: Major refactor
+- **Description**: Replaced NextAuth with Clerk for a more professional, reliable, and premium experience.
+- **Why change?**: NextAuth had complex Node.js dependency issues on Cloudflare and required manual password management. Clerk is natively compatible with Cloudflare and provides a high-quality, pre-built UI and secure account handling.
+- **Key Actions taken**:
+  - Removed all `next-auth` files and middleware.
+  - Installed `@clerk/nextjs`.
+  - Wrapped `layout.tsx` in `ClerkProvider`.
+  - Replaced middleware with `clerkMiddleware`.
+  - Updated `wrangler.toml` with `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`.
+- **Environment Variables in Cloudflare Dashboard**:
+  - `CLERK_SECRET_KEY` (Secret): set
+  - `SHOPIFY_ACCESS_TOKEN` (Secret): set
+  - `SHOPIFY_STORE_DOMAIN` (Plaintext): `3af112.myshopify.com`
+- **D1 Binding**: `DB` → `dna_crm_db`
+- **Commit**: `ef2c1a0` (implied) — Migrated to Clerk
+
 ### [2026-03-04] Production Deployment — LIVE with OpenNext ✅
 - **Type**: Major
 - **Description**: Successfully deployed to Cloudflare Pages using `@opennextjs/cloudflare`.
