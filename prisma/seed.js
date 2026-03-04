@@ -16,7 +16,18 @@ async function main() {
         },
     });
 
-    console.log({ admin });
+    const systemUser = await prisma.user.upsert({
+        where: { id: 'system' },
+        update: {},
+        create: {
+            id: 'system',
+            email: 'system@internal.dna',
+            name: 'System',
+            role: 'ADMIN',
+        },
+    });
+
+    console.log({ admin, systemUser });
 }
 
 main()
