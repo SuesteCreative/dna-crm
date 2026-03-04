@@ -15,4 +15,4 @@ NEXT_PUBLIC_APP_URL = "https://dna-crm.pages.dev"
 [[d1_databases]]
 binding = "DB"
 database_name = "dna_crm_db"
-database_id = "562fb330-8041-4c7a-9742-16a4f21650c8"
+database_id = "1560fc09-7a7f-49c5-a821-55fa753806e7"
