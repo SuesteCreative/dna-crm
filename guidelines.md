@@ -109,24 +109,29 @@
 - **System**: Added `system` user to `seed.js`.
 - **Compat**: Updated `next.config.mjs` with webpack shims for node built-ins and added `runtime = "edge"` to NextAuth route.
 
-### [2026-03-04] Production Deployment — Fixed with OpenNext
+### [2026-03-04] Production Deployment — LIVE with OpenNext ✅
 - **Type**: Major
-- **Description**: Resolved all Cloudflare Pages deployment failures by switching build adapter.
-- **Root Cause**: The old `@cloudflare/next-on-pages` adapter is deprecated and fundamentally incompatible with NextAuth v4 (which requires Node.js). It forces Edge Runtime on all routes, blocking Node.js modules like `crypto`, `util`, `querystring`.
-- **Fix**: Migrated to `@opennextjs/cloudflare` (the official Cloudflare-recommended adapter). This supports the Node.js runtime natively, eliminating all module compatibility errors.
-- **Config changes**:
-  - `wrangler.toml`: Updated `pages_build_output_dir` to `.open-next/assets`
-  - `next.config.mjs`: Cleaned to minimal config (no Webpack hacks needed)
-  - Added `open-next.config.ts` (required by OpenNext)
-  - Added `.npmrc` with `legacy-peer-deps=true`
-  - Added `.nvmrc` and `.node-version` pinned to Node 20
-  - Removed all `export const runtime = "edge"` from API routes
-- **Cloudflare Build Command**: `npx @opennextjs/cloudflare@latest build --dangerouslyUseUnsupportedNextVersion`
-- **Cloudflare Build Output**: `.open-next/assets`
-- **Database**: Applied migration via `wrangler d1 execute --remote`. Tables `User`, `Partner`, `Booking` confirmed live.
-- **Environment Variables set in Cloudflare**:
+- **Description**: Successfully deployed to Cloudflare Pages using `@opennextjs/cloudflare`.
+- **Root Cause of previous failures**: The old `@cloudflare/next-on-pages` adapter is deprecated and incompatible with NextAuth v4 (requires Node.js). It forced Edge Runtime on all routes, blocking `crypto`, `util`, `querystring` etc.
+- **Fix**: Migrated to `@opennextjs/cloudflare` (Cloudflare's official recommended adapter). Supports Node.js runtime natively — no Webpack hacks needed.
+- **Final Cloudflare Build Settings**:
+  - **Build command**: `npx @opennextjs/cloudflare@latest build --dangerouslyUseUnsupportedNextVersion && cp .open-next/worker.js .open-next/_worker.js`
+  - **Build output directory**: `.open-next`
+  - **Compatibility flags (Runtime)**: `nodejs_compat`
+  - **Framework preset**: None
+- **Files added/changed**:
+  - `wrangler.toml`: `pages_build_output_dir = ".open-next"`
+  - `next.config.mjs`: Minimal clean config (no Webpack hacks)
+  - `open-next.config.ts`: Required by OpenNext
+  - `.npmrc`: `legacy-peer-deps=true` (for Next.js 14 + OpenNext compatibility)
+  - `prisma/seed.js`: Fixed admin email to `booking@desportosnauticosalvor.com`
+  - Removed all `export const runtime = "edge"` from all API routes
+- **Database**: Tables `User`, `Partner`, `Booking` confirmed live via `wrangler d1 execute --remote`.
+- **Admin user**: `booking@desportosnauticosalvor.com` (role: ADMIN)
+- **Environment Variables in Cloudflare**:
   - `NEXTAUTH_URL` (Plaintext): `https://dna-crm.pages.dev`
   - `NEXTAUTH_SECRET` (Secret): set
   - `SHOPIFY_ACCESS_TOKEN` (Secret): set
   - `SHOPIFY_STORE_DOMAIN` (Plaintext): `3af112.myshopify.com`
-
+- **D1 Binding**: `DB` → `dna_crm_db`
+- **Commit**: `85a74a0` — deployed 2026-03-04
