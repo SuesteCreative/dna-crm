@@ -2,13 +2,14 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-    const adminEmail = 'admin@desportosnauticosalvor.com';
+    const adminEmail = 'booking@desportosnauticosalvor.com';
     const adminPassword = 'adminpassword123'; // User should change this immediately
 
     const admin = await prisma.user.upsert({
         where: { email: adminEmail },
         update: {},
         create: {
+            id: 'admin_seed',
             email: adminEmail,
             name: 'Admin',
             password: adminPassword,
