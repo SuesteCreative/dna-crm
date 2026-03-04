@@ -10,7 +10,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "cf-build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && cp .open-next/worker.js .open-next/_worker.js && cp -r .open-next/assets/. .open-next/",
+        "cf-build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && node scripts/post-build.js",
         "deploy": "opennextjs-cloudflare"
     },
     "dependencies": {
