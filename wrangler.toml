@@ -1,12 +1,18 @@
 name = "dna-crm"
+pages_build_output_dir = ".open-next"
 compatibility_date = "2024-11-18"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".open-next"
 
 [vars]
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_dGhhbmtmdWwtc3BvbmdlLTIxLmNsZXJrLmFjY291bnRzLmRldiQ"
+NEXT_PUBLIC_CLERK_SIGN_IN_URL = "/sign-in"
+NEXT_PUBLIC_CLERK_SIGN_UP_URL = "/sign-up"
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL = "/"
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL = "/"
+SHOPIFY_STORE_DOMAIN = "3af112.myshopify.com"
+NEXT_PUBLIC_APP_URL = "https://dna-crm.pages.dev"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "dna_crm_db"
-database_id = "1560fc09-7a7f-49c5-a821-55fa753806e7"
+database_id = "562fb330-8041-4c7a-9742-16a4f21650c8"
