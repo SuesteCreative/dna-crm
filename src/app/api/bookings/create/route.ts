@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 
 export const runtime = "edge";
 
 export async function POST(req: Request) {
-    // Force some session check
-    const session = await getServerSession(authOptions);
+    const token = await getToken({ req: req as any });
 
-    // In local dev without session yet, we might want to bypass for testing, 
-    // but for production Cloudflare, auth should be working.
-    if (!session) {
-        // Checking for a temporary bypass for the very first setup if needed, 
-        // but better to enforce security.
+    if (!token) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -28,7 +22,7 @@ export async function POST(req: Request) {
                 activityTime: data.activityTime,
                 pax: parseInt(data.pax),
                 totalPrice: parseFloat(data.totalPrice || 0),
-                createdById: (session.user as any).id,
+                createdById: token.id as string,
                 source: "MANUAL",
                 status: "CONFIRMED",
             },
