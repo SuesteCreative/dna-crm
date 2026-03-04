@@ -2,16 +2,16 @@
 const nextConfig = {
     webpack: (config, { isServer }) => {
         if (isServer) {
-            config.resolve.fallback = {
-                ...config.resolve.fallback,
-                crypto: false,
-                http: false,
-                https: false,
-                querystring: false,
-                zlib: false,
-                stream: false,
-                buffer: false,
-                util: false,
+            config.resolve.alias = {
+                ...config.resolve.alias,
+                crypto: "node:crypto",
+                http: "node:http",
+                https: "node:https",
+                querystring: "node:querystring",
+                zlib: "node:zlib",
+                stream: "node:stream",
+                buffer: "node:buffer",
+                util: "node:util",
             };
         }
         return config;
