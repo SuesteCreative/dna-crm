@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { syncShopifyOrders } from "@/lib/shopify";
 
-export const runtime = "edge";
 
 export async function POST() {
     try {
