@@ -57,10 +57,15 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const res = await fetch("/api/bookings");
+      if (!res.ok) {
+        setBookings([]);
+        return;
+      }
       const data = await res.json();
-      setBookings(data || []);
+      setBookings(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setBookings([]);
     } finally {
       setLoading(false);
     }
