@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-export const runtime = "nodejs";
-
 async function verifyHmac(body: string, secret: string, hmacHeader: string): Promise<boolean> {
     try {
         const enc = new TextEncoder();
