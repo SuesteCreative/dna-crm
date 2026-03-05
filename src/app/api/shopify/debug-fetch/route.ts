@@ -1,4 +1,5 @@
-export const runtime = "nodejs";
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -6,7 +7,7 @@ export async function GET() {
     let domain: string | undefined;
     let token: string | undefined;
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         domain = (env as any).SHOPIFY_STORE_DOMAIN;
         token = (env as any).SHOPIFY_ACCESS_TOKEN;
     } catch {

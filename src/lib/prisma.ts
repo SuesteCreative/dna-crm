@@ -10,15 +10,13 @@ export async function getPrisma() {
         // Dynamic import to avoid module-level evaluation issues on some workers
         const { PrismaClient } = await import("@prisma/client/wasm");
 
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         const db = (env as any).DB;
 
         if (db) {
-            console.log("Initializing Prisma with D1 adapter");
             const adapter = new PrismaD1(db);
             prisma = new PrismaClient({ adapter } as any);
         } else {
-            console.warn("D1 binding not found, using default client");
             prisma = new PrismaClient();
         }
     } catch (error) {

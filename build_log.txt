@@ -1,0 +1,60 @@
+  Ôû▓ Next.js 14.2.3
+  - Environments: .env.production, .env
+
+   Creating an optimized production build ...
+ Ô£ô Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+ ÔÜá Using edge runtime on a page currently disables static generation for that page
+   Generating static pages (0/12) ...
+   Generating static pages (3/12) 
+   Generating static pages (6/12) 
+Prisma init error: Error: 
+
+ERROR: `getCloudflareContext` has been called in sync mode in either a static route or at the top level of a non-static one, both cases are not allowed but can be solved by either:
+  - make sure that the call is not at the top level and that the route is not static
+  - call `getCloudflareContext({async: true})` to use the `async` mode
+  - avoid calling `getCloudflareContext` in the route
+
+    at C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\chunks\706.js:1:3411
+    at a (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\chunks\706.js:1:3835)
+    at n (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\api\shopify\debug-sync\route.js:1:1713)
+    at async p (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\api\shopify\debug-sync\route.js:1:603)
+    at async C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:34666
+    at async eS.execute (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:25813)
+    at async eS.handle (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:35920)
+    at async exportAppRoute (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\export\routes\app-route.js:77:26)
+    at async exportPageImpl (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\export\worker.js:175:20)
+    at async Span.traceAsyncFn (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\trace\trace.js:154:20)
+   Generating static pages (9/12) 
+ Ô£ô Generating static pages (12/12)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+Ôöî ãÆ /                                    224 kB          343 kB
+Ôö£ ãÆ /_not-found                          871 B          88.1 kB
+Ôö£ ãÆ /api/bookings                        0 B                0 B
+Ôö£ ãÆ /api/bookings/create                 0 B                0 B
+Ôö£ ãÆ /api/services                        0 B                0 B
+Ôö£ ãÆ /api/services/seed                   0 B                0 B
+Ôö£ ãÆ /api/shopify/debug-db                0 B                0 B
+Ôö£ Ôùï /api/shopify/debug-fetch             0 B                0 B
+Ôö£ ãÆ /api/shopify/debug-sync              0 B                0 B
+Ôö£ ãÆ /api/shopify/sync                    0 B                0 B
+Ôö£ ãÆ /api/shopify/webhook                 0 B                0 B
+Ôö£ ãÆ /partners                            2.89 kB         122 kB
+Ôö£ ãÆ /services                            2.16 kB         121 kB
+Ôö£ ãÆ /sign-in/[[...sign-in]]              199 B           125 kB
+Ôöö ãÆ /sign-up/[[...sign-up]]              199 B           125 kB
++ First Load JS shared by all            87.2 kB
+  Ôö£ chunks/23-407f516fe122bd70.js        31.5 kB
+  Ôö£ chunks/fd9d1056-2724c10f3f6c1061.js  53.6 kB
+  Ôöö other shared chunks (total)          2.15 kB
+
+
+ãÆ Middleware                             77.7 kB
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+

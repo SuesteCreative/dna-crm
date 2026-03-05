@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 import { getPrisma } from "@/lib/prisma";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
     // Fetch webhook secret from Cloudflare env
     let webhookSecret: string | undefined;
     try {
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         webhookSecret = (env as any).SHOPIFY_WEBHOOK_SECRET;
     } catch {
         webhookSecret = process.env.SHOPIFY_WEBHOOK_SECRET;
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const order = JSON.parse(rawBody);
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
         const prisma = await getPrisma();
         const db = (env as any).DB;
 

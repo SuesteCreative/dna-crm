@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 import { getPrisma } from "@/lib/prisma";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { syncShopifyOrders } from "@/lib/shopify";
@@ -6,7 +7,7 @@ import { syncShopifyOrders } from "@/lib/shopify";
 export async function POST() {
     try {
         const prisma = await getPrisma();
-        const { env } = await getCloudflareContext();
+        const { env } = await getCloudflareContext({ async: true });
 
         // Explicitly pass Cloudflare env vars so they're available at runtime
         const domain = (env as any).SHOPIFY_STORE_DOMAIN || process.env.SHOPIFY_STORE_DOMAIN;
