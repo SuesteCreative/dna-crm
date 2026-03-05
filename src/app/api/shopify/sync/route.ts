@@ -6,15 +6,14 @@ import { syncShopifyOrders } from "@/lib/shopify";
 
 export async function POST() {
     try {
-        const prisma = await getPrisma();
         const { env } = await getCloudflareContext({ async: true });
 
-        // Explicitly pass Cloudflare env vars so they're available at runtime
+        // Explicitly pass Cloudflare env vars
         const domain = (env as any).SHOPIFY_STORE_DOMAIN || process.env.SHOPIFY_STORE_DOMAIN;
         const token = (env as any).SHOPIFY_ACCESS_TOKEN || process.env.SHOPIFY_ACCESS_TOKEN;
-        const db = (env as any).DB;
+        const db = (env as any).DB || (env as any).dna_crm_db; // Try both standard and named bindings
 
-        const result = await syncShopifyOrders(prisma as any, domain, token, db);
+        const result = await syncShopifyOrders(domain, token, db);
         return NextResponse.json({
             ...result,
             debug: { hasDb: !!db, domain }
