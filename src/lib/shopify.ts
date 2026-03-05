@@ -117,13 +117,13 @@ export async function syncShopifyOrders(
                     },
                 });
                 upserted++;
-            } catch (err) {
+            } catch (err: any) {
                 console.error(`Failed to process order ${order.id}:`, err);
-                failedOrders.push(order.id);
+                failedOrders.push({ id: order.id, error: err.message || String(err) });
             }
         }
 
-        return { success: true, count: upserted, failed: failedOrders.length, failedIds: failedOrders };
+        return { success: true, count: upserted, failed: failedOrders.length, failedOrders };
     } catch (error) {
         console.error("Error syncing Shopify orders:", error);
         return { success: false, error: String(error), count: 0 };
