@@ -15,7 +15,8 @@ export async function syncShopifyOrders(
     }
 
     try {
-        const url = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250`;
+        // Fetching all orders, status=any to capture historical data
+        const url = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250&fulfillment_status=any&financial_status=any`;
         console.log("Fetching Shopify orders from:", url);
 
         const response = await fetch(url, {

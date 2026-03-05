@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 
-// Services extracted from products_export.csv
+// We force Node runtime here because Cloudflare Workers (Edge) 
+// sometimes have issues with Prisma introspection or specific Node modules
+// although we aren't using 'fs' explicitly, unenv might be triggered by internal libs.
+export const runtime = "nodejs";
+
 const SERVICES = [
-    // ── Jetski Rental ──────────────────────────────────────────
     {
         shopifyHandle: "jetski-rental",
         name: "Jetski Rental",
@@ -49,7 +52,6 @@ const SERVICES = [
         imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg",
         category: "Jetski",
     },
-    // ── Infláveis ──────────────────────────────────────────────
     {
         shopifyHandle: "crazy-sofa-inflatable-towable",
         name: "Crazy Sofa",
