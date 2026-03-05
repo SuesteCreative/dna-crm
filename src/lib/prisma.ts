@@ -1,34 +1,28 @@
-import { PrismaClient } from "@prisma/client/wasm";
+import { PrismaClient } from "@prisma/client";
 import { PrismaD1 } from "@prisma/adapter-d1";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-// Hack to prevent Prisma from crashing on unsupported fs.readdir in some polyfilled environments
-if (typeof (globalThis as any).process === "undefined") {
-    (globalThis as any).process = { env: {} };
-}
-if (!(globalThis as any).fs) {
-    (globalThis as any).fs = { readdir: (p: any, cb: any) => cb(null, []), readdirSync: () => [] };
-}
+let prisma: PrismaClient | null = null;
 
-// Creates a Prisma client using the D1 binding from the Cloudflare request context.
-// Must be called inside a request handler.
 export async function getPrisma() {
+    if (prisma) return prisma;
+
     try {
         const { env } = await getCloudflareContext();
-        console.log("Cloudflare env keys:", Object.keys(env || {}));
-
         const db = (env as any).DB;
+
         if (db) {
-            console.log("Using Prisma with D1 adapter (DB found)");
+            console.log("Initializing Prisma with D1 adapter");
             const adapter = new PrismaD1(db);
-            return new PrismaClient({ adapter } as any);
+            prisma = new PrismaClient({ adapter } as any);
         } else {
-            console.warn("D1 binding 'DB' NOT found in Cloudflare context");
-            throw new Error("Missing DB binding");
+            console.warn("D1 binding not found, using default client");
+            prisma = new PrismaClient();
         }
-    } catch (e) {
-        console.warn("Prisma initialization error/fallback:", e);
-        // Fallback for local development
-        return new PrismaClient();
+    } catch (error) {
+        console.warn("Error getting Cloudflare context, using default client:", error);
+        prisma = new PrismaClient();
     }
+
+    return prisma;
 }
