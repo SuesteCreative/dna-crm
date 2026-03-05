@@ -4,8 +4,13 @@ const path = require("path");
 console.log("Running post-build...");
 
 // 1. Rename worker.js to _worker.js (required by Cloudflare Pages)
-fs.copyFileSync(".open-next/worker.js", ".open-next/_worker.js");
-console.log("Copied worker.js -> _worker.js");
+const workerPath = ".open-next/worker.js";
+if (fs.existsSync(workerPath)) {
+    fs.copyFileSync(workerPath, ".open-next/_worker.js");
+    console.log("Copied worker.js -> _worker.js");
+} else {
+    console.log("worker.js not found, skipping copy (might be handled by OpenNext target)");
+}
 
 // 2. Copy all assets from .open-next/assets/ to .open-next/
 //    This makes /_next/static/... accessible at the root of the output dir

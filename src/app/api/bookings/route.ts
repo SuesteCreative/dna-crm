@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 
+export const runtime = "edge";
+
 export async function GET() {
     try {
         const prisma = await getPrisma();
