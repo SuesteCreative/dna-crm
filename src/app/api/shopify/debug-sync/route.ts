@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
-import { getPrisma } from "@/lib/prisma";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { syncShopifyOrders } from "@/lib/shopify";
 
@@ -14,10 +13,10 @@ export async function GET() {
 
         const result = await syncShopifyOrders(domain, token, db);
         return NextResponse.json({
+            v: "v2-no-prisma-raw-sql",
             ...result,
             debug: {
                 hasDb: !!db,
-                hasNamedDb: !!(env as any).dna_crm_db,
                 availableBindings: Object.keys(env as any),
                 domain
             }
