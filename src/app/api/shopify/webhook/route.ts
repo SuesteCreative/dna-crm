@@ -20,48 +20,65 @@ async function verifyHmac(body: string, secret: string, hmacHeader: string): Pro
 
 function parseOrderToBooking(order: any) {
     const firstLineItem = order.line_items?.[0];
-    const properties: { name: string; value: string }[] = firstLineItem?.properties || [];
+    const properties = firstLineItem?.properties || [];
 
     // Index all properties by name for quick lookup
     const props: Record<string, string> = {};
-    for (const p of properties) props[p.name] = p.value;
+    if (Array.isArray(properties)) {
+        for (const p of properties) {
+            if (p && typeof p.name === "string" && typeof p.value === "string") {
+                props[p.name] = p.value;
+            }
+        }
+    }
 
     // ── Meety date/time ──────────────────────────────────────────────
-    // _meety_from_time: "2025-10-09T14:10:00.000+01:00"
     let activityDate: Date;
     let activityTime: string | null = null;
 
     if (props["_meety_from_time"]) {
         const from = new Date(props["_meety_from_time"]);
-        activityDate = from;
+        activityDate = isNaN(from.getTime()) ? new Date(order.created_at) : from;
         const tz = props["_meety_timezone"] || "Europe/Lisbon";
-        activityTime = from.toLocaleTimeString("pt-PT", {
-            hour: "2-digit", minute: "2-digit", timeZone: tz
-        });
+        if (!isNaN(from.getTime())) {
+            activityTime = from.toLocaleTimeString("pt-PT", {
+                hour: "2-digit", minute: "2-digit", timeZone: tz
+            });
+        }
     } else {
-        // Generic fallback for other booking apps
         activityDate = new Date(order.created_at);
-        for (const p of properties) {
-            const n = p.name.toLowerCase();
-            if (n.includes("date") && !n.startsWith("_meety")) { try { activityDate = new Date(p.value); } catch { } }
-            if (n.includes("time") && !n.startsWith("_meety")) { activityTime = p.value; }
+        if (isNaN(activityDate.getTime())) activityDate = new Date();
+        for (const [name, value] of Object.entries(props)) {
+            const n = name.toLowerCase();
+            if (n.includes("date") && !n.startsWith("_meety")) {
+                const d = new Date(value);
+                if (!isNaN(d.getTime())) activityDate = d;
+            }
+            if (n.includes("time") && !n.startsWith("_meety")) {
+                activityTime = value;
+            }
         }
     }
 
     // ── Meety pax ────────────────────────────────────────────────────
-    // _meety_user_inputs_XXXXX: "How many people will be attending => 2"
-    let pax = parseInt(props["_meety_numslots"] || "1") || 1;
+    let pax = parseInt(props["_meety_numslots"] || "1", 10);
+    if (isNaN(pax) || pax < 1) pax = 1;
     for (const [key, value] of Object.entries(props)) {
         if (key.startsWith("_meety_user_inputs")) {
             const match = value.match(/=>\s*(\d+)/);
-            if (match) { pax = parseInt(match[1]) || pax; break; }
+            if (match) {
+                const parsedPax = parseInt(match[1], 10);
+                if (!isNaN(parsedPax) && parsedPax > 0) pax = parsedPax;
+                break;
+            }
         }
     }
 
     // ── Status & activity name ────────────────────────────────────────
-    const status = order.cancelled_at
-        ? "CANCELLED"
-        : order.financial_status === "paid" ? "CONFIRMED" : "PENDING";
+    let status = order.financial_status === "paid" ? "CONFIRMED" : "PENDING";
+    if (order.cancelled_at) {
+        status = "CANCELLED";
+    }
 
     const activityName = firstLineItem?.title || null;
 
@@ -72,12 +89,13 @@ function parseOrderToBooking(order: any) {
         customerPhone: order.customer?.phone || null,
         activityDate,
         activityTime,
+        activityType: activityName,
         pax,
         status,
         source: "SHOPIFY",
-        totalPrice: parseFloat(order.total_price || "0"),
+        totalPrice: parseFloat(order.total_price || "0") || 0,
         createdById: "shopify-webhook",
-        notes: activityName,
+        notes: `Webhook from Shopify Order #${order.order_number || order.id}`,
     };
 }
 
