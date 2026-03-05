@@ -14,7 +14,10 @@ export async function POST() {
         const db = (env as any).DB;
 
         const result = await syncShopifyOrders(prisma as any, domain, token, db);
-        return NextResponse.json(result);
+        return NextResponse.json({
+            ...result,
+            debug: { hasDb: !!db, domain }
+        });
     } catch (error) {
         console.error("Shopify sync route error:", error);
         return NextResponse.json({ error: String(error), count: 0 }, { status: 500 });
