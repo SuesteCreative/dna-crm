@@ -1,16 +1,17 @@
-import { PrismaClient } from "@prisma/client";
 import { PrismaD1 } from "@prisma/adapter-d1";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-let prisma: PrismaClient | null = null;
+let prisma: any = null;
 
 export async function getPrisma() {
     if (prisma) return prisma;
 
     try {
+        // Dynamic import to avoid module-level evaluation issues on some workers
+        const { PrismaClient } = await import("@prisma/client/wasm");
+
         const { env } = await getCloudflareContext();
         const db = (env as any).DB;
-        console.log("getPrisma debug - env.DB available:", !!db);
 
         if (db) {
             console.log("Initializing Prisma with D1 adapter");
@@ -21,7 +22,9 @@ export async function getPrisma() {
             prisma = new PrismaClient();
         }
     } catch (error) {
-        console.warn("Error getting Cloudflare context, using default client:", error);
+        console.warn("Prisma init error:", error);
+        // Fallback
+        const { PrismaClient } = await import("@prisma/client/wasm");
         prisma = new PrismaClient();
     }
 

@@ -1,5 +1,6 @@
 "use client";
 
+export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Plus, RefreshCcw, Waves, Zap } from "lucide-react";

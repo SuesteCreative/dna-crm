@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
+export const runtime = "edge";
+
 
 export async function POST(req: Request) {
     const { userId } = await auth();
