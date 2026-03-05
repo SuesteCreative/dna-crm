@@ -1,12 +1,12 @@
 "use client";
 
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import {
-  Calendar, Users, RefreshCcw, Plus, Search,
+  Calendar, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
-  TrendingUp, Activity, ShoppingBag, LayoutDashboard,
-  ChevronRight, AlertCircle, Waves
+  TrendingUp, Activity, ShoppingBag,
+  AlertCircle
 } from "lucide-react";
 import { exportToExcel, exportToPDF } from "@/lib/export";
 import "./Dashboard.css";
@@ -50,7 +50,6 @@ export default function Dashboard() {
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
-  const [activeNav, setActiveNav] = useState("dashboard");
   const [formData, setFormData] = useState(defaultForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -136,7 +135,6 @@ export default function Dashboard() {
     } catch { setFormError("Erro de ligação"); }
   };
 
-  // Group services by category for the modal select
   const svcGroups: Record<string, Service[]> = {};
   for (const s of services) {
     const cat = s.category || "Outros";
@@ -164,141 +162,105 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="crm-root">
-      {/* Sidebar */}
-      <aside className="crm-sidebar">
-        <div className="brand">
-          <div className="brand-icon"><Activity size={20} /></div>
-          <span className="brand-name">DNA CRM</span>
+    <main className="crm-main">
+      <header className="crm-topbar">
+        <div>
+          <h1 className="page-title">Reservas</h1>
+          <p className="page-sub">Gerencie todas as atividades e agendamentos.</p>
         </div>
-
-        <nav className="crm-nav">
-          <p className="nav-label">Principal</p>
-          <button className={`nav-item ${activeNav === "dashboard" ? "active" : ""}`} onClick={() => setActiveNav("dashboard")}>
-            <LayoutDashboard size={18} /><span>Dashboard</span>
-            {activeNav === "dashboard" && <ChevronRight size={14} className="nav-arrow" />}
+        <div className="topbar-actions">
+          <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
+          <button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button>
+          <button className={`btn-outline ${syncing ? "syncing" : ""}`} onClick={handleSync} disabled={syncing}>
+            <RefreshCcw size={16} className={syncing ? "spin" : ""} />
+            {syncing ? "Sincronizando..." : "Sync Shopify"}
           </button>
-          <button className={`nav-item ${activeNav === "services" ? "active" : ""}`} onClick={() => { setActiveNav("services"); window.location.href = "/services"; }}>
-            <Waves size={18} /><span>Serviços</span>
+          <button className="btn-primary" onClick={() => setShowModal(true)}>
+            <Plus size={16} /> Nova Reserva
           </button>
-          <button className={`nav-item ${activeNav === "partners" ? "active" : ""}`} onClick={() => { setActiveNav("partners"); window.location.href = "/partners"; }}>
-            <Users size={18} /><span>Parceiros</span>
-          </button>
-          <p className="nav-label">Integrações</p>
-          <button className="nav-item" onClick={handleSync}>
-            <ShoppingBag size={18} /><span>Sync Shopify</span>
-          </button>
-        </nav>
-
-        <div className="sidebar-user">
-          <UserButton afterSignOutUrl="/sign-in" showName />
         </div>
-      </aside>
+      </header>
 
-      {/* Main */}
-      <main className="crm-main">
-        <header className="crm-topbar">
-          <div>
-            <h1 className="page-title">Reservas</h1>
-            <p className="page-sub">Gerencie todas as atividades e agendamentos.</p>
-          </div>
-          <div className="topbar-actions">
-            <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
-            <button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button>
-            <button className={`btn-outline ${syncing ? "syncing" : ""}`} onClick={handleSync} disabled={syncing}>
-              <RefreshCcw size={16} className={syncing ? "spin" : ""} />
-              {syncing ? "Sincronizando..." : "Sync Shopify"}
-            </button>
-            <button className="btn-primary" onClick={() => setShowModal(true)}>
-              <Plus size={16} /> Nova Reserva
-            </button>
-          </div>
-        </header>
+      {syncMsg && (
+        <div className={`sync-toast ${syncMsg.startsWith("Erro") ? "error" : "success"}`}>
+          {syncMsg.startsWith("Erro") ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
+          {syncMsg}
+        </div>
+      )}
 
-        {syncMsg && (
-          <div className={`sync-toast ${syncMsg.startsWith("Erro") ? "error" : "success"}`}>
-            {syncMsg.startsWith("Erro") ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
-            {syncMsg}
-          </div>
-        )}
+      <section className="stats-row">
+        <div className="stat-tile blue">
+          <div className="tile-ico"><Calendar size={22} /></div>
+          <div className="tile-info"><span className="tile-val">{bookings.length}</span><span className="tile-lbl">Total de Reservas</span></div>
+          <TrendingUp size={40} className="tile-bg-ico" />
+        </div>
+        <div className="stat-tile green">
+          <div className="tile-ico"><CheckCircle size={22} /></div>
+          <div className="tile-info"><span className="tile-val">{confirmed}</span><span className="tile-lbl">Confirmadas</span></div>
+          <CheckCircle size={40} className="tile-bg-ico" />
+        </div>
+        <div className="stat-tile amber">
+          <div className="tile-ico"><Clock size={22} /></div>
+          <div className="tile-info"><span className="tile-val">{pending}</span><span className="tile-lbl">Pendentes</span></div>
+          <Clock size={40} className="tile-bg-ico" />
+        </div>
+        <div className="stat-tile teal">
+          <div className="tile-ico"><Activity size={22} /></div>
+          <div className="tile-info"><span className="tile-val">{revenue.toFixed(0)}€</span><span className="tile-lbl">Receita Total</span></div>
+          <TrendingUp size={40} className="tile-bg-ico" />
+        </div>
+      </section>
 
-        {/* Stats */}
-        <section className="stats-row">
-          <div className="stat-tile blue">
-            <div className="tile-ico"><Calendar size={22} /></div>
-            <div className="tile-info"><span className="tile-val">{bookings.length}</span><span className="tile-lbl">Total de Reservas</span></div>
-            <TrendingUp size={40} className="tile-bg-ico" />
+      <section className="table-card">
+        <div className="table-card-header">
+          <h2>Reservas Recentes</h2>
+          <div className="search-wrap">
+            <Search size={16} className="search-icon" />
+            <input className="search-input" placeholder="Pesquisar cliente, email ou atividade..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <div className="stat-tile green">
-            <div className="tile-ico"><CheckCircle size={22} /></div>
-            <div className="tile-info"><span className="tile-val">{confirmed}</span><span className="tile-lbl">Confirmadas</span></div>
-            <CheckCircle size={40} className="tile-bg-ico" />
-          </div>
-          <div className="stat-tile amber">
-            <div className="tile-ico"><Clock size={22} /></div>
-            <div className="tile-info"><span className="tile-val">{pending}</span><span className="tile-lbl">Pendentes</span></div>
-            <Clock size={40} className="tile-bg-ico" />
-          </div>
-          <div className="stat-tile teal">
-            <div className="tile-ico"><Activity size={22} /></div>
-            <div className="tile-info"><span className="tile-val">{revenue.toFixed(0)}€</span><span className="tile-lbl">Receita Total</span></div>
-            <TrendingUp size={40} className="tile-bg-ico" />
-          </div>
-        </section>
-
-        {/* Table */}
-        <section className="table-card">
-          <div className="table-card-header">
-            <h2>Reservas Recentes</h2>
-            <div className="search-wrap">
-              <Search size={16} className="search-icon" />
-              <input className="search-input" placeholder="Pesquisar cliente, email ou atividade..." value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-          </div>
-          <div className="table-wrap">
-            <table className="crm-table">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Atividade</th>
-                  <th>Data / Hora</th>
-                  <th>Pax</th>
-                  <th>Fonte</th>
-                  <th>Status</th>
-                  <th>Preço</th>
+        </div>
+        <div className="table-wrap">
+          <table className="crm-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Atividade</th>
+                <th>Data / Hora</th>
+                <th>Pax</th>
+                <th>Fonte</th>
+                <th>Status</th>
+                <th>Preço</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} className="table-empty"><div className="loader-sm" /></td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={7} className="table-empty">Nenhuma reserva encontrada.</td></tr>
+              ) : filtered.map(b => (
+                <tr key={b.id}>
+                  <td>
+                    <div className="cell-name">{b.customerName}</div>
+                    <div className="cell-sub">{b.customerEmail || "—"}</div>
+                  </td>
+                  <td>
+                    <div className="cell-name">{b.activityType || b.notes || "—"}</div>
+                  </td>
+                  <td>
+                    <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
+                    <div className="cell-sub">{b.activityTime || "—"}</div>
+                  </td>
+                  <td><span className="pax-pill">{b.pax} pax</span></td>
+                  <td>{sourceBadge(b.source)}</td>
+                  <td>{statusBadge(b.status)}</td>
+                  <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={7} className="table-empty"><div className="loader-sm" /></td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={7} className="table-empty">Nenhuma reserva encontrada.</td></tr>
-                ) : filtered.map(b => (
-                  <tr key={b.id}>
-                    <td>
-                      <div className="cell-name">{b.customerName}</div>
-                      <div className="cell-sub">{b.customerEmail || "—"}</div>
-                    </td>
-                    <td>
-                      <div className="cell-name">{b.activityType || b.notes || "—"}</div>
-                    </td>
-                    <td>
-                      <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
-                      <div className="cell-sub">{b.activityTime || "—"}</div>
-                    </td>
-                    <td><span className="pax-pill">{b.pax} pax</span></td>
-                    <td>{sourceBadge(b.source)}</td>
-                    <td>{statusBadge(b.status)}</td>
-                    <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </main>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-      {/* New Booking Modal */}
       {showModal && (
         <div className="modal-backdrop" onClick={() => setShowModal(false)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -309,7 +271,6 @@ export default function Dashboard() {
             <form onSubmit={handleCreate} className="modal-form">
               {formError && <div className="form-error"><AlertCircle size={14} />{formError}</div>}
               <div className="form-grid">
-                {/* Service picker */}
                 <div className="field full">
                   <label>Atividade / Serviço</label>
                   <select
@@ -329,7 +290,7 @@ export default function Dashboard() {
                     ))}
                   </select>
                 </div>
-
+                {/* ... other fields ... */}
                 <div className="field">
                   <label>Nome do Cliente *</label>
                   <input value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />
@@ -367,6 +328,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }
