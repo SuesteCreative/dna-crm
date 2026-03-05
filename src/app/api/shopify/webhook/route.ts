@@ -126,21 +126,62 @@ export async function POST(req: NextRequest) {
 
     try {
         const order = JSON.parse(rawBody);
+        const { env } = await getCloudflareContext();
         const prisma = await getPrisma();
+        const db = (env as any).DB;
 
         if (topic === "orders/create" || topic === "orders/updated" || topic === "orders/paid") {
             const booking = parseOrderToBooking(order);
-            await (prisma as any).booking.upsert({
-                where: { shopifyId: booking.shopifyId },
-                update: { status: booking.status, totalPrice: booking.totalPrice },
-                create: booking,
-            });
-            console.log(`Webhook ${topic}: upserted booking for order ${order.id}`);
+
+            if (db) {
+                // Use Raw SQL for Cloudflare D1
+                await db.prepare(`
+                    INSERT INTO Booking (
+                        id, shopifyId, customerName, customerEmail, customerPhone, 
+                        activityDate, activityTime, activityType, pax, status, 
+                        source, totalPrice, createdById, notes, updatedAt
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(shopifyId) DO UPDATE SET 
+                        status = EXCLUDED.status,
+                        totalPrice = EXCLUDED.totalPrice,
+                        updatedAt = CURRENT_TIMESTAMP
+                `).bind(
+                    crypto.randomUUID(),
+                    booking.shopifyId,
+                    booking.customerName,
+                    booking.customerEmail,
+                    booking.customerPhone,
+                    booking.activityDate.toISOString(),
+                    booking.activityTime,
+                    booking.activityType,
+                    booking.pax,
+                    booking.status,
+                    booking.source,
+                    booking.totalPrice,
+                    booking.createdById,
+                    booking.notes,
+                    new Date().toISOString()
+                ).run();
+                console.log(`Webhook ${topic}: raw SQL upserted booking for order ${order.id}`);
+            } else {
+                await (prisma as any).booking.upsert({
+                    where: { shopifyId: booking.shopifyId },
+                    update: { status: booking.status, totalPrice: booking.totalPrice },
+                    create: booking,
+                });
+                console.log(`Webhook ${topic}: Prisma upserted booking for order ${order.id}`);
+            }
         } else if (topic === "orders/cancelled") {
-            await (prisma as any).booking.updateMany({
-                where: { shopifyId: order.id.toString() },
-                data: { status: "CANCELLED" },
-            });
+            if (db) {
+                await db.prepare("UPDATE Booking SET status = 'CANCELLED', updatedAt = ? WHERE shopifyId = ?")
+                    .bind(new Date().toISOString(), order.id.toString())
+                    .run();
+            } else {
+                await (prisma as any).booking.updateMany({
+                    where: { shopifyId: order.id.toString() },
+                    data: { status: "CANCELLED" },
+                });
+            }
             console.log(`Webhook orders/cancelled: updated order ${order.id}`);
         } else {
             console.log(`Webhook topic not handled: ${topic}`);
