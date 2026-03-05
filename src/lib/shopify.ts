@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+// Removed Prisma import to avoid fs.readdir issues in module evaluation on Cloudflare Edge
 
 export async function syncShopifyOrders(
     prisma: any,
@@ -9,6 +9,8 @@ export async function syncShopifyOrders(
     // Read env vars at call time (not module init) so Cloudflare runtime vars are available
     const SHOPIFY_STORE_DOMAIN = domain || process.env.SHOPIFY_STORE_DOMAIN;
     const SHOPIFY_ACCESS_TOKEN = token || process.env.SHOPIFY_ACCESS_TOKEN;
+
+    console.log("syncShopifyOrders debug:", { hasDb: !!db, domain: SHOPIFY_STORE_DOMAIN });
 
     if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_ACCESS_TOKEN) {
         console.warn("Shopify credentials missing", { domain: SHOPIFY_STORE_DOMAIN, hasToken: !!SHOPIFY_ACCESS_TOKEN });

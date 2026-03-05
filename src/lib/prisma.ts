@@ -10,6 +10,7 @@ export async function getPrisma() {
     try {
         const { env } = await getCloudflareContext();
         const db = (env as any).DB;
+        console.log("getPrisma debug - env.DB available:", !!db);
 
         if (db) {
             console.log("Initializing Prisma with D1 adapter");
