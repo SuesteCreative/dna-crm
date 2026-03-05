@@ -3,6 +3,8 @@ import { getPrisma } from "@/lib/prisma";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { syncShopifyOrders } from "@/lib/shopify";
 
+export const runtime = "nodejs";
+
 export async function GET() {
     try {
         const prisma = await getPrisma();
