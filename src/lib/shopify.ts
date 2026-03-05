@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client/wasm";
 
 export async function syncShopifyOrders(
     prisma: InstanceType<typeof PrismaClient>,
