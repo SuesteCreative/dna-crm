@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
     "/api/shopify/webhook(.*)",
     "/api/shopify/debug-fetch(.*)",
     "/api/shopify/debug-sync(.*)",
+    "/api/shopify/debug-db(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
