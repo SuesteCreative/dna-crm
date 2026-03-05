@@ -97,7 +97,10 @@ export default function Dashboard() {
       const res = await fetch("/api/shopify/sync", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
-        setSyncMsg(`Sincronizado: ${data.count ?? 0} reservas importadas`);
+        const msg = data.failed > 0
+          ? `Sincronizado: ${data.count ?? 0} novas, ${data.failed} falharam.`
+          : `Sincronizado: ${data.count ?? 0} reservas importadas`;
+        setSyncMsg(msg);
         await fetchBookings();
       } else {
         setSyncMsg(`Erro: ${data.error || "Sync falhou"}`);
