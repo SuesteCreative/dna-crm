@@ -7,9 +7,16 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 export async function getPrisma() {
     try {
         const { env } = await getCloudflareContext();
-        const adapter = new PrismaD1((env as any).DB);
-        return new PrismaClient({ adapter } as any);
-    } catch {
+        if ((env as any).DB) {
+            console.log("Using Prisma with D1 adapter");
+            const adapter = new PrismaD1((env as any).DB);
+            return new PrismaClient({ adapter } as any);
+        } else {
+            console.warn("D1 binding 'DB' not found in Cloudflare context");
+            throw new Error("Missing DB binding");
+        }
+    } catch (e) {
+        console.warn("Prisma fallback triggered:", e);
         // Fallback for local development (no Cloudflare context)
         return new PrismaClient();
     }
