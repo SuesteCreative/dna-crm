@@ -6,18 +6,13 @@ import { syncShopifyOrders } from "@/lib/shopify";
 export async function GET() {
     try {
         const prisma = await getPrisma();
-        let domain: string | undefined;
-        let token: string | undefined;
-        try {
-            const { env } = await getCloudflareContext();
-            domain = (env as any).SHOPIFY_STORE_DOMAIN;
-            token = (env as any).SHOPIFY_ACCESS_TOKEN;
-        } catch {
-            domain = process.env.SHOPIFY_STORE_DOMAIN;
-            token = process.env.SHOPIFY_ACCESS_TOKEN;
-        }
+        const { env } = await getCloudflareContext();
 
-        const result = await syncShopifyOrders(prisma as any, domain, token);
+        const domain = (env as any).SHOPIFY_STORE_DOMAIN || process.env.SHOPIFY_STORE_DOMAIN;
+        const token = (env as any).SHOPIFY_ACCESS_TOKEN || process.env.SHOPIFY_ACCESS_TOKEN;
+        const db = (env as any).DB;
+
+        const result = await syncShopifyOrders(prisma as any, domain, token, db);
         return NextResponse.json(result);
     } catch (error) {
         return NextResponse.json({ error: String(error), count: 0 }, { status: 500 });
