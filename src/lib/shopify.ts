@@ -37,62 +37,93 @@ export async function syncShopifyOrders(
         console.log(`Got ${orders.length} orders from Shopify`);
 
         let upserted = 0;
+        const failedOrders = [];
         for (const order of orders) {
-            const firstLineItem = order.line_items?.[0];
-            const properties = firstLineItem?.properties || [];
+            try {
+                const firstLineItem = order.line_items?.[0];
+                const properties = firstLineItem?.properties || [];
 
-            const props: Record<string, string> = {};
-            for (const p of properties) props[p.name] = p.value;
-
-            // Meety date/time
-            let activityDate: Date;
-            let activityTime: string | null = null;
-            if (props["_meety_from_time"]) {
-                const from = new Date(props["_meety_from_time"]);
-                activityDate = from;
-                const tz = props["_meety_timezone"] || "Europe/Lisbon";
-                activityTime = from.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", timeZone: tz });
-            } else {
-                activityDate = new Date(order.created_at);
-                for (const p of properties) {
-                    const n = p.name.toLowerCase();
-                    if (n.includes("date") && !n.startsWith("_meety")) { try { activityDate = new Date(p.value); } catch { } }
-                    if (n.includes("time") && !n.startsWith("_meety")) { activityTime = p.value; }
+                const props: Record<string, string> = {};
+                if (Array.isArray(properties)) {
+                    for (const p of properties) {
+                        if (p && typeof p.name === "string" && typeof p.value === "string") {
+                            props[p.name] = p.value;
+                        }
+                    }
                 }
-            }
 
-            // Meety pax
-            let pax = parseInt(props["_meety_numslots"] || "1") || 1;
-            for (const [key, value] of Object.entries(props)) {
-                if (key.startsWith("_meety_user_inputs")) {
-                    const match = value.match(/=>\s*(\d+)/);
-                    if (match) { pax = parseInt(match[1]) || pax; break; }
+                // Meety date/time
+                let activityDate: Date;
+                let activityTime: string | null = null;
+                if (props["_meety_from_time"]) {
+                    const from = new Date(props["_meety_from_time"]);
+                    activityDate = isNaN(from.getTime()) ? new Date(order.created_at) : from;
+                    const tz = props["_meety_timezone"] || "Europe/Lisbon";
+                    if (!isNaN(from.getTime())) {
+                        activityTime = from.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+                    }
+                } else {
+                    activityDate = new Date(order.created_at);
+                    if (isNaN(activityDate.getTime())) activityDate = new Date();
+                    for (const [name, value] of Object.entries(props)) {
+                        const n = name.toLowerCase();
+                        if (n.includes("date") && !n.startsWith("_meety")) {
+                            const d = new Date(value);
+                            if (!isNaN(d.getTime())) activityDate = d;
+                        }
+                        if (n.includes("time") && !n.startsWith("_meety")) {
+                            activityTime = value;
+                        }
+                    }
                 }
+
+                // Meety pax
+                let pax = parseInt(props["_meety_numslots"] || "1", 10);
+                if (isNaN(pax) || pax < 1) pax = 1;
+                for (const [key, value] of Object.entries(props)) {
+                    if (key.startsWith("_meety_user_inputs")) {
+                        const match = value.match(/=>\s*(\d+)/);
+                        if (match) {
+                            const parsedPax = parseInt(match[1], 10);
+                            if (!isNaN(parsedPax) && parsedPax > 0) pax = parsedPax;
+                            break;
+                        }
+                    }
+                }
+
+                // Get serviceId if product is a service
+                let serviceId: string | null = null;
+                const shopifyHandle = firstLineItem?.product_id ? firstLineItem.product_id.toString() : null;
+                // Since we don't fetch serviceId here directly due to performance, we just leave it null for synced orders 
+                // or you could query it from prisma if needed. For now, we trust the name.
+
+                await (prisma as any).booking.upsert({
+                    where: { shopifyId: order.id.toString() },
+                    update: { status: order.financial_status === "paid" ? "CONFIRMED" : "PENDING" },
+                    create: {
+                        shopifyId: order.id.toString(),
+                        customerName: `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || "Consumidor Final",
+                        customerEmail: order.customer?.email || null,
+                        customerPhone: order.customer?.phone || null,
+                        activityDate,
+                        activityTime,
+                        activityType: firstLineItem?.title || null,
+                        pax,
+                        status: order.financial_status === "paid" ? "CONFIRMED" : "PENDING",
+                        source: "SHOPIFY",
+                        totalPrice: parseFloat(order.total_price) || 0,
+                        createdById: "shopify-sync",
+                        notes: `Synced from Shopify Order #${order.order_number || order.id}`,
+                    },
+                });
+                upserted++;
+            } catch (err) {
+                console.error(`Failed to process order ${order.id}:`, err);
+                failedOrders.push(order.id);
             }
-
-            await (prisma as any).booking.upsert({
-                where: { shopifyId: order.id.toString() },
-                update: { status: order.financial_status === "paid" ? "CONFIRMED" : "PENDING" },
-                create: {
-                    shopifyId: order.id.toString(),
-                    customerName: `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || "Consumidor Final",
-                    customerEmail: order.customer?.email || null,
-                    customerPhone: order.customer?.phone || null,
-                    activityDate,
-                    activityTime,
-                    pax,
-                    status: order.financial_status === "paid" ? "CONFIRMED" : "PENDING",
-                    source: "SHOPIFY",
-                    totalPrice: parseFloat(order.total_price),
-                    createdById: "shopify-sync",
-                    notes: order.line_items?.[0]?.title || null,
-                },
-            });
-            upserted++;
-
         }
 
-        return { success: true, count: upserted };
+        return { success: true, count: upserted, failed: failedOrders.length, failedIds: failedOrders };
     } catch (error) {
         console.error("Error syncing Shopify orders:", error);
         return { success: false, error: String(error), count: 0 };
