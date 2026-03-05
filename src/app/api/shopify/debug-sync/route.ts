@@ -13,7 +13,15 @@ export async function GET() {
         const db = (env as any).DB;
 
         const result = await syncShopifyOrders(prisma as any, domain, token, db);
-        return NextResponse.json(result);
+        return NextResponse.json({
+            ...result,
+            debug: {
+                hasDb: !!db,
+                hasPrisma: !!prisma,
+                domain,
+                hasToken: !!token
+            }
+        });
     } catch (error) {
         return NextResponse.json({ error: String(error), count: 0 }, { status: 500 });
     }
