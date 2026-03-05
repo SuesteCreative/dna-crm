@@ -119,7 +119,11 @@ export async function syncShopifyOrders(
                 upserted++;
             } catch (err: any) {
                 console.error(`Failed to process order ${order.id}:`, err);
-                failedOrders.push({ id: order.id, error: err.message || String(err) });
+                failedOrders.push({
+                    id: order.id,
+                    error: err.message || String(err),
+                    stack: err.stack
+                });
             }
         }
 
