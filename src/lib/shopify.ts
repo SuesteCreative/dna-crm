@@ -119,6 +119,11 @@ export async function syncShopifyOrders(
                     ? `${firstLineItem.title} — ${firstLineItem.variant_title}`
                     : firstLineItem?.title || "Atividade Shopify";
 
+                const country = order.billing_address?.country_code
+                    || order.billing_address?.country
+                    || order.customer?.default_address?.country_code
+                    || null;
+
                 await prisma.booking.upsert({
                     where: { shopifyId },
                     update: {
@@ -129,7 +134,8 @@ export async function syncShopifyOrders(
                         orderNumber,
                         activityType,
                         activityDate,
-                        activityTime
+                        activityTime,
+                        country,
                     },
                     create: {
                         shopifyId,
@@ -145,6 +151,7 @@ export async function syncShopifyOrders(
                         status,
                         source: "SHOPIFY",
                         totalPrice,
+                        country,
                         createdById: "shopify-sync",
                         notes: `Shopify ${orderNumber || order.id}`,
                     }

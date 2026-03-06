@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    ChevronRight, RefreshCcw, Shield
+    ChevronRight, RefreshCcw, Shield, BarChart2
 } from "lucide-react";
 import { useState } from "react";
 
@@ -24,6 +24,7 @@ export function Sidebar() {
         { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/" },
         { id: "services", label: "Serviços", icon: Waves, path: "/services" },
         { id: "partners", label: "Parceiros", icon: Users, path: "/partners" },
+        { id: "statistics", label: "Estatísticas", icon: BarChart2, path: "/statistics" },
     ];
 
     const handleSync = async () => {
@@ -82,7 +83,21 @@ export function Sidebar() {
             </nav>
 
             <div className="sidebar-user">
-                <UserButton afterSignOutUrl="/sign-in" showName />
+                <UserButton
+                    afterSignOutUrl="/sign-in"
+                    showName
+                    appearance={{
+                        variables: {
+                            colorText: "#f1f5f9",
+                            colorTextSecondary: "#94a3b8",
+                            colorBackground: "#111827",
+                        },
+                        elements: {
+                            userButtonOuterIdentifier: { color: "#f1f5f9" },
+                            userButtonIdentifier: { color: "#94a3b8" },
+                        },
+                    }}
+                />
             </div>
         </aside>
     );

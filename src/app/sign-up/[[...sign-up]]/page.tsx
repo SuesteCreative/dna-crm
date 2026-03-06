@@ -18,10 +18,12 @@ const appearance = {
         card: { border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)" },
         headerTitle: { color: "#f1f5f9" },
         headerSubtitle: { color: "#64748b" },
+        formFieldLabel: { color: "#f1f5f9" },
         formFieldInput: { borderColor: "rgba(255,255,255,0.07)" },
         footerActionLink: { color: "#3b82f6" },
         identityPreviewText: { color: "#f1f5f9" },
         identityPreviewEditButton: { color: "#3b82f6" },
+        badge: { color: "#f1f5f9", backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.15)" },
     },
 };
 
