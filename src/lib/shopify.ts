@@ -12,8 +12,15 @@ export async function syncShopifyOrders(
     }
 
     try {
+        console.log("STARTING SYNC - Credentials check:");
+        console.log("Domain:", SHOPIFY_STORE_DOMAIN);
+        console.log("Token length:", SHOPIFY_ACCESS_TOKEN.length);
+
         const prisma = await getPrisma();
         const url = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250&fulfillment_status=any&financial_status=any`;
+
+        console.log("Fetching URL:", url);
+
         const response = await fetch(url, {
             headers: {
                 "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
@@ -22,11 +29,19 @@ export async function syncShopifyOrders(
         });
 
         if (!response.ok) {
-            return { success: false, error: `Shopify API ${response.status}`, count: 0 };
+            const errorText = await response.text();
+            console.error("Shopify HTTP Error:", response.status, errorText);
+            return { success: false, error: `Shopify API ${response.status}: ${errorText}`, count: 0 };
         }
 
         const data = await response.json() as { orders: any[] };
         const orders = data.orders || [];
+
+        console.log("SUCCESS! Got orders count from Shopify:", orders.length);
+
+        if (orders.length > 0) {
+            console.log("First order ID:", orders[0].id);
+        }
 
         let upserted = 0;
         const failedOrders = [];
