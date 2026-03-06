@@ -324,6 +324,7 @@ export default function Dashboard() {
                             <thead>
                               <tr>
                                 <th>Cliente</th>
+                                <th style={{ width: "80px" }}>Qtd</th>
                                 <th>Atividade</th>
                                 <th>Data / Hora</th>
                                 <th>Pax</th>
@@ -341,12 +342,12 @@ export default function Dashboard() {
                                     <div className="cell-sub">{b.customerEmail || "—"}</div>
                                   </td>
                                   <td>
-                                    <div className="activity-cell-layout">
-                                      {b.quantity != null && b.quantity > 1 && (
-                                        <span className="qty-badge">Qtd: {b.quantity}</span>
-                                      )}
-                                      <div className="cell-name">{b.activityType || b.notes || "—"}</div>
-                                    </div>
+                                    <span className={b.quantity != null && b.quantity > 1 ? "qty-badge" : "qty-badge-simple"}>
+                                      {b.quantity || 1}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <div className="cell-name">{b.activityType || b.notes || "—"}</div>
                                   </td>
                                   <td>
                                     <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
