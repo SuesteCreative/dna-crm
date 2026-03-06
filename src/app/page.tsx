@@ -147,12 +147,22 @@ export default function Dashboard() {
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(todayStart);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const isFuture = (b: Booking) => new Date(b.activityDate) >= todayStart;
-  const anyFutureInGroup = (bookings: Booking[]) => bookings.some(isFuture);
-  const anyFutureInYear = (year: string) => {
-    return Object.values(grouped[year]).some(monthList => anyFutureInGroup(monthList));
+  const isToday = (b: Booking) => {
+    const d = new Date(b.activityDate);
+    return d >= todayStart && d < tomorrow;
   };
+  const isFuture = (b: Booking) => new Date(b.activityDate) >= tomorrow;
+
+  const anyTodayInGroup = (bookings: Booking[]) => bookings.some(isToday);
+  const anyFutureInGroup = (bookings: Booking[]) => bookings.some(isFuture);
+
+  const anyTodayInYear = (year: string) =>
+    Object.values(grouped[year]).some(monthList => anyTodayInGroup(monthList));
+  const anyFutureInYear = (year: string) =>
+    Object.values(grouped[year]).some(monthList => anyFutureInGroup(monthList));
 
   const handleServiceSelect = (serviceId: string) => {
     // ... existing handleServiceSelect logic
@@ -294,9 +304,13 @@ export default function Dashboard() {
           <div className="table-empty"><div className="loader-sm" /></div>
         ) : years.length === 0 ? (
           <div className="table-empty">Nenhuma reserva encontrada.</div>
-        ) : years.map(year => (
-          <div key={year} className={`year-section ${anyFutureInYear(year) ? "is-future" : ""}`}>
-            <div className={`year-box-hdr ${anyFutureInYear(year) ? "is-future" : ""}`} onClick={() => toggleGroup(year)}>
+        ) : years.map(year => {
+          const yearHasFuture = anyFutureInYear(year);
+          const yearHasToday = !yearHasFuture && anyTodayInYear(year);
+          const yearClass = yearHasFuture ? "is-future" : yearHasToday ? "is-today" : "";
+          return (
+          <div key={year} className={`year-section ${yearClass}`}>
+            <div className={`year-box-hdr ${yearClass}`} onClick={() => toggleGroup(year)}>
               <ChevronDown size={20} className={collapsed[year] ? "group-ico collapsed" : "group-ico"} />
               <h3>Ano {year}</h3>
             </div>
@@ -310,9 +324,11 @@ export default function Dashboard() {
                   const mKey = `${year}-${month}`;
                   const monthBookings = grouped[year][month];
                   const hasFuture = anyFutureInGroup(monthBookings);
+                  const hasToday = !hasFuture && anyTodayInGroup(monthBookings);
+                  const monthClass = hasFuture ? "is-future" : hasToday ? "is-today" : "";
                   return (
-                    <div key={mKey} className={`month-section ${hasFuture ? "is-future" : ""}`}>
-                      <div className={`month-box-hdr ${hasFuture ? "is-future" : ""}`} onClick={() => toggleGroup(mKey)}>
+                    <div key={mKey} className={`month-section ${monthClass}`}>
+                      <div className={`month-box-hdr ${monthClass}`} onClick={() => toggleGroup(mKey)}>
                         <div className="month-title">
                           <ChevronDown size={14} className={collapsed[mKey] ? "group-ico collapsed" : "group-ico"} />
                           {month}
@@ -338,15 +354,17 @@ export default function Dashboard() {
                             </thead>
                             <tbody>
                               {monthBookings.map(b => (
-                                <tr key={b.id} className={isFuture(b) ? "row-future" : ""}>
+                                <tr key={b.id} className={isFuture(b) ? "row-future" : isToday(b) ? "row-today" : ""}>
                                   <td>
                                     <div className="cell-name">{b.customerName}</div>
                                     <div className="cell-sub">{b.customerEmail || "—"}</div>
                                   </td>
                                   <td>
-                                    <span className="qty-badge">
-                                      {b.quantity || 1}
-                                    </span>
+                                    <div style={{ display: "flex", justifyContent: "center" }}>
+                                      <span className="qty-badge">
+                                        {b.quantity || 1}
+                                      </span>
+                                    </div>
                                   </td>
                                   <td>
                                     <div className="cell-name">{b.activityType || b.notes || "—"}</div>
@@ -376,7 +394,8 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </section>
 
       {showModal && (
