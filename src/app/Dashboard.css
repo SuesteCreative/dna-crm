@@ -1001,29 +1001,8 @@ body {
     min-width: 32px;
 }
 
-.qty-badge-simple {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2px 8px;
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    font-size: 11px;
-    font-weight: 500;
-    border-radius: 6px;
-    width: fit-content;
-    min-width: 32px;
-}
-
 .row-future .qty-badge {
     background: var(--green-dim);
     color: var(--green);
     border-color: var(--green);
-}
-
-.row-future .qty-badge-simple {
-    border-color: rgba(16, 185, 129, 0.2);
-    color: var(--green);
-    opacity: 0.7;
 }
