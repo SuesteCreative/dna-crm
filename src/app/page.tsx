@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
-import { exportToExcel, exportToPDF } from "@/lib/export";
+// import { exportToExcel, exportToPDF } from "@/lib/export";
 import "./Dashboard.css";
 
 interface Booking {
@@ -234,8 +234,8 @@ export default function Dashboard() {
           <p className="page-sub">Gerencie todas as atividades e agendamentos.</p>
         </div>
         <div className="topbar-actions">
-          <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
-          <button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button>
+          {/* <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
+<button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button> */}
           <button className={`btn-outline ${syncing ? "syncing" : ""}`} onClick={handleSync} disabled={syncing}>
             <RefreshCcw size={16} className={syncing ? "spin" : ""} />
             {syncing ? "Sincronizando..." : "Sync Shopify"}
