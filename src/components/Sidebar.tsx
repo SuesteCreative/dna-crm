@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
     Activity, ChevronRight, RefreshCcw
@@ -9,9 +9,12 @@ import {
 import { useState } from "react";
 
 export function Sidebar() {
+    const { userId } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
     const [syncing, setSyncing] = useState(false);
+
+    if (!userId) return null;
 
     const navItems = [
         { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/" },
