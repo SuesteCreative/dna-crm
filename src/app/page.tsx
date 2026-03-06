@@ -6,7 +6,7 @@ import { useEffect, useState, Fragment } from "react";
 import {
   Calendar, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
-  TrendingUp, Activity, ShoppingBag,
+  TrendingUp, Activity, UserCheck, UserX,
   AlertCircle, Trash2, ChevronDown, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
@@ -30,6 +30,7 @@ interface Booking {
   quantity?: number | null;
   notes?: string | null;
   activityType?: string | null;
+  showedUp?: boolean | null;
 }
 
 interface Service {
@@ -60,6 +61,8 @@ export default function Dashboard() {
   const [formError, setFormError] = useState<string | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [attendanceTarget, setAttendanceTarget] = useState<Booking | null>(null);
+  const [attendanceSaving, setAttendanceSaving] = useState(false);
 
   useEffect(() => {
     if (isSignedIn) {
@@ -201,6 +204,24 @@ export default function Dashboard() {
       if (res.ok) fetchBookings();
       else alert("Erro ao eliminar reserva");
     } catch { alert("Erro de ligação"); }
+  };
+
+  const handleAttendance = async (booking: Booking) => {
+    setAttendanceSaving(true);
+    try {
+      const res = await fetch("/api/bookings/attendance", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: booking.id, showedUp: true }),
+      });
+      if (res.ok) {
+        setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, showedUp: true } : b));
+      }
+    } catch { }
+    finally {
+      setAttendanceSaving(false);
+      setAttendanceTarget(null);
+    }
   };
 
   const svcGroups: Record<string, Service[]> = {};
@@ -349,7 +370,8 @@ export default function Dashboard() {
                                 <th>Fonte</th>
                                 <th>Status</th>
                                 <th>Preço</th>
-                                <th style={{ width: "50px" }}></th>
+                                <th style={{ width: "44px" }}>Pres.</th>
+                                <th style={{ width: "44px" }}></th>
                               </tr>
                             </thead>
                             <tbody>
@@ -377,6 +399,21 @@ export default function Dashboard() {
                                   <td>{sourceBadge(b.source, b.orderNumber)}</td>
                                   <td>{statusBadge(b.status)}</td>
                                   <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
+                                  <td>
+                                    {b.showedUp === true ? (
+                                      <span className="attendance-verified" title="Presença confirmada">
+                                        <UserCheck size={16} />
+                                      </span>
+                                    ) : b.status !== "CANCELLED" ? (
+                                      <button
+                                        className="btn-attendance"
+                                        title="Confirmar presença"
+                                        onClick={() => setAttendanceTarget(b)}
+                                      >
+                                        <UserCheck size={16} />
+                                      </button>
+                                    ) : null}
+                                  </td>
                                   <td>
                                     <button className="btn-delete" onClick={() => handleDelete(b.id)}>
                                       <Trash2 size={16} />
@@ -462,6 +499,38 @@ export default function Dashboard() {
                 <button type="submit" className="btn-primary">Criar Reserva</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {attendanceTarget && (
+        <div className="modal-backdrop" onClick={() => setAttendanceTarget(null)}>
+          <div className="modal-box attendance-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setAttendanceTarget(null)}><X size={20} /></button>
+            <div className="attendance-icon-wrap">
+              <UserCheck size={32} />
+            </div>
+            <div className="attendance-info">
+              <div className="attendance-name">{attendanceTarget.customerName}</div>
+              <div className="attendance-meta">
+                <span>{attendanceTarget.pax} pax</span>
+                <span className="attendance-dot">·</span>
+                <span>{attendanceTarget.activityType || "—"}</span>
+                <span className="attendance-dot">·</span>
+                <span className={`src-badge src-${attendanceTarget.source.toLowerCase()}`}>{attendanceTarget.source}</span>
+              </div>
+            </div>
+            <p className="attendance-question">Este cliente compareceu?</p>
+            <div className="attendance-actions">
+              <button className="btn-ghost" onClick={() => setAttendanceTarget(null)}>Cancelar</button>
+              <button
+                className="btn-attendance-confirm"
+                disabled={attendanceSaving}
+                onClick={() => handleAttendance(attendanceTarget)}
+              >
+                <UserCheck size={16} />
+                {attendanceSaving ? "A guardar..." : "Sim, compareceu"}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1068,3 +1068,123 @@ body {
     color: var(--orange);
     border-color: var(--orange);
 }
+
+/* ── ATTENDANCE BUTTON ─────────────────────────────────── */
+.btn-attendance {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+}
+
+.btn-attendance:hover {
+    background: var(--green-dim);
+    color: var(--green);
+    border-color: var(--green);
+}
+
+.attendance-verified {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    color: var(--green);
+}
+
+/* ── ATTENDANCE MODAL ──────────────────────────────────── */
+.attendance-modal {
+    max-width: 380px;
+    text-align: center;
+    padding: 32px 28px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+}
+
+.attendance-modal .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}
+
+.attendance-icon-wrap {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    background: var(--green-dim);
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.attendance-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.attendance-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--muted);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.attendance-dot {
+    color: var(--border);
+}
+
+.attendance-question {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 4px;
+}
+
+.attendance-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.attendance-actions .btn-ghost {
+    flex: 1;
+}
+
+.btn-attendance-confirm {
+    flex: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--green);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity .15s;
+}
+
+.btn-attendance-confirm:hover { opacity: .88; }
+.btn-attendance-confirm:disabled { opacity: .5; cursor: not-allowed; }
