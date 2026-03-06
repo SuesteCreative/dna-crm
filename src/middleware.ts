@@ -29,6 +29,9 @@ export default clerkMiddleware(async (auth, request) => {
         return;
     }
 
+    // Bootstrap setup route — any authenticated user can call it (the handler itself enforces one-time use)
+    if (path === "/api/admin/setup") return;
+
     // API routes — return 403 JSON instead of redirecting
     if (path.startsWith("/api/admin")) {
         if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
