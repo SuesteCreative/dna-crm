@@ -4,17 +4,20 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    Activity, ChevronRight, RefreshCcw
+    Activity, ChevronRight, RefreshCcw, Shield
 } from "lucide-react";
 import { useState } from "react";
 
 export function Sidebar() {
-    const { userId } = useAuth();
+    const { userId, sessionClaims } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
     const [syncing, setSyncing] = useState(false);
 
     if (!userId) return null;
+
+    const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    const isAdmin = role === "SUPER_ADMIN" || role === "ADMIN";
 
     const navItems = [
         { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/" },
@@ -62,6 +65,20 @@ export function Sidebar() {
                     <span>{syncing ? "Sincronizando..." : "Sync Shopify"}</span>
                     {syncing && <RefreshCcw size={14} className="spin" />}
                 </button>
+
+                {isAdmin && (
+                    <>
+                        <p className="nav-label">Administração</p>
+                        <button
+                            className={`nav-item ${pathname === "/admin/users" ? "active" : ""}`}
+                            onClick={() => router.push("/admin/users")}
+                        >
+                            <Shield size={18} />
+                            <span>Utilizadores</span>
+                            {pathname === "/admin/users" && <ChevronRight size={14} className="nav-arrow" />}
+                        </button>
+                    </>
+                )}
             </nav>
 
             <div className="sidebar-user">
