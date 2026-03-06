@@ -15,16 +15,18 @@ import "./Dashboard.css";
 interface Booking {
   id: string;
   customerName: string;
-  customerEmail?: string;
-  customerPhone?: string;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
   activityDate: string;
   activityTime: string | null;
   pax: number;
   status: string;
   source: string;
+  shopifyId?: string | null;
+  orderNumber?: string | null;
   totalPrice: number | null;
-  notes?: string;
-  activityType?: string;
+  notes?: string | null;
+  activityType?: string | null;
 }
 
 interface Service {
