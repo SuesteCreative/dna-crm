@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 import { getPrisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
         const prisma = await getPrisma();
-        const services = await (prisma as any).service.findMany({
+        const services = await prisma.service.findMany({
             where: { isActive: true },
             orderBy: [{ category: "asc" }, { price: "asc" }],
         });
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     try {
         const prisma = await getPrisma();
         const data = await req.json();
-        const service = await (prisma as any).service.create({ data });
+        const service = await prisma.service.create({ data });
         return NextResponse.json(service);
     } catch (error) {
         console.error("Failed to create service:", error);

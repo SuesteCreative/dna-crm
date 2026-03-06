@@ -1,24 +1,18 @@
-// This library is now Prisma-free to avoid fs.readdir issues on Cloudflare Edge Runtime.
-// It uses raw SQL via the D1 database binding for maximum reliability.
+import { getPrisma } from "./prisma";
 
 export async function syncShopifyOrders(
     domain?: string,
-    token?: string,
-    db?: any // D1Database binding
+    token?: string
 ) {
     const SHOPIFY_STORE_DOMAIN = domain || process.env.SHOPIFY_STORE_DOMAIN;
     const SHOPIFY_ACCESS_TOKEN = token || process.env.SHOPIFY_ACCESS_TOKEN;
-
-    if (!db) {
-        console.error("D1 Database binding missing in syncShopifyOrders");
-        return { success: false, error: "Database binding missing", count: 0 };
-    }
 
     if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_ACCESS_TOKEN) {
         return { success: false, error: "Shopify credentials missing", count: 0 };
     }
 
     try {
+        const prisma = await getPrisma();
         const url = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250&fulfillment_status=any&financial_status=any`;
         const response = await fetch(url, {
             headers: {
@@ -47,7 +41,7 @@ export async function syncShopifyOrders(
                     }
                 }
 
-                // Date parsing
+                // Date parsing from Meety properties
                 let activityDate: Date;
                 let activityTime: string | null = null;
                 if (props["_meety_from_time"]) {
@@ -70,35 +64,28 @@ export async function syncShopifyOrders(
                 const totalPrice = parseFloat(order.total_price) || 0;
                 const pax = parseInt(props["_meety_numslots"] || "1", 10) || 1;
 
-                // Raw SQL Upsert for D1
-                await db.prepare(`
-                    INSERT INTO Booking (
-                        id, shopifyId, customerName, customerEmail, customerPhone, 
-                        activityDate, activityTime, activityType, pax, status, 
-                        source, totalPrice, createdById, notes, updatedAt, createdAt
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(shopifyId) DO UPDATE SET 
-                        status = EXCLUDED.status,
-                        totalPrice = EXCLUDED.totalPrice,
-                        updatedAt = CURRENT_TIMESTAMP
-                `).bind(
-                    crypto.randomUUID(),
-                    shopifyId,
-                    customerName,
-                    order.customer?.email || null,
-                    order.customer?.phone || null,
-                    activityDate.toISOString(),
-                    activityTime,
-                    firstLineItem?.title || null,
-                    pax,
-                    status,
-                    "SHOPIFY",
-                    totalPrice,
-                    "shopify-sync",
-                    `Synced from Shopify #${order.order_number || order.id}`,
-                    new Date().toISOString(),
-                    new Date(order.created_at).toISOString()
-                ).run();
+                await prisma.booking.upsert({
+                    where: { shopifyId },
+                    update: {
+                        status,
+                        totalPrice,
+                    },
+                    create: {
+                        shopifyId,
+                        customerName,
+                        customerEmail: order.customer?.email || null,
+                        customerPhone: order.customer?.phone || null,
+                        activityDate,
+                        activityTime,
+                        activityType: firstLineItem?.title || null,
+                        pax,
+                        status,
+                        source: "SHOPIFY",
+                        totalPrice,
+                        createdById: "shopify-sync",
+                        notes: `Synced from Shopify #${order.order_number || order.id}`,
+                    }
+                });
 
                 upserted++;
             } catch (err: any) {
