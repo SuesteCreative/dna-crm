@@ -83,21 +83,15 @@ export function Sidebar() {
             </nav>
 
             <div className="sidebar-user">
-                <UserButton
-                    afterSignOutUrl="/sign-in"
-                    showName
-                    appearance={{
-                        variables: {
-                            colorText: "#f1f5f9",
-                            colorTextSecondary: "#94a3b8",
-                            colorBackground: "#111827",
-                        },
-                        elements: {
-                            userButtonOuterIdentifier: { color: "#f1f5f9" },
-                            userButtonIdentifier: { color: "#94a3b8" },
-                        },
-                    }}
-                />
+                <UserButton afterSignOutUrl="/sign-in" />
+                <div className="sidebar-user-info">
+                    <span className="sidebar-user-role">
+                        {role === "SUPER_ADMIN" ? "Super Admin"
+                            : role === "ADMIN" ? "Admin"
+                            : role === "PARTNER" ? "Parceiro"
+                            : "Utilizador"}
+                    </span>
+                </div>
             </div>
         </aside>
     );

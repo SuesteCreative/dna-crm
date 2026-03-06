@@ -29,6 +29,44 @@
     border-color: var(--blue);
 }
 
+/* ── PERIOD CONTROLS ──────────────────────────────────── */
+.period-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.date-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color .15s;
+    color-scheme: dark;
+}
+
+.date-input:focus {
+    border-color: var(--blue);
+}
+
+.date-sep {
+    color: var(--muted);
+    font-size: 14px;
+}
+
 /* ── KPI GRID ─────────────────────────────────────────── */
 .kpi-grid {
     display: grid;
