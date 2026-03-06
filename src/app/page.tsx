@@ -1,6 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useState, Fragment } from "react";
 import {
@@ -130,6 +129,8 @@ export default function Dashboard() {
 
     data.forEach(b => {
       const date = new Date(b.activityDate);
+      if (isNaN(date.getTime())) return;
+
       const year = date.getFullYear().toString();
       const monthDisplay = format(date, "MMMM", { locale: pt });
       const monthKey = monthDisplay.charAt(0).toUpperCase() + monthDisplay.slice(1);
@@ -151,6 +152,7 @@ export default function Dashboard() {
   const isFuture = (b: Booking) => new Date(b.activityDate) >= todayStart;
   const anyFutureInGroup = (bookings: Booking[]) => bookings.some(isFuture);
   const anyFutureInYear = (year: string) => {
+    if (!grouped || !grouped[year]) return false;
     return Object.values(grouped[year]).some(monthList => anyFutureInGroup(monthList));
   };
 
@@ -342,7 +344,7 @@ export default function Dashboard() {
                                     <div className="cell-sub">{b.customerEmail || "—"}</div>
                                   </td>
                                   <td>
-                                    <span className={b.quantity != null && b.quantity > 1 ? "qty-badge" : "qty-badge-simple"}>
+                                    <span className="qty-badge">
                                       {b.quantity || 1}
                                     </span>
                                   </td>
