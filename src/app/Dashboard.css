@@ -655,7 +655,51 @@ body {
     opacity: 0.8;
 }
 
-/* ── MODAL ───────────────────────────────────────────── */
+/* ── GROUPING ────────────────────────────────────────── */
+.group-row td {
+    padding: 0 !important;
+    border-bottom: none !important;
+}
+
+.year-hdr {
+    background: var(--surface2) !important;
+    padding: 10px 20px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    color: var(--blue) !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.month-hdr {
+    background: rgba(255, 255, 255, 0.03) !important;
+    padding: 8px 30px !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    color: var(--text);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.group-ico {
+    transition: transform 0.2s ease;
+}
+
+.group-ico.collapsed {
+    transform: rotate(-90deg);
+}
+
+.crm-table tr.collapsed {
+    display: none;
+}
+
 .modal-backdrop {
     position: fixed;
     inset: 0;
