@@ -162,9 +162,14 @@ export default function Dashboard() {
     return <span className={`badge ${cls[s] || "badge-pending"}`}>{lbl[s] || s}</span>;
   };
 
-  const sourceBadge = (s: string) => {
+  const sourceBadge = (s: string, orderNumber?: string | null) => {
     const cls: Record<string, string> = { SHOPIFY: "src-shopify", MANUAL: "src-manual", PARTNER: "src-partner" };
-    return <span className={`src-badge ${cls[s] || "src-manual"}`}>{s}</span>;
+    return (
+      <div className="source-stack">
+        <span className={`src-badge ${cls[s] || "src-manual"}`}>{s}</span>
+        {orderNumber && <span className="order-no-sub">{orderNumber}</span>}
+      </div>
+    );
   };
 
   if (!isLoaded || !isSignedIn) return (
@@ -267,7 +272,7 @@ export default function Dashboard() {
                     <div className="cell-sub">{b.activityTime || "—"}</div>
                   </td>
                   <td><span className="pax-pill">{b.pax} pax</span></td>
-                  <td>{sourceBadge(b.source)}</td>
+                  <td>{sourceBadge(b.source, b.orderNumber)}</td>
                   <td>{statusBadge(b.status)}</td>
                   <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
                   <td>
