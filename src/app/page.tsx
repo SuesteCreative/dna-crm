@@ -7,7 +7,7 @@ import {
   Calendar, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
   TrendingUp, Activity, ShoppingBag,
-  AlertCircle
+  AlertCircle, Trash2
 } from "lucide-react";
 import { exportToExcel, exportToPDF } from "@/lib/export";
 import "./Dashboard.css";
@@ -139,6 +139,15 @@ export default function Dashboard() {
     } catch { setFormError("Erro de ligação"); }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem a certeza que deseja eliminar esta reserva?")) return;
+    try {
+      const res = await fetch(`/api/bookings/delete?id=${id}`, { method: "DELETE" });
+      if (res.ok) fetchBookings();
+      else alert("Erro ao eliminar reserva");
+    } catch { alert("Erro de ligação"); }
+  };
+
   const svcGroups: Record<string, Service[]> = {};
   for (const s of services) {
     const cat = s.category || "Outros";
@@ -221,6 +230,11 @@ export default function Dashboard() {
           <div className="search-wrap">
             <Search size={16} className="search-icon" />
             <input className="search-input" placeholder="Pesquisar cliente, email ou atividade..." value={search} onChange={e => setSearch(e.target.value)} />
+            {search && (
+              <button className="search-clear" onClick={() => setSearch("")}>
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
         <div className="table-wrap">
@@ -234,6 +248,7 @@ export default function Dashboard() {
                 <th>Fonte</th>
                 <th>Status</th>
                 <th>Preço</th>
+                <th style={{ width: "50px" }}></th>
               </tr>
             </thead>
             <tbody>
@@ -258,6 +273,11 @@ export default function Dashboard() {
                   <td>{sourceBadge(b.source)}</td>
                   <td>{statusBadge(b.status)}</td>
                   <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
+                  <td>
+                    <button className="btn-delete" onClick={() => handleDelete(b.id)}>
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

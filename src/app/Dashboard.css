@@ -485,6 +485,43 @@ body {
     border-color: var(--blue);
 }
 
+.search-clear {
+    position: absolute;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.search-clear:hover {
+    color: var(--text);
+    background: var(--surface);
+}
+
+.btn-delete {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.btn-delete:hover {
+    color: var(--red);
+    background: rgba(239, 68, 68, 0.12);
+}
+
 .table-wrap {
     overflow-x: auto;
 }
