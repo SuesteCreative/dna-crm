@@ -1,5 +1,6 @@
 "use client";
 
+export const dynamic = "force-dynamic";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useState, Fragment } from "react";
 import {
@@ -10,7 +11,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
-// import { exportToExcel, exportToPDF } from "@/lib/export";
+import { exportToExcel, exportToPDF } from "@/lib/export";
 import "./Dashboard.css";
 
 interface Booking {
@@ -129,8 +130,6 @@ export default function Dashboard() {
 
     data.forEach(b => {
       const date = new Date(b.activityDate);
-      if (isNaN(date.getTime())) return;
-
       const year = date.getFullYear().toString();
       const monthDisplay = format(date, "MMMM", { locale: pt });
       const monthKey = monthDisplay.charAt(0).toUpperCase() + monthDisplay.slice(1);
@@ -152,7 +151,6 @@ export default function Dashboard() {
   const isFuture = (b: Booking) => new Date(b.activityDate) >= todayStart;
   const anyFutureInGroup = (bookings: Booking[]) => bookings.some(isFuture);
   const anyFutureInYear = (year: string) => {
-    if (!grouped || !grouped[year]) return false;
     return Object.values(grouped[year]).some(monthList => anyFutureInGroup(monthList));
   };
 
@@ -234,8 +232,8 @@ export default function Dashboard() {
           <p className="page-sub">Gerencie todas as atividades e agendamentos.</p>
         </div>
         <div className="topbar-actions">
-          {/* <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
-<button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button> */}
+          <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
+          <button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button>
           <button className={`btn-outline ${syncing ? "syncing" : ""}`} onClick={handleSync} disabled={syncing}>
             <RefreshCcw size={16} className={syncing ? "spin" : ""} />
             {syncing ? "Sincronizando..." : "Sync Shopify"}
