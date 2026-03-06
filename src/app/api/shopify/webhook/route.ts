@@ -31,21 +31,41 @@ function parseOrderToBooking(order: any) {
         }
     }
 
-    let activityDate: Date;
+    // IMPROVED Date and Time parsing
+    let activityDate = new Date(order.created_at);
     let activityTime: string | null = null;
 
-    if (props["_meety_from_time"]) {
-        const from = new Date(props["_meety_from_time"]);
-        activityDate = isNaN(from.getTime()) ? new Date(order.created_at) : from;
-        const tz = props["_meety_timezone"] || "Europe/Lisbon";
+    const meetyFromTime = props["_meety_from_time"];
+    const meetyDateTime = props["Date & time"]; // "May 1, 2026, 11:50 - 12:50"
+
+    if (meetyFromTime) {
+        const from = new Date(meetyFromTime);
         if (!isNaN(from.getTime())) {
+            activityDate = from;
             activityTime = from.toLocaleTimeString("pt-PT", {
-                hour: "2-digit", minute: "2-digit", timeZone: tz
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: "Europe/Lisbon"
             });
         }
-    } else {
-        activityDate = new Date(order.created_at);
-        if (isNaN(activityDate.getTime())) activityDate = new Date();
+    } else if (meetyDateTime) {
+        try {
+            const parts = meetyDateTime.split(",");
+            if (parts.length >= 2) {
+                const monthDay = parts[0].trim();
+                const year = parts[1].trim();
+                const timePart = parts[2]?.split("-")[0].trim();
+
+                const fullStr = `${monthDay} ${year} ${timePart || "00:00"}`;
+                const dt = new Date(fullStr);
+                if (!isNaN(dt.getTime())) {
+                    activityDate = dt;
+                    if (timePart) activityTime = timePart;
+                }
+            }
+        } catch (e) {
+            console.warn("Could not parse Meety Date & time string in webhook:", meetyDateTime);
+        }
     }
 
     // Advanced PAX detection
@@ -54,8 +74,9 @@ function parseOrderToBooking(order: any) {
     let pax = Math.max(qty, slots);
 
     for (const key in props) {
-        if (props[key].includes("attending? =>")) {
-            const match = props[key].match(/=>\s*(\d+)/);
+        const val = props[key];
+        if (typeof val === 'string' && val.toLowerCase().includes("attending?")) {
+            const match = val.match(/=>\s*(\d+)/);
             if (match && match[1]) {
                 pax = parseInt(match[1], 10);
                 break;
@@ -68,21 +89,21 @@ function parseOrderToBooking(order: any) {
         status = "CANCELLED";
     }
 
-    const activityName = firstLineItem?.variant_title
+    const activityType = firstLineItem?.variant_title
         ? `${firstLineItem.title} — ${firstLineItem.variant_title}`
-        : firstLineItem?.title || null;
+        : firstLineItem?.title || "Atividade Shopify";
 
     const orderNumber = order.order_number ? `#${order.order_number}` : null;
 
     return {
         shopifyId: order.id.toString(),
         orderNumber,
-        customerName: `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || "Consumidor Final",
+        customerName: `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || order.customer?.email || "Consumidor Final",
         customerEmail: order.customer?.email || null,
         customerPhone: order.customer?.phone || null,
         activityDate,
         activityTime,
-        activityType: activityName,
+        activityType,
         pax,
         status,
         source: "SHOPIFY",

@@ -45,30 +45,58 @@ export async function syncShopifyOrders(
                 const props: Record<string, string> = {};
                 if (firstLineItem?.properties) {
                     for (const p of firstLineItem.properties) {
-                        if (p.name && p.value) props[p.name] = String(p.value);
+                        if (p.name && p.value) {
+                            props[p.name] = String(p.value);
+                        }
                     }
                 }
 
-                // Date parsing from Meety properties
-                let activityDate: Date;
+                // IMPROVED Date and Time parsing
+                let activityDate = new Date(order.created_at);
                 let activityTime: string | null = null;
-                if (props["_meety_from_time"]) {
-                    const from = new Date(props["_meety_from_time"]);
-                    activityDate = isNaN(from.getTime()) ? new Date(order.created_at) : from;
+
+                const meetyFromTime = props["_meety_from_time"];
+                const meetyDateTime = props["Date & time"]; // "May 1, 2026, 11:50 - 12:50"
+
+                if (meetyFromTime) {
+                    const from = new Date(meetyFromTime);
                     if (!isNaN(from.getTime())) {
+                        activityDate = from;
                         activityTime = from.toLocaleTimeString("pt-PT", {
                             hour: "2-digit",
                             minute: "2-digit",
                             timeZone: "Europe/Lisbon"
                         });
                     }
-                } else {
-                    activityDate = new Date(order.created_at);
+                } else if (meetyDateTime) {
+                    try {
+                        // "May 1, 2026, 11:50 - 12:50"
+                        const parts = meetyDateTime.split(",");
+                        if (parts.length >= 2) {
+                            const monthDay = parts[0].trim(); // "May 1"
+                            const year = parts[1].trim();     // "2026"
+                            const timePart = parts[2]?.split("-")[0].trim(); // "11:50"
+
+                            const fullStr = `${monthDay} ${year} ${timePart || "00:00"}`;
+                            const dt = new Date(fullStr);
+                            if (!isNaN(dt.getTime())) {
+                                activityDate = dt;
+                                if (timePart) activityTime = timePart;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Could not parse Meety Date & time string:", meetyDateTime);
+                    }
                 }
 
                 const shopifyId = order.id.toString();
                 const orderNumber = order.order_number ? `#${order.order_number}` : null;
-                const customerName = `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || order.customer?.email || "Consumidor Final";
+
+                // Use email as fallback for name
+                const customerName = `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim()
+                    || order.customer?.email
+                    || "Consumidor Final";
+
                 const status = (order.cancelled_at) ? "CANCELLED" : (order.financial_status === "paid" ? "CONFIRMED" : "PENDING");
                 const totalPrice = parseFloat(order.total_price) || 0;
 
@@ -79,7 +107,7 @@ export async function syncShopifyOrders(
 
                 for (const key in props) {
                     const val = props[key];
-                    if (val && typeof val === 'string' && val.toLowerCase().includes("attending?")) {
+                    if (val && val.toLowerCase().includes("attending?")) {
                         const match = val.match(/=>\s*(\d+)/);
                         if (match && match[1]) {
                             pax = parseInt(match[1], 10);
@@ -88,6 +116,10 @@ export async function syncShopifyOrders(
                     }
                 }
 
+                const activityType = firstLineItem?.variant_title
+                    ? `${firstLineItem.title} — ${firstLineItem.variant_title}`
+                    : firstLineItem?.title || "Atividade Shopify";
+
                 await prisma.booking.upsert({
                     where: { shopifyId },
                     update: {
@@ -95,8 +127,9 @@ export async function syncShopifyOrders(
                         totalPrice,
                         pax,
                         orderNumber,
-                        activityDate,
-                        activityTime
+                        activityType,    // CRITICAL: Update the type/variant
+                        activityDate,    // CRITICAL: Update the date
+                        activityTime     // CRITICAL: Update the time
                     },
                     create: {
                         shopifyId,
@@ -106,9 +139,7 @@ export async function syncShopifyOrders(
                         customerPhone: order.customer?.phone || null,
                         activityDate,
                         activityTime,
-                        activityType: firstLineItem?.variant_title
-                            ? `${firstLineItem.title} — ${firstLineItem.variant_title}`
-                            : firstLineItem?.title || "Atividade Shopify",
+                        activityType,
                         pax,
                         status,
                         source: "SHOPIFY",
