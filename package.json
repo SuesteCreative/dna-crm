@@ -2,20 +2,15 @@
     "name": "crm-desportos-nauticos",
     "version": "0.1.0",
     "private": true,
-    "engines": {
-        "node": ">=20.0.0 <21.0.0"
-    },
     "scripts": {
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "cf-build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion && node scripts/post-build.js",
-        "deploy": "opennextjs-cloudflare"
+        "postinstall": "prisma generate"
     },
     "dependencies": {
         "@clerk/nextjs": "^7.0.1",
-        "@prisma/adapter-d1": "^5.22.0",
         "@prisma/client": "^5.22.0",
         "date-fns": "^3.6.0",
         "jspdf": "^2.5.1",
@@ -28,14 +23,12 @@
         "xlsx": "^0.18.5"
     },
     "devDependencies": {
-        "@opennextjs/cloudflare": "^1.17.1",
         "@types/node": "^20",
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "eslint": "^8",
         "eslint-config-next": "14.2.3",
         "prisma": "^5.22.0",
-        "typescript": "^5",
-        "wrangler": "^4.70.0"
+        "typescript": "^5"
     }
 }

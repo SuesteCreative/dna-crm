@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { getPrisma } from "@/lib/prisma";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 async function verifyHmac(body: string, secret: string, hmacHeader: string): Promise<boolean> {
     try {
@@ -23,7 +22,6 @@ function parseOrderToBooking(order: any) {
     const firstLineItem = order.line_items?.[0];
     const properties = firstLineItem?.properties || [];
 
-    // Index all properties by name for quick lookup
     const props: Record<string, string> = {};
     if (Array.isArray(properties)) {
         for (const p of properties) {
@@ -33,7 +31,6 @@ function parseOrderToBooking(order: any) {
         }
     }
 
-    // ── Meety date/time ──────────────────────────────────────────────
     let activityDate: Date;
     let activityTime: string | null = null;
 
@@ -49,33 +46,11 @@ function parseOrderToBooking(order: any) {
     } else {
         activityDate = new Date(order.created_at);
         if (isNaN(activityDate.getTime())) activityDate = new Date();
-        for (const [name, value] of Object.entries(props)) {
-            const n = name.toLowerCase();
-            if (n.includes("date") && !n.startsWith("_meety")) {
-                const d = new Date(value);
-                if (!isNaN(d.getTime())) activityDate = d;
-            }
-            if (n.includes("time") && !n.startsWith("_meety")) {
-                activityTime = value;
-            }
-        }
     }
 
-    // ── Meety pax ────────────────────────────────────────────────────
     let pax = parseInt(props["_meety_numslots"] || "1", 10);
     if (isNaN(pax) || pax < 1) pax = 1;
-    for (const [key, value] of Object.entries(props)) {
-        if (key.startsWith("_meety_user_inputs")) {
-            const match = value.match(/=>\s*(\d+)/);
-            if (match) {
-                const parsedPax = parseInt(match[1], 10);
-                if (!isNaN(parsedPax) && parsedPax > 0) pax = parsedPax;
-                break;
-            }
-        }
-    }
 
-    // ── Status & activity name ────────────────────────────────────────
     let status = order.financial_status === "paid" ? "CONFIRMED" : "PENDING";
     if (order.cancelled_at) {
         status = "CANCELLED";
@@ -100,23 +75,13 @@ function parseOrderToBooking(order: any) {
     };
 }
 
-
 export async function POST(req: NextRequest) {
-    // Read raw body FIRST (needed for signature check)
     const rawBody = await req.text();
     const topic = req.headers.get("x-shopify-topic");
     const hmacHeader = req.headers.get("x-shopify-hmac-sha256") || "";
 
-    // Fetch webhook secret from Cloudflare env
-    let webhookSecret: string | undefined;
-    try {
-        const { env } = await getCloudflareContext({ async: true });
-        webhookSecret = (env as any).SHOPIFY_WEBHOOK_SECRET;
-    } catch {
-        webhookSecret = process.env.SHOPIFY_WEBHOOK_SECRET;
-    }
+    const webhookSecret = process.env.SHOPIFY_WEBHOOK_SECRET;
 
-    // Verify signature if secret is configured
     if (webhookSecret && hmacHeader) {
         const valid = await verifyHmac(rawBody, webhookSecret, hmacHeader);
         if (!valid) {
@@ -127,65 +92,30 @@ export async function POST(req: NextRequest) {
 
     try {
         const order = JSON.parse(rawBody);
-        const { env } = await getCloudflareContext({ async: true });
         const prisma = await getPrisma();
-        const db = (env as any).DB;
 
         if (topic === "orders/create" || topic === "orders/updated" || topic === "orders/paid") {
-            const booking = parseOrderToBooking(order);
+            const bookingData = parseOrderToBooking(order);
 
-            if (db) {
-                // Use Raw SQL for Cloudflare D1
-                await db.prepare(`
-                    INSERT INTO Booking (
-                        id, shopifyId, customerName, customerEmail, customerPhone, 
-                        activityDate, activityTime, activityType, pax, status, 
-                        source, totalPrice, createdById, notes, updatedAt
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(shopifyId) DO UPDATE SET 
-                        status = EXCLUDED.status,
-                        totalPrice = EXCLUDED.totalPrice,
-                        updatedAt = CURRENT_TIMESTAMP
-                `).bind(
-                    crypto.randomUUID(),
-                    booking.shopifyId,
-                    booking.customerName,
-                    booking.customerEmail,
-                    booking.customerPhone,
-                    booking.activityDate.toISOString(),
-                    booking.activityTime,
-                    booking.activityType,
-                    booking.pax,
-                    booking.status,
-                    booking.source,
-                    booking.totalPrice,
-                    booking.createdById,
-                    booking.notes,
-                    new Date().toISOString()
-                ).run();
-                console.log(`Webhook ${topic}: raw SQL upserted booking for order ${order.id}`);
-            } else {
-                await (prisma as any).booking.upsert({
-                    where: { shopifyId: booking.shopifyId },
-                    update: { status: booking.status, totalPrice: booking.totalPrice },
-                    create: booking,
-                });
-                console.log(`Webhook ${topic}: Prisma upserted booking for order ${order.id}`);
-            }
+            await prisma.booking.upsert({
+                where: { shopifyId: bookingData.shopifyId },
+                update: {
+                    status: bookingData.status,
+                    totalPrice: bookingData.totalPrice,
+                    activityDate: bookingData.activityDate,
+                    activityTime: bookingData.activityTime,
+                    activityType: bookingData.activityType,
+                    pax: bookingData.pax
+                },
+                create: bookingData,
+            });
+            console.log(`Webhook ${topic}: upserted booking for order ${order.id}`);
         } else if (topic === "orders/cancelled") {
-            if (db) {
-                await db.prepare("UPDATE Booking SET status = 'CANCELLED', updatedAt = ? WHERE shopifyId = ?")
-                    .bind(new Date().toISOString(), order.id.toString())
-                    .run();
-            } else {
-                await (prisma as any).booking.updateMany({
-                    where: { shopifyId: order.id.toString() },
-                    data: { status: "CANCELLED" },
-                });
-            }
+            await prisma.booking.updateMany({
+                where: { shopifyId: order.id.toString() },
+                data: { status: "CANCELLED" },
+            });
             console.log(`Webhook orders/cancelled: updated order ${order.id}`);
-        } else {
-            console.log(`Webhook topic not handled: ${topic}`);
         }
 
         return NextResponse.json({ ok: true });

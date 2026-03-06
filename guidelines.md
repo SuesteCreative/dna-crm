@@ -109,6 +109,13 @@
 - **System**: Added `system` user to `seed.js`.
 - **Compat**: Updated `next.config.mjs` with webpack shims for node built-ins and added `runtime = "edge"` to NextAuth route.
 
+### [2026-03-05] OpenNext & Prisma Build Fix
+- **Type**: Major
+- **Description**: Fixed persistent `fs.readdir` and `cannot use the edge runtime` errors during Cloudflare Pages deployment.
+- **Details**: 
+  - [2026-03-05] Removed manual `runtime = "edge"` exports to fix OpenNext bundling separation errors.
+  - [2026-03-05] **Prisma-to-Raw-SQL Migration**: Converted `api/bookings`, `api/bookings/create`, and `api/services` to raw D1 SQL using `getCloudflareContext()`. This completely bypasses the `fs.readdir` errors caused by Prisma Client attempting file system access on Cloudflare's Edge Runtime.
+
 ### [2026-03-04] Migration: Switching to Clerk Authentication — "Premium Upgrade" ✅
 - **Type**: Major refactor
 - **Description**: Replaced NextAuth with Clerk for a more professional, reliable, and premium experience.

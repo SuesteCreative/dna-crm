@@ -4,7 +4,6 @@ import { getPrisma } from "@/lib/prisma";
 // We force Node runtime here because Cloudflare Workers (Edge) 
 // sometimes have issues with Prisma introspection or specific Node modules
 // although we aren't using 'fs' explicitly, unenv might be triggered by internal libs.
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const SERVICES = [
