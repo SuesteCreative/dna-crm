@@ -15,6 +15,7 @@ export function Sidebar() {
     const [syncing, setSyncing] = useState(false);
 
     if (!userId) return null;
+    if (pathname.startsWith("/pending") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
     const isAdmin = role === "SUPER_ADMIN" || role === "ADMIN";
