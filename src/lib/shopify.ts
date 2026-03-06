@@ -7,8 +7,13 @@ export async function syncShopifyOrders(
     const SHOPIFY_STORE_DOMAIN = domain || process.env.SHOPIFY_STORE_DOMAIN;
     const SHOPIFY_ACCESS_TOKEN = token || process.env.SHOPIFY_ACCESS_TOKEN;
 
+    const debugInfo = {
+        domain: SHOPIFY_STORE_DOMAIN || "MISSING",
+        tokenPrefix: SHOPIFY_ACCESS_TOKEN ? SHOPIFY_ACCESS_TOKEN.substring(0, 10) : "MISSING"
+    };
+
     if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_ACCESS_TOKEN) {
-        return { success: false, error: "Shopify credentials missing", count: 0 };
+        return { success: false, error: "Shopify credentials missing", count: 0, debugInfo };
     }
 
     try {
@@ -17,7 +22,8 @@ export async function syncShopifyOrders(
         console.log("Token length:", SHOPIFY_ACCESS_TOKEN.length);
 
         const prisma = await getPrisma();
-        const url = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250&fulfillment_status=any&financial_status=any`;
+        // Simplified URL matching the working debug script
+        const url = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250`;
 
         console.log("Fetching URL:", url);
 
@@ -31,7 +37,7 @@ export async function syncShopifyOrders(
         if (!response.ok) {
             const errorText = await response.text();
             console.error("Shopify HTTP Error:", response.status, errorText);
-            return { success: false, error: `Shopify API ${response.status}: ${errorText}`, count: 0 };
+            return { success: false, error: `Shopify API ${response.status}: ${errorText}`, count: 0, debugInfo };
         }
 
         const data = await response.json() as { orders: any[] };
@@ -108,9 +114,9 @@ export async function syncShopifyOrders(
             }
         }
 
-        return { success: true, count: upserted, failed: failedOrders.length, failedOrders };
+        return { success: true, count: upserted, failed: failedOrders.length, failedOrders, debugInfo };
     } catch (error) {
-        return { success: false, error: String(error), count: 0 };
+        return { success: false, error: String(error), count: 0, debugInfo };
     }
 }
 
