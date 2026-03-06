@@ -1,7 +1,7 @@
 "use client";
 
 export const dynamic = "force-dynamic";
-import { useUser } from "@clerk/nextjs";
+import { useUser, RedirectToSignIn } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import {
     Users, Plus, Search, Mail, Phone,
@@ -73,7 +73,8 @@ export default function PartnersPage() {
         finally { setSubmitting(false); }
     };
 
-    if (!isLoaded || !isSignedIn) return null;
+    if (!isLoaded) return null;
+    if (!isSignedIn) return <RedirectToSignIn />;
 
     return (
         <div className="ptn-root">

@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, RedirectToSignIn } from "@clerk/nextjs";
 import { Plus, RefreshCcw, Waves, Zap } from "lucide-react";
 import "./services.css";
 
@@ -54,7 +54,8 @@ export default function ServicesPage() {
         finally { setSeeding(false); setTimeout(() => setSeedMsg(null), 4000); }
     };
 
-    if (!isLoaded || !isSignedIn) return null;
+    if (!isLoaded) return null;
+    if (!isSignedIn) return <RedirectToSignIn />;
 
     // Group by category
     const groups: Record<string, Service[]> = {};
