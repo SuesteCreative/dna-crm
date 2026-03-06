@@ -2,13 +2,15 @@
 
 export const dynamic = "force-dynamic";
 import { useUser } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import {
   Calendar, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
   TrendingUp, Activity, ShoppingBag,
-  AlertCircle, Trash2
+  AlertCircle, Trash2, ChevronDown, ChevronRight
 } from "lucide-react";
+import { format } from "date-fns";
+import { pt } from "date-fns/locale";
 import { exportToExcel, exportToPDF } from "@/lib/export";
 import "./Dashboard.css";
 
@@ -56,6 +58,7 @@ export default function Dashboard() {
   const [formData, setFormData] = useState(defaultForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [services, setServices] = useState<Service[]>([]);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (isSignedIn) {
@@ -116,6 +119,30 @@ export default function Dashboard() {
     } catch { setSyncMsg("Erro de ligação"); }
     finally { setSyncing(false); setTimeout(() => setSyncMsg(null), 4000); }
   };
+
+  const toggleGroup = (key: string) => {
+    setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const groupBookings = (data: Booking[]) => {
+    const groups: Record<string, Record<string, Booking[]>> = {};
+
+    data.forEach(b => {
+      const date = new Date(b.activityDate);
+      const year = date.getFullYear().toString();
+      const monthDisplay = format(date, "MMMM", { locale: pt });
+      const monthKey = monthDisplay.charAt(0).toUpperCase() + monthDisplay.slice(1);
+
+      if (!groups[year]) groups[year] = {};
+      if (!groups[year][monthKey]) groups[year][monthKey] = [];
+      groups[year][monthKey].push(b);
+    });
+
+    return groups;
+  };
+
+  const grouped = groupBookings(filtered);
+  const years = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   const handleServiceSelect = (serviceId: string) => {
     const svc = services.find(s => s.id === serviceId);
@@ -265,32 +292,55 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="table-empty"><div className="loader-sm" /></td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="table-empty">Nenhuma reserva encontrada.</td></tr>
-              ) : filtered.map(b => (
-                <tr key={b.id}>
-                  <td>
-                    <div className="cell-name">{b.customerName}</div>
-                    <div className="cell-sub">{b.customerEmail || "—"}</div>
-                  </td>
-                  <td>
-                    <div className="cell-name">{b.activityType || b.notes || "—"}</div>
-                  </td>
-                  <td>
-                    <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
-                    <div className="cell-sub">{b.activityTime || "—"}</div>
-                  </td>
-                  <td><span className="pax-pill">{b.pax} pax</span></td>
-                  <td>{sourceBadge(b.source, b.orderNumber)}</td>
-                  <td>{statusBadge(b.status)}</td>
-                  <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
-                  <td>
-                    <button className="btn-delete" onClick={() => handleDelete(b.id)}>
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
+                <tr><td colSpan={8} className="table-empty"><div className="loader-sm" /></td></tr>
+              ) : years.length === 0 ? (
+                <tr><td colSpan={8} className="table-empty">Nenhuma reserva encontrada.</td></tr>
+              ) : years.map(year => (
+                <Fragment key={year}>
+                  <tr className="group-row">
+                    <td colSpan={8} onClick={() => toggleGroup(year)} className="year-hdr">
+                      <ChevronDown size={16} className={collapsed[year] ? "group-ico collapsed" : "group-ico"} />
+                      {year}
+                    </td>
+                  </tr>
+                  {!collapsed[year] && Object.keys(grouped[year]).sort((a, b) => {
+                    const monthsOrder = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+                    return monthsOrder.indexOf(b) - monthsOrder.indexOf(a);
+                  }).map(month => (
+                    <Fragment key={`${year}-${month}`}>
+                      <tr className="group-row">
+                        <td colSpan={8} onClick={() => toggleGroup(`${year}-${month}`)} className="month-hdr">
+                          <ChevronDown size={14} className={collapsed[`${year}-${month}`] ? "group-ico collapsed" : "group-ico"} />
+                          {month}
+                        </td>
+                      </tr>
+                      {!collapsed[`${year}-${month}`] && grouped[year][month].map(b => (
+                        <tr key={b.id}>
+                          <td>
+                            <div className="cell-name">{b.customerName}</div>
+                            <div className="cell-sub">{b.customerEmail || "—"}</div>
+                          </td>
+                          <td>
+                            <div className="cell-name">{b.activityType || b.notes || "—"}</div>
+                          </td>
+                          <td>
+                            <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
+                            <div className="cell-sub">{b.activityTime || "—"}</div>
+                          </td>
+                          <td><span className="pax-pill">{b.pax} pax</span></td>
+                          <td>{sourceBadge(b.source, b.orderNumber)}</td>
+                          <td>{statusBadge(b.status)}</td>
+                          <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
+                          <td>
+                            <button className="btn-delete" onClick={() => handleDelete(b.id)}>
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))}
+                </Fragment>
               ))}
             </tbody>
           </table>
