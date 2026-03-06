@@ -48,8 +48,9 @@ function parseOrderToBooking(order: any) {
         if (isNaN(activityDate.getTime())) activityDate = new Date();
     }
 
-    let pax = parseInt(props["_meety_numslots"] || "1", 10);
-    if (isNaN(pax) || pax < 1) pax = 1;
+    const qty = firstLineItem?.quantity || 1;
+    const slots = parseInt(props["_meety_numslots"] || "0", 10);
+    const pax = Math.max(qty, slots);
 
     let status = order.financial_status === "paid" ? "CONFIRMED" : "PENDING";
     if (order.cancelled_at) {

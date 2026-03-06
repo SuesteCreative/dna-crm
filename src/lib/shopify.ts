@@ -83,7 +83,11 @@ export async function syncShopifyOrders(
                 const customerName = `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || "Consumidor Final";
                 const status = order.financial_status === "paid" ? "CONFIRMED" : "PENDING";
                 const totalPrice = parseFloat(order.total_price) || 0;
-                const pax = parseInt(props["_meety_numslots"] || "1", 10) || 1;
+
+                // Use the higher value between quantity and meety slots to ensure accuracy
+                const qty = firstLineItem?.quantity || 1;
+                const slots = parseInt(props["_meety_numslots"] || "0", 10);
+                const pax = Math.max(qty, slots);
 
                 await prisma.booking.upsert({
                     where: { shopifyId },

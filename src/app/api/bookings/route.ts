@@ -7,7 +7,7 @@ export async function GET() {
     try {
         const prisma = await getPrisma();
         const bookings = await prisma.booking.findMany({
-            orderBy: { activityDate: "desc" },
+            orderBy: { createdAt: "desc" },
         });
         return NextResponse.json(bookings);
     } catch (error) {
