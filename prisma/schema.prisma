@@ -40,7 +40,6 @@ model Booking {
   activityDate  DateTime
   activityTime  String?
   pax           Int      @default(1)
-  quantity      Int?     @default(1)
   status        String   @default("CONFIRMED")
   source        String   @default("MANUAL")
   shopifyId     String?  @unique
@@ -53,6 +52,7 @@ model Booking {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   orderNumber   String?
+  quantity      Int?     @default(1)
   partner       Partner? @relation(fields: [partnerId], references: [id])
 }
 
