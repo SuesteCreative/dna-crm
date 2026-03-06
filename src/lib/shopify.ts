@@ -25,7 +25,7 @@ export async function syncShopifyOrders(
             `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250`;
 
         while (nextUrl) {
-            const response = await fetch(nextUrl, {
+            const response: Response = await fetch(nextUrl, {
                 headers: {
                     "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN!,
                     "Content-Type": "application/json",
