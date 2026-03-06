@@ -44,12 +44,14 @@ async function main() {
                 status: financialStatus === 'PAID' ? 'CONFIRMED' : (financialStatus === 'CANCELLED' ? 'CANCELLED' : 'PENDING'),
                 activityType: lineItemName,
                 pax: lineItemQuantity,
+                quantity: lineItemQuantity,
                 notes: notes
             });
         } else {
             const existing = orders.get(shopifyId);
             existing.activityType += `, ${lineItemName}`;
             existing.pax += lineItemQuantity;
+            existing.quantity += lineItemQuantity;
             if (existing.totalPrice === 0 && totalPrice > 0) {
                 existing.totalPrice = totalPrice;
             }
@@ -81,6 +83,7 @@ async function main() {
                     status: order.status,
                     activityType: order.activityType,
                     pax: order.pax,
+                    quantity: order.quantity,
                     notes: order.notes,
                     source: 'SHOPIFY'
                 },
@@ -94,6 +97,7 @@ async function main() {
                     status: order.status,
                     activityType: order.activityType,
                     pax: order.pax,
+                    quantity: order.quantity,
                     notes: order.notes,
                     source: 'SHOPIFY'
                 },
