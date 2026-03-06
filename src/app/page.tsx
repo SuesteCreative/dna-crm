@@ -1,7 +1,7 @@
 "use client";
 
 export const dynamic = "force-dynamic";
-import { useUser } from "@clerk/nextjs";
+import { useUser, RedirectToSignIn } from "@clerk/nextjs";
 import { useEffect, useState, Fragment } from "react";
 import {
   Calendar, RefreshCcw, Plus, Search,
@@ -220,9 +220,11 @@ export default function Dashboard() {
     );
   };
 
-  if (!isLoaded || !isSignedIn) return (
+  if (!isLoaded) return (
     <div className="loading-screen"><div className="loader" /></div>
   );
+
+  if (!isSignedIn) return <RedirectToSignIn />;
 
   return (
     <main className="crm-main">
