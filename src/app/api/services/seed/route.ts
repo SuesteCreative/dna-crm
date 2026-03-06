@@ -1,74 +1,72 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 
-// We force Node runtime here because Cloudflare Workers (Edge) 
-// sometimes have issues with Prisma introspection or specific Node modules
-// although we aren't using 'fs' explicitly, unenv might be triggered by internal libs.
 export const dynamic = "force-dynamic";
 
+// Full list of services from the provided products_export.csv
 const SERVICES = [
     {
         shopifyHandle: "jetski-rental",
         name: "Jetski Rental",
-        variant: "10 minutos",
+        variant: "10 minutes",
         sku: "001-001",
         price: 40,
-        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg",
+        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg?v=1742288499",
         category: "Jetski",
     },
     {
         shopifyHandle: "jetski-rental",
         name: "Jetski Rental",
-        variant: "15 minutos",
+        variant: "15 minutes",
         sku: "001-002",
         price: 55,
-        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg",
+        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/jetski3_1716709b-4018-444d-9c5d-871944391814.jpg?v=1742288506",
         category: "Jetski",
     },
     {
         shopifyHandle: "jetski-rental",
         name: "Jetski Rental",
-        variant: "20 minutos",
+        variant: "20 minutes",
         sku: "001-003",
         price: 65,
-        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg",
+        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/jetski2.jpg?v=1742288503",
         category: "Jetski",
     },
     {
         shopifyHandle: "jetski-rental",
         name: "Jetski Rental",
-        variant: "30 minutos",
+        variant: "30 minutes",
         sku: "001-004",
         price: 85,
-        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg",
+        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg?v=1742288499",
         category: "Jetski",
     },
     {
         shopifyHandle: "jetski-rental",
         name: "Jetski Rental",
-        variant: "1 hora",
+        variant: "1 hour",
         sku: "001-005",
         price: 160,
-        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg",
+        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/mota.jpg?v=1742288499",
         category: "Jetski",
     },
     {
         shopifyHandle: "crazy-sofa-inflatable-towable",
-        name: "Crazy Sofa",
-        variant: "Por pessoa",
+        name: "Crazy Sofa - Inflatable Towable",
+        variant: null,
         sku: "002-001",
         price: 18,
-        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/CrazySofa-InflatableTowable.png",
-        category: "Infláveis",
+        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/CrazySofa-InflatableTowable.png?v=1769024529",
+        category: "Towable",
     },
     {
         shopifyHandle: "banana-slider-inflatable-towable",
-        name: "Banana Slider",
-        variant: "Por pessoa",
+        name: "Banana Slider - Inflatable Towable",
+        variant: null,
         sku: "002-002",
         price: 18,
-        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/BananaSlider-InflatableTowable.png",
-        category: "Infláveis",
+        imageUrl: "https://cdn.shopify.com/s/files/1/0818/0554/1723/files/BananaSlider-InflatableTowable.png?v=1769024472",
+        category: "Towable",
     },
 ];
 
@@ -78,9 +76,17 @@ export async function POST() {
         let seeded = 0;
 
         for (const svc of SERVICES) {
-            await (prisma as any).service.upsert({
+            await prisma.service.upsert({
                 where: { sku: svc.sku },
-                update: { price: svc.price, isActive: true },
+                update: {
+                    name: svc.name,
+                    variant: svc.variant,
+                    price: svc.price,
+                    imageUrl: svc.imageUrl,
+                    category: svc.category,
+                    shopifyHandle: svc.shopifyHandle,
+                    isActive: true
+                },
                 create: { ...svc, isActive: true },
             });
             seeded++;
