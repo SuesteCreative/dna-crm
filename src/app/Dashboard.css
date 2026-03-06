@@ -24,6 +24,8 @@
     --teal: #14b8a6;
     --teal-dim: rgba(20, 184, 166, 0.15);
     --red: #ef4444;
+    --orange: #f97316;
+    --orange-dim: rgba(249, 115, 22, 0.15);
     --sidebar-w: 240px;
     --radius: 12px;
 }
@@ -942,7 +944,7 @@ body {
     animation: spin .8s linear infinite;
 }
 
-/* ── FUTURE HIGHLIGHTS ─────────────────────────────────── */
+/* ── FUTURE HIGHLIGHTS (green = tomorrow+) ─────────────── */
 .is-future {
     border-color: rgba(16, 185, 129, 0.4) !important;
     box-shadow: 0 0 15px rgba(16, 185, 129, 0.08);
@@ -979,6 +981,44 @@ body {
     color: var(--green);
 }
 
+/* ── TODAY HIGHLIGHTS (orange = today) ─────────────────── */
+.is-today {
+    border-color: rgba(249, 115, 22, 0.4) !important;
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.08);
+}
+
+.year-box-hdr.is-today {
+    background: linear-gradient(90deg, var(--surface) 0%, rgba(249, 115, 22, 0.05) 100%);
+    border-left: 3px solid var(--orange) !important;
+}
+
+.year-box-hdr.is-today h3 {
+    color: var(--orange);
+    text-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
+}
+
+.month-box-hdr.is-today {
+    background: linear-gradient(90deg, var(--surface) 0%, rgba(249, 115, 22, 0.03) 100%);
+    border-left: 2px solid var(--orange) !important;
+}
+
+.month-box-hdr.is-today .month-title {
+    color: var(--orange) !important;
+}
+
+.row-today td {
+    background: rgba(249, 115, 22, 0.03) !important;
+}
+
+.row-today:hover td {
+    background: rgba(249, 115, 22, 0.07) !important;
+}
+
+.row-today .cell-name {
+    color: var(--orange);
+    text-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+}
+
 /* ── QUANTITY BADGE ──────────────────────────────────── */
 .activity-cell-layout {
     display: flex;
@@ -1005,4 +1045,10 @@ body {
     background: var(--green-dim);
     color: var(--green);
     border-color: var(--green);
+}
+
+.row-today .qty-badge {
+    background: var(--orange-dim);
+    color: var(--orange);
+    border-color: var(--orange);
 }
