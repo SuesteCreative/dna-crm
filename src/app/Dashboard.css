@@ -941,3 +941,67 @@ body {
 .spin {
     animation: spin .8s linear infinite;
 }
+
+/* ── FUTURE HIGHLIGHTS ─────────────────────────────────── */
+.is-future {
+    border-color: rgba(16, 185, 129, 0.4) !important;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.08);
+}
+
+.year-box-hdr.is-future {
+    background: linear-gradient(90deg, var(--surface) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border-left: 3px solid var(--green) !important;
+}
+
+.year-box-hdr.is-future h3 {
+    color: var(--green);
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.month-box-hdr.is-future {
+    background: linear-gradient(90deg, var(--surface) 0%, rgba(16, 185, 129, 0.03) 100%);
+    border-left: 2px solid var(--green) !important;
+}
+
+.month-box-hdr.is-future .month-title {
+    color: var(--green) !important;
+}
+
+.row-future td {
+    background: rgba(16, 185, 129, 0.02) !important;
+}
+
+.row-future:hover td {
+    background: rgba(16, 185, 129, 0.05) !important;
+}
+
+.row-future .cell-name {
+    color: var(--green);
+}
+
+/* ── QUANTITY BADGE ──────────────────────────────────── */
+.activity-cell-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.qty-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 4px;
+    width: fit-content;
+    text-transform: uppercase;
+}
+
+.row-future .qty-badge {
+    background: var(--green-dim);
+    color: var(--green);
+    border-color: var(--green);
+}

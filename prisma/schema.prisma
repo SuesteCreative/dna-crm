@@ -1,38 +1,35 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  password      String?
-  role          String    @default("USER") // ADMIN, PARTNER, USER
-  image         String?
-  partner       Partner?  @relation(fields: [partnerId], references: [id])
-  partnerId     String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  password  String?
+  role      String   @default("USER")
+  image     String?
+  partnerId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  partner   Partner? @relation(fields: [partnerId], references: [id])
 }
 
 model Partner {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  email     String   @unique
+  email     String    @unique
   phone     String?
   address   String?
-  users     User[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   bookings  Booking[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  users     User[]
 }
 
 model Booking {
@@ -43,36 +40,32 @@ model Booking {
   activityDate  DateTime
   activityTime  String?
   pax           Int      @default(1)
-  status        String   @default("CONFIRMED") // PENDING, CONFIRMED, CANCELLED
-  source        String   @default("MANUAL") // MANUAL, SHOPIFY, PARTNER
+  quantity      Int?     @default(1)
+  status        String   @default("CONFIRMED")
+  source        String   @default("MANUAL")
   shopifyId     String?  @unique
-  orderNumber   String?
   totalPrice    Float?
   notes         String?
-  activityType  String?  // service name (denormalized for quick display)
-
-  partner       Partner? @relation(fields: [partnerId], references: [id])
+  activityType  String?
   partnerId     String?
-
   serviceId     String?
-
   createdById   String?
-
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  orderNumber   String?
+  partner       Partner? @relation(fields: [partnerId], references: [id])
 }
 
 model Service {
   id            String   @id @default(cuid())
   shopifyHandle String?
-  name          String   // product name, e.g. "Jetski Rental"
-  variant       String?  // e.g. "30 minutes"
+  name          String
+  variant       String?
   sku           String?  @unique
   price         Float?
   imageUrl      String?
-  category      String?  // "Jetski", "Towable"
+  category      String?
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
-

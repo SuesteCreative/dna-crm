@@ -27,6 +27,7 @@ interface Booking {
   shopifyId?: string | null;
   orderNumber?: string | null;
   totalPrice: number | null;
+  quantity?: number | null;
   notes?: string | null;
   activityType?: string | null;
 }
@@ -144,7 +145,17 @@ export default function Dashboard() {
   const grouped = groupBookings(filtered);
   const years = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const isFuture = (b: Booking) => new Date(b.activityDate) >= todayStart;
+  const anyFutureInGroup = (bookings: Booking[]) => bookings.some(isFuture);
+  const anyFutureInYear = (year: string) => {
+    return Object.values(grouped[year]).some(monthList => anyFutureInGroup(monthList));
+  };
+
   const handleServiceSelect = (serviceId: string) => {
+    // ... existing handleServiceSelect logic
     const svc = services.find(s => s.id === serviceId);
     if (!svc) { setFormData({ ...formData, serviceId: "", activityType: "", totalPrice: "" }); return; }
     const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
@@ -282,10 +293,10 @@ export default function Dashboard() {
         ) : years.length === 0 ? (
           <div className="table-empty">Nenhuma reserva encontrada.</div>
         ) : years.map(year => (
-          <div key={year} className="year-section">
-            <div className="year-box-hdr" onClick={() => toggleGroup(year)}>
+          <div key={year} className={`year-section ${anyFutureInYear(year) ? "is-future" : ""}`}>
+            <div className={`year-box-hdr ${anyFutureInYear(year) ? "is-future" : ""}`} onClick={() => toggleGroup(year)}>
               <ChevronDown size={20} className={collapsed[year] ? "group-ico collapsed" : "group-ico"} />
-              <h3>{year}</h3>
+              <h3>Ano {year}</h3>
             </div>
 
             {!collapsed[year] && (
@@ -296,9 +307,10 @@ export default function Dashboard() {
                 }).map(month => {
                   const mKey = `${year}-${month}`;
                   const monthBookings = grouped[year][month];
+                  const hasFuture = anyFutureInGroup(monthBookings);
                   return (
-                    <div key={mKey} className="month-section">
-                      <div className="month-box-hdr" onClick={() => toggleGroup(mKey)}>
+                    <div key={mKey} className={`month-section ${hasFuture ? "is-future" : ""}`}>
+                      <div className={`month-box-hdr ${hasFuture ? "is-future" : ""}`} onClick={() => toggleGroup(mKey)}>
                         <div className="month-title">
                           <ChevronDown size={14} className={collapsed[mKey] ? "group-ico collapsed" : "group-ico"} />
                           {month}
@@ -323,13 +335,18 @@ export default function Dashboard() {
                             </thead>
                             <tbody>
                               {monthBookings.map(b => (
-                                <tr key={b.id}>
+                                <tr key={b.id} className={isFuture(b) ? "row-future" : ""}>
                                   <td>
                                     <div className="cell-name">{b.customerName}</div>
                                     <div className="cell-sub">{b.customerEmail || "—"}</div>
                                   </td>
                                   <td>
-                                    <div className="cell-name">{b.activityType || b.notes || "—"}</div>
+                                    <div className="activity-cell-layout">
+                                      {b.quantity != null && b.quantity > 1 && (
+                                        <span className="qty-badge">Qtd: {b.quantity}</span>
+                                      )}
+                                      <div className="cell-name">{b.activityType || b.notes || "—"}</div>
+                                    </div>
                                   </td>
                                   <td>
                                     <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>

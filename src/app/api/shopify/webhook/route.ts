@@ -19,6 +19,7 @@ async function verifyHmac(body: string, secret: string, hmacHeader: string): Pro
 }
 
 function parseOrderToBooking(order: any) {
+    const totalQuantity = order.line_items?.reduce((s: number, li: any) => s + (li.quantity || 0), 0) || 1;
     const firstLineItem = order.line_items?.[0];
     const properties = firstLineItem?.properties || [];
 
@@ -31,12 +32,11 @@ function parseOrderToBooking(order: any) {
         }
     }
 
-    // IMPROVED Date and Time parsing
     let activityDate = new Date(order.created_at);
     let activityTime: string | null = null;
 
     const meetyFromTime = props["_meety_from_time"];
-    const meetyDateTime = props["Date & time"]; // "May 1, 2026, 11:50 - 12:50"
+    const meetyDateTime = props["Date & time"];
 
     if (meetyFromTime) {
         const from = new Date(meetyFromTime);
@@ -68,10 +68,8 @@ function parseOrderToBooking(order: any) {
         }
     }
 
-    // Advanced PAX detection
-    const qty = firstLineItem?.quantity || 1;
     const slots = parseInt(props["_meety_numslots"] || "0", 10);
-    let pax = Math.max(qty, slots);
+    let pax = Math.max(totalQuantity, slots);
 
     for (const key in props) {
         const val = props[key];
@@ -105,6 +103,7 @@ function parseOrderToBooking(order: any) {
         activityTime,
         activityType,
         pax,
+        quantity: totalQuantity,
         status,
         source: "SHOPIFY",
         totalPrice: parseFloat(order.total_price || "0") || 0,
@@ -144,6 +143,7 @@ export async function POST(req: NextRequest) {
                     activityTime: bookingData.activityTime,
                     activityType: bookingData.activityType,
                     pax: bookingData.pax,
+                    quantity: bookingData.quantity,
                     orderNumber: bookingData.orderNumber
                 },
                 create: bookingData,

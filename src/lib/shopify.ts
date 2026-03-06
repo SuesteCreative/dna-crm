@@ -41,8 +41,10 @@ export async function syncShopifyOrders(
 
         for (const order of orders) {
             try {
+                const totalQuantity = order.line_items?.reduce((s: number, li: any) => s + (li.quantity || 0), 0) || 1;
                 const firstLineItem = order.line_items?.[0];
                 const props: Record<string, string> = {};
+                // ... (existing props collection logic)
                 if (firstLineItem?.properties) {
                     for (const p of firstLineItem.properties) {
                         if (p.name && p.value) {
@@ -51,12 +53,12 @@ export async function syncShopifyOrders(
                     }
                 }
 
-                // IMPROVED Date and Time parsing
+                // ... (existing date parsing)
                 let activityDate = new Date(order.created_at);
                 let activityTime: string | null = null;
 
                 const meetyFromTime = props["_meety_from_time"];
-                const meetyDateTime = props["Date & time"]; // "May 1, 2026, 11:50 - 12:50"
+                const meetyDateTime = props["Date & time"];
 
                 if (meetyFromTime) {
                     const from = new Date(meetyFromTime);
@@ -70,12 +72,11 @@ export async function syncShopifyOrders(
                     }
                 } else if (meetyDateTime) {
                     try {
-                        // "May 1, 2026, 11:50 - 12:50"
                         const parts = meetyDateTime.split(",");
                         if (parts.length >= 2) {
-                            const monthDay = parts[0].trim(); // "May 1"
-                            const year = parts[1].trim();     // "2026"
-                            const timePart = parts[2]?.split("-")[0].trim(); // "11:50"
+                            const monthDay = parts[0].trim();
+                            const year = parts[1].trim();
+                            const timePart = parts[2]?.split("-")[0].trim();
 
                             const fullStr = `${monthDay} ${year} ${timePart || "00:00"}`;
                             const dt = new Date(fullStr);
@@ -92,7 +93,6 @@ export async function syncShopifyOrders(
                 const shopifyId = order.id.toString();
                 const orderNumber = order.order_number ? `#${order.order_number}` : null;
 
-                // Use email as fallback for name
                 const customerName = `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim()
                     || order.customer?.email
                     || "Consumidor Final";
@@ -101,9 +101,8 @@ export async function syncShopifyOrders(
                 const totalPrice = parseFloat(order.total_price) || 0;
 
                 // Advanced PAX detection
-                const qty = firstLineItem?.quantity || 1;
                 const slots = parseInt(props["_meety_numslots"] || "0", 10);
-                let pax = Math.max(qty, slots);
+                let pax = Math.max(totalQuantity, slots);
 
                 for (const key in props) {
                     const val = props[key];
@@ -126,10 +125,11 @@ export async function syncShopifyOrders(
                         status,
                         totalPrice,
                         pax,
+                        quantity: totalQuantity,
                         orderNumber,
-                        activityType,    // CRITICAL: Update the type/variant
-                        activityDate,    // CRITICAL: Update the date
-                        activityTime     // CRITICAL: Update the time
+                        activityType,
+                        activityDate,
+                        activityTime
                     },
                     create: {
                         shopifyId,
@@ -141,6 +141,7 @@ export async function syncShopifyOrders(
                         activityTime,
                         activityType,
                         pax,
+                        quantity: totalQuantity,
                         status,
                         source: "SHOPIFY",
                         totalPrice,
