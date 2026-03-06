@@ -56,7 +56,9 @@ function parseOrderToBooking(order: any) {
         status = "CANCELLED";
     }
 
-    const activityName = firstLineItem?.title || null;
+    const activityName = firstLineItem?.variant_title
+        ? `${firstLineItem.title} — ${firstLineItem.variant_title}`
+        : firstLineItem?.title || null;
 
     return {
         shopifyId: order.id.toString(),
@@ -71,7 +73,7 @@ function parseOrderToBooking(order: any) {
         source: "SHOPIFY",
         totalPrice: parseFloat(order.total_price || "0") || 0,
         createdById: "shopify-webhook",
-        notes: `Webhook from Shopify Order #${order.order_number || order.id}`,
+        notes: `Shopify #${order.order_number || order.id}`,
     };
 }
 

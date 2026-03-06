@@ -98,13 +98,15 @@ export async function syncShopifyOrders(
                         customerPhone: order.customer?.phone || null,
                         activityDate,
                         activityTime,
-                        activityType: firstLineItem?.title || null,
+                        activityType: firstLineItem?.variant_title
+                            ? `${firstLineItem.title} — ${firstLineItem.variant_title}`
+                            : firstLineItem?.title || null,
                         pax,
                         status,
                         source: "SHOPIFY",
                         totalPrice,
                         createdById: "shopify-sync",
-                        notes: `Synced from Shopify #${order.order_number || order.id}`,
+                        notes: `Shopify #${order.order_number || order.id}`,
                     }
                 });
 
