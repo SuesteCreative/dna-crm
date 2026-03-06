@@ -6,8 +6,8 @@ import { useEffect, useState, Fragment } from "react";
 import {
   Calendar, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
-  TrendingUp, Activity, UserCheck, UserX,
-  AlertCircle, Trash2, ChevronDown, ChevronRight
+  TrendingUp, Activity, UserCheck,
+  AlertCircle, Trash2, ChevronDown, ChevronRight, Pencil
 } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
@@ -63,6 +63,10 @@ export default function Dashboard() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [attendanceTarget, setAttendanceTarget] = useState<Booking | null>(null);
   const [attendanceSaving, setAttendanceSaving] = useState(false);
+  const [editTarget, setEditTarget] = useState<Booking | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, any>>({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isSignedIn) {
@@ -222,6 +226,58 @@ export default function Dashboard() {
       setAttendanceSaving(false);
       setAttendanceTarget(null);
     }
+  };
+
+  const openEdit = (b: Booking) => {
+    setEditTarget(b);
+    setEditError(null);
+    const d = new Date(b.activityDate);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    setEditForm({
+      customerName: b.customerName,
+      customerEmail: b.customerEmail || "",
+      customerPhone: b.customerPhone || "",
+      activityDate: dateStr,
+      activityTime: b.activityTime || "",
+      pax: b.pax,
+      totalPrice: b.totalPrice ?? "",
+      activityType: b.activityType || "",
+      status: b.status,
+      notes: b.notes || "",
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editTarget) return;
+    setEditSaving(true); setEditError(null);
+    try {
+      const res = await fetch("/api/bookings/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editTarget.id, ...editForm }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setBookings(prev => prev.map(b => b.id === updated.id ? { ...b, ...updated } : b));
+        setEditTarget(null);
+      } else {
+        const d = await res.json();
+        setEditError(d.error || "Erro ao guardar");
+      }
+    } catch { setEditError("Erro de ligação"); }
+    finally { setEditSaving(false); }
+  };
+
+  const handleEditDelete = async () => {
+    if (!editTarget) return;
+    if (!confirm(`Eliminar reserva de ${editTarget.customerName}?`)) return;
+    try {
+      const res = await fetch(`/api/bookings/delete?id=${editTarget.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setBookings(prev => prev.filter(b => b.id !== editTarget.id));
+        setEditTarget(null);
+      } else { alert("Erro ao eliminar reserva"); }
+    } catch { alert("Erro de ligação"); }
   };
 
   const svcGroups: Record<string, Service[]> = {};
@@ -415,8 +471,8 @@ export default function Dashboard() {
                                     ) : null}
                                   </td>
                                   <td>
-                                    <button className="btn-delete" onClick={() => handleDelete(b.id)}>
-                                      <Trash2 size={16} />
+                                    <button className="btn-edit" onClick={() => openEdit(b)}>
+                                      <Pencil size={15} />
                                     </button>
                                   </td>
                                 </tr>
@@ -502,6 +558,113 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      {editTarget && (
+        <>
+          <div className="drawer-backdrop" onClick={() => setEditTarget(null)} />
+          <aside className="edit-drawer">
+            <div className="drawer-hdr">
+              <div>
+                <div className="drawer-title">{editTarget.customerName}</div>
+                <div className="drawer-sub">
+                  {editTarget.source === "SHOPIFY" && editTarget.orderNumber
+                    ? `Shopify ${editTarget.orderNumber}`
+                    : editTarget.source}
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setEditTarget(null)}><X size={20} /></button>
+            </div>
+
+            <div className="drawer-original">
+              <span className="drawer-original-label">Original</span>
+              <span>{editTarget.activityType || "—"}</span>
+              <span className="attendance-dot">·</span>
+              <span>{editTarget.pax} pax</span>
+              <span className="attendance-dot">·</span>
+              <span>{editTarget.totalPrice != null ? `${editTarget.totalPrice.toFixed(2)}€` : "—"}</span>
+            </div>
+
+            <div className="drawer-body">
+              {editError && <div className="form-error"><AlertCircle size={14} />{editError}</div>}
+
+              <div className="drawer-section-label">Atividade</div>
+              <div className="form-grid">
+                <div className="field full">
+                  <label>Tipo de atividade</label>
+                  <select className="field-select" value={editForm.activityType} onChange={e => setEditForm({ ...editForm, activityType: e.target.value })}>
+                    <option value="">— Livre —</option>
+                    {Object.entries(svcGroups).map(([cat, items]) => (
+                      <optgroup key={cat} label={cat}>
+                        {items.map(svc => (
+                          <option key={svc.id} value={svc.variant ? `${svc.name} - ${svc.variant}` : svc.name}>
+                            {svc.name}{svc.variant ? ` - ${svc.variant}` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Data</label>
+                  <input type="date" value={editForm.activityDate} onChange={e => setEditForm({ ...editForm, activityDate: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>Hora</label>
+                  <input type="time" value={editForm.activityTime} onChange={e => setEditForm({ ...editForm, activityTime: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>Pax</label>
+                  <input type="number" min="1" value={editForm.pax} onChange={e => setEditForm({ ...editForm, pax: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>Preço real (€)</label>
+                  <input type="number" step="0.01" value={editForm.totalPrice} onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })} />
+                </div>
+                <div className="field full">
+                  <label>Estado</label>
+                  <select className="field-select" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
+                    <option value="CONFIRMED">Confirmada</option>
+                    <option value="PENDING">Pendente</option>
+                    <option value="CANCELLED">Cancelada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="drawer-section-label" style={{ marginTop: 16 }}>Cliente</div>
+              <div className="form-grid">
+                <div className="field full">
+                  <label>Nome</label>
+                  <input value={editForm.customerName} onChange={e => setEditForm({ ...editForm, customerName: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>Email</label>
+                  <input type="email" value={editForm.customerEmail} onChange={e => setEditForm({ ...editForm, customerEmail: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>Telefone</label>
+                  <input value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: e.target.value })} />
+                </div>
+                <div className="field full">
+                  <label>Notas</label>
+                  <textarea rows={2} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
+                </div>
+              </div>
+            </div>
+
+            <div className="drawer-footer">
+              <button className="btn-drawer-delete" onClick={handleEditDelete}>
+                <Trash2 size={15} /> Eliminar
+              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn-ghost" onClick={() => setEditTarget(null)}>Cancelar</button>
+                <button className="btn-primary" disabled={editSaving} onClick={handleEditSave}>
+                  {editSaving ? "A guardar..." : "Guardar"}
+                </button>
+              </div>
+            </div>
+          </aside>
+        </>
+      )}
+
       {attendanceTarget && (
         <div className="modal-backdrop" onClick={() => setAttendanceTarget(null)}>
           <div className="modal-box attendance-modal" onClick={e => e.stopPropagation()}>
