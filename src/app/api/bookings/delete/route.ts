@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 
 export async function DELETE(req: Request) {
+    const { userId } = await auth();
+    if (!userId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
