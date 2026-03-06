@@ -1,0 +1,157 @@
+
+> crm-desportos-nauticos@0.1.0 dev
+> next dev
+
+ ÔÜá Port 3000 is in use, trying 3001 instead.
+ ÔÜá Port 3001 is in use, trying 3002 instead.
+ ÔÜá Port 3002 is in use, trying 3003 instead.
+  Ôû▓ Next.js 14.2.3
+  - Local:        http://localhost:3003
+  - Environments: .env
+
+ Ô£ô Starting...
+ Ô£ô Ready in 1700ms
+ Ô£ô Compiled /src/middleware in 269ms (189 modules)
+ Ôùï Compiling /_not-found ...
+ Ô£ô Compiled /_not-found in 5.1s (1027 modules)
+ GET / 404 in 5334ms
+ Ô£ô Compiled /sign-in/[[...sign-in]] in 342ms (1008 modules)
+ HEAD /sign-in 200 in 813ms
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/dequal' in C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server for build dependencies doesn't lead to expected result 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\dequal.js', but to 'Error: Can't resolve './vendor-chunks/dequal' in 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/dequal (expected C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\dequal.js)
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at resolve commonjs C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/@swc' in C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server for build dependencies doesn't lead to expected result 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\@swc.js', but to 'Error: Can't resolve './vendor-chunks/@swc' in 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/@swc (expected C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\@swc.js)
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at resolve commonjs C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/lucide-react' in C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server for build dependencies doesn't lead to expected result 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\lucide-react.js', but to 'Error: Can't resolve './vendor-chunks/lucide-react' in 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/lucide-react (expected C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\lucide-react.js)
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at resolve commonjs C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/@tanstack' in C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server for build dependencies doesn't lead to expected result 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\@tanstack.js', but to 'Error: Can't resolve './vendor-chunks/@tanstack' in 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/@tanstack (expected C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\@tanstack.js)
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at resolve commonjs C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/next' in C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server for build dependencies doesn't lead to expected result 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\next.js', but to 'Error: Can't resolve './vendor-chunks/next' in 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/next (expected C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\vendor-chunks\next.js)
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\sign-in\[[...sign-in]]\page.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\require.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\load-components.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-app-loader.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\loader-runner\LoaderRunner.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\bundle5.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\compiled\webpack\webpack.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\plugins\define-env-plugin.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\swc\index.js
+<w>  at file dependencies C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at file C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+<w>  at resolve commonjs C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
+ Ô£ô Compiled in 34ms
+ Ô£ô Compiled in 165ms (398 modules)

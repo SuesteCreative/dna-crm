@@ -1,0 +1,30 @@
+
+> crm-desportos-nauticos@0.1.0 dev
+> next dev
+
+ ÔÜá Port 3000 is in use, trying 3001 instead.
+ ÔÜá Port 3001 is in use, trying 3002 instead.
+  Ôû▓ Next.js 14.2.3
+  - Local:        http://localhost:3002
+  - Environments: .env
+
+ Ô£ô Starting...
+ Ô£ô Ready in 2s
+ Ôùï Compiling /src/middleware ...
+ Ô£ô Compiled /src/middleware in 781ms (189 modules)
+ Ô¿» Error: @clerk/nextjs: Missing secretKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+    at Object.throwMissingSecretKeyError (webpack-internal:///(middleware)/./node_modules/@clerk/shared/dist/runtime/error-qcSj2j-M.mjs:297:10)
+    at eval (webpack-internal:///(middleware)/./node_modules/@clerk/nextjs/dist/esm/server/clerkMiddleware.js:63:72)
+    at assertKey (webpack-internal:///(middleware)/./node_modules/@clerk/nextjs/dist/esm/server/utils.js:122:5)
+    at eval (webpack-internal:///(middleware)/./node_modules/@clerk/nextjs/dist/esm/server/clerkMiddleware.js:61:74)
+    at async adapter (webpack-internal:///(middleware)/./node_modules/next/dist/esm/server/web/adapter.js:179:16)
+    at async (file://C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\web\sandbox\sandbox.js:110:22)
+    at async runWithTaggedErrors (file://C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\web\sandbox\sandbox.js:107:9)
+    at async DevServer.runMiddleware (file://C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\next-server.js:1062:24)
+    at async DevServer.runMiddleware (file://C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\dev\next-dev-server.js:268:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (file://C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\next-server.js:324:26)
+ Ôùï Compiling /_error ...
+ Ô£ô Compiled /_error in 888ms (252 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (192kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+   Reload env: .env
+ Ô£ô Compiled in 206ms (439 modules)

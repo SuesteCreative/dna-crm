@@ -1,0 +1,30 @@
+
+> crm-desportos-nauticos@0.1.0 dev
+> next dev
+
+ ÔÜá Port 3000 is in use, trying 3001 instead.
+ ÔÜá Port 3001 is in use, trying 3002 instead.
+ ÔÜá Port 3002 is in use, trying 3003 instead.
+ ÔÜá Port 3003 is in use, trying 3004 instead.
+  Ôû▓ Next.js 14.2.3
+  - Local:        http://localhost:3004
+  - Environments: .env
+
+ Ô£ô Starting...
+Error: EINVAL: invalid argument, readlink 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\edge-runtime-webpack.js'
+    at async Object.readlink (node:internal/fs/promises:972:10)
+    at async C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\lib\recursive-delete.js:58:30
+    at async Promise.all (index 3)
+    at async recursiveDelete (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\lib\recursive-delete.js:51:5)
+    at async C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\lib\recursive-delete.js:68:17
+    at async Promise.all (index 15)
+    at async recursiveDelete (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\lib\recursive-delete.js:51:5)
+    at async Span.traceAsyncFn (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\trace\trace.js:154:20)
+    at async HotReloaderWebpack.start (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\dev\hot-reloader-webpack.js:608:9)
+    at async startWatcher (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js:156:5) {
+  errno: -4071,
+  code: 'EINVAL',
+  syscall: 'readlink',
+  path: 'C:\\Users\\pedro\\OneDrive\\Desportos N├íuticos de Alvor\\CRM\\.next\\server\\edge-runtime-webpack.js'
+}
+[?25h

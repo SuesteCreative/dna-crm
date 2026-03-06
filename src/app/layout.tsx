@@ -1,5 +1,4 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -12,18 +11,16 @@ export const metadata: Metadata = {
     description: "Sistema de CRM e Reservas para Desportos Náuticos de Alvor",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const { userId } = await auth();
-
     return (
         <ClerkProvider>
             <html lang="pt">
                 <body className={inter.className}>
-                    {userId && <Sidebar />}
+                    <Sidebar />
                     {children}
                 </body>
             </html>
