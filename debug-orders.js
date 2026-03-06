@@ -25,7 +25,10 @@ async function debugOrders() {
             if (data.orders && data.orders.length > 0) {
                 data.orders.forEach(o => {
                     console.log(`- Order #${o.order_number} (${o.id}): ${o.customer?.first_name} ${o.customer?.last_name} | Total: ${o.total_price} | Created: ${o.created_at}`);
-                    console.log(`  Line Items: ${o.line_items.map(li => li.title).join(', ')}`);
+                    o.line_items.forEach(li => {
+                        console.log(`  LI: ${li.title} (${li.variant_title}) | Qty: ${li.quantity}`);
+                        console.log(`  Props: ${JSON.stringify(li.properties)}`);
+                    });
                 });
             }
         } else {
