@@ -18,23 +18,36 @@ export async function syncShopifyOrders(
 
     try {
         const prisma = await getPrisma();
-        const url = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250`;
 
-        const response = await fetch(url, {
-            headers: {
-                "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
-                "Content-Type": "application/json",
-            },
-            cache: 'no-store'
-        });
+        // Paginate through ALL orders using Shopify cursor-based pagination
+        const allOrders: any[] = [];
+        let nextUrl: string | null =
+            `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250`;
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            return { success: false, error: `Shopify API ${response.status}: ${errorText}`, count: 0, debugInfo };
+        while (nextUrl) {
+            const response = await fetch(nextUrl, {
+                headers: {
+                    "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN!,
+                    "Content-Type": "application/json",
+                },
+                cache: "no-store",
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                return { success: false, error: `Shopify API ${response.status}: ${errorText}`, count: 0, debugInfo };
+            }
+
+            const data = await response.json() as { orders: any[] };
+            allOrders.push(...(data.orders || []));
+
+            // Follow cursor-based pagination via Link header
+            const linkHeader = response.headers.get("Link") || "";
+            const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+            nextUrl = nextMatch ? nextMatch[1] : null;
         }
 
-        const data = await response.json() as { orders: any[] };
-        const orders = data.orders || [];
+        const orders = allOrders;
 
         let upserted = 0;
         const failedOrders = [];
@@ -53,9 +66,13 @@ export async function syncShopifyOrders(
                     }
                 }
 
-                // ... (existing date parsing)
-                let activityDate = new Date(order.created_at);
-                let activityTime: string | null = null;
+                const createdAt = new Date(order.created_at);
+                let activityDate = createdAt;
+                let activityTime: string | null = createdAt.toLocaleTimeString("pt-PT", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZone: "Europe/Lisbon",
+                });
 
                 const meetyFromTime = props["_meety_from_time"];
                 const meetyDateTime = props["Date & time"];
@@ -67,7 +84,7 @@ export async function syncShopifyOrders(
                         activityTime = from.toLocaleTimeString("pt-PT", {
                             hour: "2-digit",
                             minute: "2-digit",
-                            timeZone: "Europe/Lisbon"
+                            timeZone: "Europe/Lisbon",
                         });
                     }
                 } else if (meetyDateTime) {
