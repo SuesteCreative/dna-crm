@@ -168,6 +168,22 @@ body {
 .sidebar-user {
     padding: 16px 20px;
     border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-user-info {
+    overflow: hidden;
+}
+
+.sidebar-user-role {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ── MAIN ────────────────────────────────────────────── */

@@ -31,22 +31,37 @@ interface BookingRow {
     customerEmail: string | null;
     customerName:  string | null;
     serviceId:     string | null;
+    activityType:  string | null;
     partnerId:     string | null;
     country:       string | null;
 }
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
-    const period = searchParams.get("period") || "30d";
-    const isAll  = period === "all";
+    const period      = searchParams.get("period") || "30d";
+    const customStart = searchParams.get("startDate");
+    const customEnd   = searchParams.get("endDate");
+    const isCustom    = period === "custom" && customStart && customEnd;
+    const isAll       = period === "all" && !isCustom;
 
     const prisma = await getPrisma();
-    const { start, end } = getDateRange(period);
+
+    let start: Date;
+    let end: Date;
+    if (isCustom) {
+        start = new Date(customStart!);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(customEnd!);
+        end.setHours(23, 59, 59, 999);
+    } else {
+        ({ start, end } = getDateRange(period));
+    }
+
     const dateFilter = isAll ? {} : { activityDate: { gte: start, lte: end } };
 
     // Previous period for growth calc
     let prevRevenue = 0;
-    if (!isAll) {
+    if (!isAll && !isCustom) {
         const duration  = end.getTime() - start.getTime();
         const prevStart = new Date(start.getTime() - duration);
         const prevEnd   = new Date(start.getTime() - 1);
@@ -69,6 +84,7 @@ export async function GET(req: NextRequest) {
                 customerEmail: true,
                 customerName:  true,
                 serviceId:     true,
+                activityType:  true,
                 partnerId:     true,
                 country:       true,
             },
@@ -128,13 +144,14 @@ export async function GET(req: NextRequest) {
         .map(([channel, val]) => ({ channel, ...val }))
         .sort((a, b) => b.revenue - a.revenue);
 
-    // Top services
+    // Top services — group by activityType (Shopify product name) with serviceId as fallback
     const svcMap: Record<string, { name: string; count: number; revenue: number }> = {};
     for (const b of bookings) {
-        const id = b.serviceId || "__unknown__";
-        if (!svcMap[id]) svcMap[id] = { name: serviceMap[id] || "Sem serviço", count: 0, revenue: 0 };
-        svcMap[id].count++;
-        svcMap[id].revenue += b.totalPrice ?? 0;
+        const key  = b.activityType || (b.serviceId ? serviceMap[b.serviceId] : null) || "Sem serviço";
+        const name = b.activityType || (b.serviceId ? serviceMap[b.serviceId] : null) || "Sem serviço";
+        if (!svcMap[key]) svcMap[key] = { name, count: 0, revenue: 0 };
+        svcMap[key].count++;
+        svcMap[key].revenue += b.totalPrice ?? 0;
     }
     const topServices = Object.values(svcMap)
         .sort((a, b) => b.revenue - a.revenue)
@@ -155,7 +172,7 @@ export async function GET(req: NextRequest) {
     // New vs returning
     let newCustomers = 0;
     let returningCustomers = 0;
-    if (!isAll) {
+    if (!isAll && !isCustom) {
         const pastRows = await prisma.booking.findMany({
             where: { activityDate: { lt: start } },
             select: { customerEmail: true },

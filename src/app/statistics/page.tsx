@@ -13,11 +13,12 @@ import "../Dashboard.css";
 import "./statistics.css";
 
 const PERIODS = [
-    { value: "7d",  label: "Últimos 7 dias" },
-    { value: "30d", label: "Últimos 30 dias" },
-    { value: "90d", label: "Últimos 90 dias" },
-    { value: "1y",  label: "Último ano" },
-    { value: "all", label: "Todo o período" },
+    { value: "7d",     label: "Últimos 7 dias" },
+    { value: "30d",    label: "Últimos 30 dias" },
+    { value: "90d",    label: "Últimos 90 dias" },
+    { value: "1y",     label: "Último ano" },
+    { value: "all",    label: "Todo o período" },
+    { value: "custom", label: "Personalizado" },
 ];
 
 
@@ -72,6 +73,8 @@ export default function StatisticsPage() {
     const { isLoaded, isSignedIn } = useUser();
     const router = useRouter();
     const [period, setPeriod] = useState("30d");
+    const [customStart, setCustomStart] = useState("");
+    const [customEnd, setCustomEnd] = useState("");
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -81,12 +84,16 @@ export default function StatisticsPage() {
 
     const fetchStats = useCallback(() => {
         if (!isSignedIn) return;
+        if (period === "custom" && (!customStart || !customEnd)) return;
         setLoading(true);
-        fetch(`/api/stats?period=${period}`)
+        const url = period === "custom"
+            ? `/api/stats?period=custom&startDate=${customStart}&endDate=${customEnd}`
+            : `/api/stats?period=${period}`;
+        fetch(url)
             .then(r => r.json())
             .then(d => { setData(d); setLoading(false); })
             .catch(() => setLoading(false));
-    }, [period, isSignedIn]);
+    }, [period, customStart, customEnd, isSignedIn]);
 
     useEffect(() => { fetchStats(); }, [fetchStats]);
 
@@ -105,15 +112,34 @@ export default function StatisticsPage() {
                         <h1 className="page-title">Estatísticas</h1>
                         <p className="page-sub">Análise de vendas, clientes e operação</p>
                     </div>
-                    <select
-                        className="period-select"
-                        value={period}
-                        onChange={e => setPeriod(e.target.value)}
-                    >
-                        {PERIODS.map(p => (
-                            <option key={p.value} value={p.value}>{p.label}</option>
-                        ))}
-                    </select>
+                    <div className="period-controls">
+                        <select
+                            className="period-select"
+                            value={period}
+                            onChange={e => setPeriod(e.target.value)}
+                        >
+                            {PERIODS.map(p => (
+                                <option key={p.value} value={p.value}>{p.label}</option>
+                            ))}
+                        </select>
+                        {period === "custom" && (
+                            <div className="date-range">
+                                <input
+                                    type="date"
+                                    className="date-input"
+                                    value={customStart}
+                                    onChange={e => setCustomStart(e.target.value)}
+                                />
+                                <span className="date-sep">—</span>
+                                <input
+                                    type="date"
+                                    className="date-input"
+                                    value={customEnd}
+                                    onChange={e => setCustomEnd(e.target.value)}
+                                />
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {loading ? (
@@ -206,9 +232,9 @@ export default function StatisticsPage() {
                         </div>
 
                         {/* ── CLIENTES POR PAÍS ── */}
-                        {data.topCountries?.length > 0 && (
-                            <div className="stats-section">
-                                <h2 className="stats-section-title">Clientes por País</h2>
+                        <div className="stats-section">
+                            <h2 className="stats-section-title">Clientes por País</h2>
+                            {data.topCountries?.length > 0 ? (
                                 <div className="chart-two-col">
                                     <div className="chart-card">
                                         <div className="chart-card-title">País com maior volume de compras</div>
@@ -226,8 +252,12 @@ export default function StatisticsPage() {
                                         />
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="chart-card">
+                                    <p className="stats-empty">Sem dados de país. Faça Sync Shopify para popular esta secção.</p>
+                                </div>
+                            )}
+                        </div>
 
                         {/* ── CLIENTES ── */}
                         <div className="stats-section">
