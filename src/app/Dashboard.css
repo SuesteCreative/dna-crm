@@ -655,49 +655,120 @@ body {
     opacity: 0.8;
 }
 
-/* ── GROUPING ────────────────────────────────────────── */
-.group-row td {
-    padding: 0 !important;
-    border-bottom: none !important;
+/* ── NESTED GROUPING BOXES ───────────────────────────── */
+.year-section {
+    margin-bottom: 30px;
+    animation: fadeIn .3s ease;
 }
 
-.year-hdr {
-    background: var(--surface2) !important;
-    padding: 10px 20px !important;
-    font-weight: 700 !important;
-    font-size: 14px !important;
-    color: var(--blue) !important;
-    cursor: pointer;
+.year-box-hdr {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: all .2s ease;
 }
 
-.month-hdr {
-    background: rgba(255, 255, 255, 0.03) !important;
-    padding: 8px 30px !important;
-    font-weight: 600 !important;
-    font-size: 12px !important;
+.year-box-hdr:hover {
+    border-color: var(--blue);
+    background: var(--surface2);
+}
+
+.year-box-hdr h3 {
+    font-size: 18px;
+    font-weight: 700;
     color: var(--text);
+    margin: 0;
+}
+
+.year-content {
+    padding-left: 20px;
+    border-left: 2px solid var(--border);
+    margin-left: 10px;
+}
+
+.month-section {
+    margin-bottom: 16px;
+}
+
+.month-box-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
     cursor: pointer;
+    transition: all .2s ease;
+    margin-bottom: 8px;
+}
+
+.month-box-hdr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.month-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 1px solid var(--border) !important;
+    color: var(--muted);
+}
+
+.month-box-hdr:hover .month-title {
+    color: var(--text);
+}
+
+.month-badge {
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
 }
 
 .group-ico {
     transition: transform 0.2s ease;
+    color: var(--muted);
 }
 
 .group-ico.collapsed {
     transform: rotate(-90deg);
 }
 
-.crm-table tr.collapsed {
-    display: none;
+.table-card-header {
+    margin-bottom: 15px;
+}
+
+/* Override for grouped tables */
+.month-section .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    animation: slideDown .2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .modal-backdrop {

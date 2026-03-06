@@ -263,7 +263,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="table-card">
+      <section className="dashboard-content">
         <div className="table-card-header">
           <h2>Reservas Recentes</h2>
           <div className="search-wrap">
@@ -276,75 +276,87 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-        <div className="table-wrap">
-          <table className="crm-table">
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>Atividade</th>
-                <th>Data / Hora</th>
-                <th>Pax</th>
-                <th>Fonte</th>
-                <th>Status</th>
-                <th>Preço</th>
-                <th style={{ width: "50px" }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={8} className="table-empty"><div className="loader-sm" /></td></tr>
-              ) : years.length === 0 ? (
-                <tr><td colSpan={8} className="table-empty">Nenhuma reserva encontrada.</td></tr>
-              ) : years.map(year => (
-                <Fragment key={year}>
-                  <tr className="group-row">
-                    <td colSpan={8} onClick={() => toggleGroup(year)} className="year-hdr">
-                      <ChevronDown size={16} className={collapsed[year] ? "group-ico collapsed" : "group-ico"} />
-                      {year}
-                    </td>
-                  </tr>
-                  {!collapsed[year] && Object.keys(grouped[year]).sort((a, b) => {
-                    const monthsOrder = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-                    return monthsOrder.indexOf(b) - monthsOrder.indexOf(a);
-                  }).map(month => (
-                    <Fragment key={`${year}-${month}`}>
-                      <tr className="group-row">
-                        <td colSpan={8} onClick={() => toggleGroup(`${year}-${month}`)} className="month-hdr">
-                          <ChevronDown size={14} className={collapsed[`${year}-${month}`] ? "group-ico collapsed" : "group-ico"} />
+
+        {loading ? (
+          <div className="table-empty"><div className="loader-sm" /></div>
+        ) : years.length === 0 ? (
+          <div className="table-empty">Nenhuma reserva encontrada.</div>
+        ) : years.map(year => (
+          <div key={year} className="year-section">
+            <div className="year-box-hdr" onClick={() => toggleGroup(year)}>
+              <ChevronDown size={20} className={collapsed[year] ? "group-ico collapsed" : "group-ico"} />
+              <h3>{year}</h3>
+            </div>
+
+            {!collapsed[year] && (
+              <div className="year-content">
+                {Object.keys(grouped[year]).sort((a, b) => {
+                  const monthsOrder = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+                  return monthsOrder.indexOf(b) - monthsOrder.indexOf(a);
+                }).map(month => {
+                  const mKey = `${year}-${month}`;
+                  const monthBookings = grouped[year][month];
+                  return (
+                    <div key={mKey} className="month-section">
+                      <div className="month-box-hdr" onClick={() => toggleGroup(mKey)}>
+                        <div className="month-title">
+                          <ChevronDown size={14} className={collapsed[mKey] ? "group-ico collapsed" : "group-ico"} />
                           {month}
-                        </td>
-                      </tr>
-                      {!collapsed[`${year}-${month}`] && grouped[year][month].map(b => (
-                        <tr key={b.id}>
-                          <td>
-                            <div className="cell-name">{b.customerName}</div>
-                            <div className="cell-sub">{b.customerEmail || "—"}</div>
-                          </td>
-                          <td>
-                            <div className="cell-name">{b.activityType || b.notes || "—"}</div>
-                          </td>
-                          <td>
-                            <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
-                            <div className="cell-sub">{b.activityTime || "—"}</div>
-                          </td>
-                          <td><span className="pax-pill">{b.pax} pax</span></td>
-                          <td>{sourceBadge(b.source, b.orderNumber)}</td>
-                          <td>{statusBadge(b.status)}</td>
-                          <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
-                          <td>
-                            <button className="btn-delete" onClick={() => handleDelete(b.id)}>
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </Fragment>
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                        </div>
+                        <span className="month-badge">{monthBookings.length} {monthBookings.length === 1 ? 'reserva' : 'reservas'}</span>
+                      </div>
+
+                      {!collapsed[mKey] && (
+                        <div className="table-wrap">
+                          <table className="crm-table">
+                            <thead>
+                              <tr>
+                                <th>Cliente</th>
+                                <th>Atividade</th>
+                                <th>Data / Hora</th>
+                                <th>Pax</th>
+                                <th>Fonte</th>
+                                <th>Status</th>
+                                <th>Preço</th>
+                                <th style={{ width: "50px" }}></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {monthBookings.map(b => (
+                                <tr key={b.id}>
+                                  <td>
+                                    <div className="cell-name">{b.customerName}</div>
+                                    <div className="cell-sub">{b.customerEmail || "—"}</div>
+                                  </td>
+                                  <td>
+                                    <div className="cell-name">{b.activityType || b.notes || "—"}</div>
+                                  </td>
+                                  <td>
+                                    <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
+                                    <div className="cell-sub">{b.activityTime || "—"}</div>
+                                  </td>
+                                  <td><span className="pax-pill">{b.pax} pax</span></td>
+                                  <td>{sourceBadge(b.source, b.orderNumber)}</td>
+                                  <td>{statusBadge(b.status)}</td>
+                                  <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
+                                  <td>
+                                    <button className="btn-delete" onClick={() => handleDelete(b.id)}>
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
       </section>
 
       {showModal && (
