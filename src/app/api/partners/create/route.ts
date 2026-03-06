@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 
 export const dynamic = "force-dynamic";
 
@@ -29,23 +29,6 @@ export async function POST(req: Request) {
                 commission: parseFloat(data.commission) || 10,
             },
         });
-
-        // Send Clerk invitation email to the partner
-        try {
-            const clerk = await clerkClient();
-            await clerk.invitations.createInvitation({
-                emailAddress: partner.email,
-                redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || ""}/sign-in`,
-                publicMetadata: {
-                    role: "PARTNER",
-                    partnerId: partner.id,
-                },
-                notify: true,
-            });
-        } catch (inviteError: any) {
-            // If invitation fails (e.g. user already exists in Clerk), don't block the response
-            console.warn("Clerk invitation warning:", inviteError?.message || inviteError);
-        }
 
         return NextResponse.json(partner);
     } catch (error: any) {
