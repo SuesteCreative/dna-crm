@@ -97,14 +97,11 @@ export default function Dashboard() {
     try {
       const res = await fetch("/api/shopify/sync", { method: "POST" });
       const data = await res.json();
-      if (res.ok) {
-        const msg = data.failed > 0
-          ? `Sincronizado: ${data.count ?? 0} novas, ${data.failed} falharam.`
-          : `Sincronizado: ${data.count ?? 0} reservas importadas`;
-        setSyncMsg(msg);
-        await fetchBookings();
+      if (data.success) {
+        setSyncMsg(`Sincronizado: ${data.count} reservas importadas (Usando: ${data.debugInfo?.domain}, ${data.debugInfo?.tokenPrefix}...)`);
+        fetchBookings();
       } else {
-        setSyncMsg(`Erro: ${data.error || "Sync falhou"}`);
+        setSyncMsg(`Erro: ${data.error} (Usando: ${data.debugInfo?.domain}, ${data.debugInfo?.tokenPrefix}...)`);
       }
     } catch { setSyncMsg("Erro de ligação"); }
     finally { setSyncing(false); setTimeout(() => setSyncMsg(null), 4000); }
