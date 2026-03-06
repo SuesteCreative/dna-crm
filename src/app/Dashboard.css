@@ -989,19 +989,41 @@ body {
 .qty-badge {
     display: inline-flex;
     align-items: center;
-    padding: 1px 6px;
+    justify-content: center;
+    padding: 2px 8px;
     background: var(--blue-dim);
     color: var(--blue);
     border: 1px solid var(--blue);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
-    border-radius: 4px;
+    border-radius: 6px;
     width: fit-content;
-    text-transform: uppercase;
+    min-width: 32px;
+}
+
+.qty-badge-simple {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 6px;
+    width: fit-content;
+    min-width: 32px;
 }
 
 .row-future .qty-badge {
     background: var(--green-dim);
     color: var(--green);
     border-color: var(--green);
+}
+
+.row-future .qty-badge-simple {
+    border-color: rgba(16, 185, 129, 0.2);
+    color: var(--green);
+    opacity: 0.7;
 }
