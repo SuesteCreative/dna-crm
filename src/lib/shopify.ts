@@ -133,7 +133,7 @@ export async function syncShopifyOrders(
                 }
 
                 const activityType = firstLineItem?.variant_title
-                    ? `${firstLineItem.title} — ${firstLineItem.variant_title}`
+                    ? `${firstLineItem.title} - ${firstLineItem.variant_title}`
                     : firstLineItem?.title || "Atividade Shopify";
 
                 const country = order.billing_address?.country_code
