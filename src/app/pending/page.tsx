@@ -16,6 +16,8 @@ export default function PendingPage() {
             padding: "32px",
             textAlign: "center",
         }}>
+            <img src="/SVG/logo-white.svg" alt="DNA" style={{ height: 64, width: "auto", marginBottom: 8 }} />
+
             <div style={{
                 width: 64,
                 height: 64,

@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    Activity, ChevronRight, RefreshCcw, Shield
+    ChevronRight, RefreshCcw, Shield
 } from "lucide-react";
 import { useState } from "react";
 
@@ -41,8 +41,7 @@ export function Sidebar() {
     return (
         <aside className="crm-sidebar">
             <div className="brand">
-                <div className="brand-icon"><Activity size={20} /></div>
-                <span className="brand-name">DNA CRM</span>
+                <img src="/SVG/logo-white.svg" alt="DNA" style={{ height: 52, width: "auto" }} />
             </div>
 
             <nav className="crm-nav">
