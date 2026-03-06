@@ -48,9 +48,20 @@ function parseOrderToBooking(order: any) {
         if (isNaN(activityDate.getTime())) activityDate = new Date();
     }
 
+    // Advanced PAX detection
     const qty = firstLineItem?.quantity || 1;
     const slots = parseInt(props["_meety_numslots"] || "0", 10);
-    const pax = Math.max(qty, slots);
+    let pax = Math.max(qty, slots);
+
+    for (const key in props) {
+        if (props[key].includes("attending? =>")) {
+            const match = props[key].match(/=>\s*(\d+)/);
+            if (match && match[1]) {
+                pax = parseInt(match[1], 10);
+                break;
+            }
+        }
+    }
 
     let status = order.financial_status === "paid" ? "CONFIRMED" : "PENDING";
     if (order.cancelled_at) {
@@ -61,8 +72,11 @@ function parseOrderToBooking(order: any) {
         ? `${firstLineItem.title} — ${firstLineItem.variant_title}`
         : firstLineItem?.title || null;
 
+    const orderNumber = order.order_number ? `#${order.order_number}` : null;
+
     return {
         shopifyId: order.id.toString(),
+        orderNumber,
         customerName: `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || "Consumidor Final",
         customerEmail: order.customer?.email || null,
         customerPhone: order.customer?.phone || null,
@@ -74,7 +88,7 @@ function parseOrderToBooking(order: any) {
         source: "SHOPIFY",
         totalPrice: parseFloat(order.total_price || "0") || 0,
         createdById: "shopify-webhook",
-        notes: `Shopify #${order.order_number || order.id}`,
+        notes: `Shopify ${orderNumber || order.id}`,
     };
 }
 
@@ -108,7 +122,8 @@ export async function POST(req: NextRequest) {
                     activityDate: bookingData.activityDate,
                     activityTime: bookingData.activityTime,
                     activityType: bookingData.activityType,
-                    pax: bookingData.pax
+                    pax: bookingData.pax,
+                    orderNumber: bookingData.orderNumber
                 },
                 create: bookingData,
             });

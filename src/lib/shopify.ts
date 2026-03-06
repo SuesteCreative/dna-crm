@@ -17,15 +17,8 @@ export async function syncShopifyOrders(
     }
 
     try {
-        console.log("STARTING SYNC - Credentials check:");
-        console.log("Domain:", SHOPIFY_STORE_DOMAIN);
-        console.log("Token length:", SHOPIFY_ACCESS_TOKEN.length);
-
         const prisma = await getPrisma();
-        // Simplified URL matching the working debug script
         const url = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250`;
-
-        console.log("Fetching URL:", url);
 
         const response = await fetch(url, {
             headers: {
@@ -36,18 +29,11 @@ export async function syncShopifyOrders(
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Shopify HTTP Error:", response.status, errorText);
             return { success: false, error: `Shopify API ${response.status}: ${errorText}`, count: 0, debugInfo };
         }
 
         const data = await response.json() as { orders: any[] };
         const orders = data.orders || [];
-
-        console.log("SUCCESS! Got orders count from Shopify:", orders.length);
-
-        if (orders.length > 0) {
-            console.log("First order ID:", orders[0].id);
-        }
 
         let upserted = 0;
         const failedOrders = [];
@@ -80,23 +66,37 @@ export async function syncShopifyOrders(
                 }
 
                 const shopifyId = order.id.toString();
+                const orderNumber = order.order_number ? `#${order.order_number}` : null;
                 const customerName = `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || "Consumidor Final";
                 const status = order.financial_status === "paid" ? "CONFIRMED" : "PENDING";
                 const totalPrice = parseFloat(order.total_price) || 0;
 
-                // Use the higher value between quantity and meety slots to ensure accuracy
+                // Advanced PAX detection
                 const qty = firstLineItem?.quantity || 1;
                 const slots = parseInt(props["_meety_numslots"] || "0", 10);
-                const pax = Math.max(qty, slots);
+                let pax = Math.max(qty, slots);
+
+                for (const key in props) {
+                    if (props[key].includes("attending? =>")) {
+                        const match = props[key].match(/=>\s*(\d+)/);
+                        if (match && match[1]) {
+                            pax = parseInt(match[1], 10);
+                            break;
+                        }
+                    }
+                }
 
                 await prisma.booking.upsert({
                     where: { shopifyId },
                     update: {
                         status,
                         totalPrice,
+                        pax,
+                        orderNumber
                     },
                     create: {
                         shopifyId,
+                        orderNumber,
                         customerName,
                         customerEmail: order.customer?.email || null,
                         customerPhone: order.customer?.phone || null,
@@ -110,7 +110,7 @@ export async function syncShopifyOrders(
                         source: "SHOPIFY",
                         totalPrice,
                         createdById: "shopify-sync",
-                        notes: `Shopify #${order.order_number || order.id}`,
+                        notes: `Shopify ${orderNumber || order.id}`,
                     }
                 });
 
@@ -125,4 +125,3 @@ export async function syncShopifyOrders(
         return { success: false, error: String(error), count: 0, debugInfo };
     }
 }
-

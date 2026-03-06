@@ -640,6 +640,19 @@ body {
     color: var(--teal);
 }
 
+.source-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.order-no-sub {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    font-family: monospace;
+}
+
 /* ── MODAL ───────────────────────────────────────────── */
 .modal-backdrop {
     position: fixed;

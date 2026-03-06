@@ -46,6 +46,7 @@ model Booking {
   status        String   @default("CONFIRMED") // PENDING, CONFIRMED, CANCELLED
   source        String   @default("MANUAL") // MANUAL, SHOPIFY, PARTNER
   shopifyId     String?  @unique
+  orderNumber   String?
   totalPrice    Float?
   notes         String?
   activityType  String?  // service name (denormalized for quick display)
