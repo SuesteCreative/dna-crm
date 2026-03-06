@@ -25,6 +25,7 @@ export async function syncShopifyOrders(
                 "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
                 "Content-Type": "application/json",
             },
+            cache: 'no-store'
         });
 
         if (!response.ok) {
@@ -44,7 +45,7 @@ export async function syncShopifyOrders(
                 const props: Record<string, string> = {};
                 if (firstLineItem?.properties) {
                     for (const p of firstLineItem.properties) {
-                        if (p.name && p.value) props[p.name] = p.value;
+                        if (p.name && p.value) props[p.name] = String(p.value);
                     }
                 }
 
@@ -67,8 +68,8 @@ export async function syncShopifyOrders(
 
                 const shopifyId = order.id.toString();
                 const orderNumber = order.order_number ? `#${order.order_number}` : null;
-                const customerName = `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || "Consumidor Final";
-                const status = order.financial_status === "paid" ? "CONFIRMED" : "PENDING";
+                const customerName = `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim() || order.customer?.email || "Consumidor Final";
+                const status = (order.cancelled_at) ? "CANCELLED" : (order.financial_status === "paid" ? "CONFIRMED" : "PENDING");
                 const totalPrice = parseFloat(order.total_price) || 0;
 
                 // Advanced PAX detection
@@ -77,8 +78,9 @@ export async function syncShopifyOrders(
                 let pax = Math.max(qty, slots);
 
                 for (const key in props) {
-                    if (props[key].includes("attending? =>")) {
-                        const match = props[key].match(/=>\s*(\d+)/);
+                    const val = props[key];
+                    if (val && typeof val === 'string' && val.toLowerCase().includes("attending?")) {
+                        const match = val.match(/=>\s*(\d+)/);
                         if (match && match[1]) {
                             pax = parseInt(match[1], 10);
                             break;
@@ -92,7 +94,9 @@ export async function syncShopifyOrders(
                         status,
                         totalPrice,
                         pax,
-                        orderNumber
+                        orderNumber,
+                        activityDate,
+                        activityTime
                     },
                     create: {
                         shopifyId,
@@ -104,7 +108,7 @@ export async function syncShopifyOrders(
                         activityTime,
                         activityType: firstLineItem?.variant_title
                             ? `${firstLineItem.title} — ${firstLineItem.variant_title}`
-                            : firstLineItem?.title || null,
+                            : firstLineItem?.title || "Atividade Shopify",
                         pax,
                         status,
                         source: "SHOPIFY",
@@ -116,6 +120,7 @@ export async function syncShopifyOrders(
 
                 upserted++;
             } catch (err: any) {
+                console.error(`Sync error for order ${order.id}:`, err);
                 failedOrders.push({ id: order.id, error: err.message });
             }
         }
