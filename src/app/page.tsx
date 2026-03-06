@@ -94,16 +94,24 @@ export default function Dashboard() {
     } catch { }
   };
 
+  // Helper function to call the sync API
+  const syncShopifyOrders = async () => {
+    const res = await fetch("/api/shopify/sync", { method: "POST" });
+    return res.json();
+  };
+
   const handleSync = async () => {
     setSyncing(true); setSyncMsg(null);
     try {
-      const res = await fetch("/api/shopify/sync", { method: "POST" });
-      const data = await res.json();
+      const data = await syncShopifyOrders();
       if (data.success) {
-        setSyncMsg(`Sincronizado: ${data.count} reservas importadas (Usando: ${data.debugInfo?.domain}, ${data.debugInfo?.tokenPrefix}...)`);
-        fetchBookings();
+        let msg = `Sincronizado: ${data.count} importadas`;
+        if (data.failed > 0) msg += `, ${data.failed} falhas`;
+        msg += ` (${data.debugInfo.domain})`;
+        setSyncMsg(msg);
+        await fetchBookings();
       } else {
-        setSyncMsg(`Erro: ${data.error} (Usando: ${data.debugInfo?.domain}, ${data.debugInfo?.tokenPrefix}...)`);
+        setSyncMsg(`Erro: ${data.error}`);
       }
     } catch { setSyncMsg("Erro de ligação"); }
     finally { setSyncing(false); setTimeout(() => setSyncMsg(null), 4000); }
