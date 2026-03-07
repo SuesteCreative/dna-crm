@@ -7,17 +7,17 @@ export const dynamic = "force-dynamic";
 // Slot configuration based on DNA activity data
 // Jetski variants share capacity pool of 3 units
 // Crazy Sofa and Banana Slider have 1 unit each
-const SLOT_CONFIG: Record<string, { durationMinutes: number; unitCapacity: number; capacityGroup: string | null; slotGapMinutes: number }> = {
-    // Jetski - all share JETSKI group (3 physical jetskis)
-    "jetski-10": { durationMinutes: 10, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10 },
-    "jetski-15": { durationMinutes: 15, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10 },
-    "jetski-20": { durationMinutes: 20, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10 },
-    "jetski-30": { durationMinutes: 30, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10 },
-    "jetski-60": { durationMinutes: 60, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10 },
-    // Crazy Sofa - 1 unit
-    "crazy-sofa": { durationMinutes: 15, unitCapacity: 1, capacityGroup: null, slotGapMinutes: 10 },
-    // Banana Slider - 1 unit
-    "banana-slider": { durationMinutes: 15, unitCapacity: 1, capacityGroup: null, slotGapMinutes: 10 },
+// Exact timeslot config from timeslots_produtos_v3.xlsx (mirroring Meety)
+// All services: open 09:30, gap=10min. Close time varies per variant.
+// Crazy Sofa + Banana Slider share 1 boat → SOFA_BANANA group, capacity=1
+const SLOT_CONFIG: Record<string, { durationMinutes: number; unitCapacity: number; capacityGroup: string | null; slotGapMinutes: number; serviceCloseTime: string }> = {
+    "jetski-10": { durationMinutes: 10, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10, serviceCloseTime: "17:50" },
+    "jetski-15": { durationMinutes: 15, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10, serviceCloseTime: "17:40" },
+    "jetski-20": { durationMinutes: 20, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10, serviceCloseTime: "17:50" },
+    "jetski-30": { durationMinutes: 30, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10, serviceCloseTime: "18:00" },
+    "jetski-60": { durationMinutes: 60, unitCapacity: 3, capacityGroup: "JETSKI", slotGapMinutes: 10, serviceCloseTime: "17:30" },
+    "crazy-sofa": { durationMinutes: 15, unitCapacity: 1, capacityGroup: "SOFA_BANANA", slotGapMinutes: 10, serviceCloseTime: "17:40" },
+    "banana-slider": { durationMinutes: 15, unitCapacity: 1, capacityGroup: "SOFA_BANANA", slotGapMinutes: 10, serviceCloseTime: "17:40" },
 };
 
 // Name/variant matchers for auto-detection

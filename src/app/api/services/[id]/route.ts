@@ -22,6 +22,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             unitCapacity: body.unitCapacity ?? 1,
             capacityGroup: body.capacityGroup ?? null,
             slotGapMinutes: body.slotGapMinutes ?? 10,
+            serviceCloseTime: body.serviceCloseTime ?? null,
+            gcalEnabled: body.gcalEnabled ?? false,
         },
     });
 

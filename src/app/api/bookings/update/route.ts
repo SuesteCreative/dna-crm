@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { deleteBusyEvent } from "@/lib/gcal";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,19 @@ export async function PATCH(req: NextRequest) {
         // Fetch current booking to capture originals on first edit
         const current = await prisma.booking.findUnique({ where: { id } });
         if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+        // If status is being set to CANCELLED and booking has GCal events, delete them
+        if (fields.status === "CANCELLED" && current.gcalEventIds && current.gcalCalendarIds) {
+            try {
+                const eventIds: string[] = JSON.parse(current.gcalEventIds);
+                const calendarIds: string[] = JSON.parse(current.gcalCalendarIds);
+                for (let i = 0; i < eventIds.length; i++) {
+                    await deleteBusyEvent(calendarIds[i], eventIds[i]);
+                }
+            } catch (gcalErr) {
+                console.error("gcal cancel-delete failed (non-blocking):", gcalErr);
+            }
+        }
 
         // Only capture originals on the very first edit
         const captureOriginals = !current.isEdited;
@@ -37,6 +51,10 @@ export async function PATCH(req: NextRequest) {
                 status: fields.status || undefined,
                 notes: fields.notes || null,
                 isEdited: true,
+                ...(fields.status === "CANCELLED" && {
+                    gcalEventIds: null,
+                    gcalCalendarIds: null,
+                }),
                 ...(captureOriginals && {
                     originalActivityType: current.activityType,
                     originalPax: current.pax,
