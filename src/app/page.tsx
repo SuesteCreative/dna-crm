@@ -26,6 +26,7 @@ interface Booking {
   source: string;
   shopifyId?: string | null;
   orderNumber?: string | null;
+  serviceId?: string | null;
   totalPrice: number | null;
   quantity?: number | null;
   notes?: string | null;
