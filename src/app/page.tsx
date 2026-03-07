@@ -438,7 +438,8 @@ export default function Dashboard() {
                             </thead>
                             <tbody>
                               {monthBookings.map(b => (
-                                <tr key={b.id} className={isFuture(b) ? "row-future" : isToday(b) ? "row-today" : ""}>
+                                <Fragment key={b.id}>
+                                <tr className={isFuture(b) ? "row-future" : isToday(b) ? "row-today" : ""}>
                                   <td>
                                     <div className="cell-name">{b.customerName}</div>
                                     <div className="cell-sub">{b.customerEmail || "—"}</div>
@@ -485,6 +486,27 @@ export default function Dashboard() {
                                     </button>
                                   </td>
                                 </tr>
+                                {b.isEdited && (
+                                  <tr className="row-ghost-original">
+                                    <td />
+                                    <td>
+                                      <div style={{ display: "flex", justifyContent: "center" }}>
+                                        <span className="qty-badge qty-badge-ghost">{b.originalQuantity ?? b.quantity ?? 1}</span>
+                                      </div>
+                                    </td>
+                                    <td colSpan={2}>
+                                      <span className="ghost-label">Original</span>
+                                      <span className="ghost-text">{b.originalActivityType || "—"}</span>
+                                    </td>
+                                    <td><span className="pax-pill pax-pill-ghost">{b.originalPax ?? b.pax} pax</span></td>
+                                    <td /><td />
+                                    <td className="price-cell ghost-text">
+                                      {b.originalTotalPrice != null ? `${b.originalTotalPrice.toFixed(2)}€` : "—"}
+                                    </td>
+                                    <td /><td />
+                                  </tr>
+                                )}
+                                </Fragment>
                               ))}
                             </tbody>
                           </table>

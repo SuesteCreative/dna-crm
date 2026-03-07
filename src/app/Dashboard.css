@@ -1206,6 +1206,46 @@ body {
     vertical-align: middle;
 }
 
+/* ── GHOST ORIGINAL ROW ────────────────────────────────── */
+.row-ghost-original td {
+    padding: 2px 12px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.ghost-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--amber);
+    background: var(--amber-dim);
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin-right: 6px;
+    vertical-align: middle;
+    opacity: 0.7;
+}
+
+.ghost-text {
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.6;
+    text-decoration: line-through;
+    text-decoration-color: rgba(100,116,139,0.4);
+}
+
+.qty-badge-ghost {
+    opacity: 0.45;
+    font-size: 10px;
+    padding: 1px 5px;
+}
+
+.pax-pill-ghost {
+    opacity: 0.45;
+    font-size: 10px;
+    padding: 1px 6px;
+}
+
 /* ── EDIT BUTTON ───────────────────────────────────────── */
 .btn-edit {
     display: flex;
