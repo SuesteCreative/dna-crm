@@ -68,15 +68,42 @@ model Booking {
 }
 
 model Service {
-  id            String   @id @default(cuid())
-  shopifyHandle String?
-  name          String
-  variant       String?
-  sku           String?  @unique
-  price         Float?
-  imageUrl      String?
-  category      String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  shopifyHandle   String?
+  name            String
+  variant         String?
+  sku             String?  @unique
+  price           Float?
+  imageUrl        String?
+  category        String?
+  isActive        Boolean  @default(true)
+  durationMinutes Int?
+  unitCapacity    Int      @default(1)
+  capacityGroup   String?
+  slotGapMinutes  Int      @default(10)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Schedule {
+  id        String   @id @default(cuid())
+  dayOfWeek Int      @unique // 0=Sunday, 1=Monday, ... 6=Saturday
+  openTime  String   // "HH:MM"
+  closeTime String   // "HH:MM"
+  isOpen    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OverrideLog {
+  id          String   @id @default(cuid())
+  bookingId   String
+  clerkUserId String
+  userName    String
+  reason      String
+  serviceId   String?
+  serviceName String?
+  slotTime    String
+  date        String   // "YYYY-MM-DD"
+  createdAt   DateTime @default(now())
 }
