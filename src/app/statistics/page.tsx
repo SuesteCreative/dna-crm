@@ -8,7 +8,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import { CheckCircle, Clock, XCircle, TrendingUp, TrendingDown, Minus, Pencil } from "lucide-react";
+import { CheckCircle, Clock, XCircle, TrendingUp, TrendingDown, Minus, Pencil, UserCheck } from "lucide-react";
 import "../Dashboard.css";
 import "./statistics.css";
 
@@ -196,7 +196,19 @@ export default function StatisticsPage() {
                                     <div className="kpi-card">
                                         <span className="kpi-label">Comissão Estimada</span>
                                         <span className="kpi-value" style={{ color: "var(--green)" }}>€{fmt(data.partnerSelf.commissionEarned ?? 0)}</span>
+                                        {data.partnerSelf.noShowCount > 0 && (
+                                            <span className="kpi-growth negative">
+                                                {data.partnerSelf.noShowCount} no-show excluído{data.partnerSelf.noShowCount !== 1 ? "s" : ""} (−€{fmt(data.partnerSelf.noShowRevenue ?? 0)})
+                                            </span>
+                                        )}
                                     </div>
+                                    {data.partnerSelf.noShowCount > 0 && (
+                                        <div className="kpi-card">
+                                            <span className="kpi-label">No-shows</span>
+                                            <span className="kpi-value" style={{ color: "var(--red)" }}>{fmtInt(data.partnerSelf.noShowCount)}</span>
+                                            <span className="kpi-growth neutral">−€{fmt(data.partnerSelf.noShowRevenue ?? 0)} sem comissão</span>
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -387,6 +399,45 @@ export default function StatisticsPage() {
                                     </div>
                                 </div>
                             </div>
+                            {/* No-show stats */}
+                            {data.noShowStats && (
+                                <div className="chart-two-col" style={{ marginTop: 16 }}>
+                                    <div className="chart-card">
+                                        <div className="chart-card-title">Presenças</div>
+                                        <div className="status-cards" style={{ padding: 0, background: "none", border: "none" }}>
+                                            <div className="status-card">
+                                                <div className="status-icon green"><UserCheck size={20} /></div>
+                                                <div>
+                                                    <div className="status-info-label">Taxa de presença</div>
+                                                    <div className="status-info-value">
+                                                        {data.noShowStats.showRate !== null
+                                                            ? `${data.noShowStats.showRate.toFixed(1)}%`
+                                                            : "—"}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="status-card">
+                                                <div className="status-icon red"><XCircle size={20} /></div>
+                                                <div>
+                                                    <div className="status-info-label">No-shows</div>
+                                                    <div className="status-info-value">{fmtInt(data.noShowStats.count ?? 0)}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="chart-card">
+                                        <div className="chart-card-title">Receita perdida (no-shows)</div>
+                                        <span className="kpi-value" style={{ color: "var(--red)", fontSize: 28, fontWeight: 700 }}>
+                                            −€{fmt(data.noShowStats.revenue ?? 0)}
+                                        </span>
+                                        {data.kpis?.totalRevenue > 0 && (
+                                            <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                                                {((data.noShowStats.revenue / data.kpis.totalRevenue) * 100).toFixed(1)}% da receita total
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         </>)}{/* end !isPartner sections */}
@@ -456,7 +507,9 @@ export default function StatisticsPage() {
                                             <tr>
                                                 <th>Parceiro</th>
                                                 <th className="t-right">Ordens</th>
-                                                <th className="t-right">Receita</th>
+                                                <th className="t-right">No-shows</th>
+                                                <th className="t-right">Receita Total</th>
+                                                <th className="t-right">Receita Elegível</th>
                                                 <th className="t-right">Comissão %</th>
                                                 <th className="t-right">Comissão Est.</th>
                                             </tr>
@@ -466,7 +519,11 @@ export default function StatisticsPage() {
                                                 <tr key={i}>
                                                     <td>{p.name}</td>
                                                     <td className="t-right">{fmtInt(p.count)}</td>
+                                                    <td className="t-right" style={{ color: p.noShowCount > 0 ? "var(--red)" : "var(--muted)" }}>
+                                                        {p.noShowCount > 0 ? `${fmtInt(p.noShowCount)} (−€${fmt(p.noShowRevenue)})` : "—"}
+                                                    </td>
                                                     <td className="t-right">€{fmt(p.revenue)}</td>
+                                                    <td className="t-right">€{fmt(p.revenueEligible)}</td>
                                                     <td className="t-right">{p.commissionPct}%</td>
                                                     <td className="t-right" style={{ color: "var(--green)" }}>€{fmt(p.commissionEarned)}</td>
                                                 </tr>
