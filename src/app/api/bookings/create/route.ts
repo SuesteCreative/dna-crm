@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { timeToMinutes, timesOverlap } from "@/lib/slots";
+import { createBusyEvent, toGcalTimes } from "@/lib/gcal";
 
 export const dynamic = "force-dynamic";
 
@@ -137,6 +138,46 @@ export async function POST(req: Request) {
                 },
                 data: { bookingId: booking.id },
             });
+        }
+
+        // Push to Google Calendar if service has gcalEnabled
+        if (serviceId && activityTime && activityDate) {
+            try {
+                const svc = await prisma.service.findUnique({ where: { id: serviceId } });
+                if (svc?.gcalEnabled && svc.durationMinutes) {
+                    const staffList = await prisma.gcalStaff.findMany({
+                        where: { serviceId },
+                        orderBy: { order: "asc" },
+                    });
+                    const requestedQty = parseInt(quantity) || parseInt(pax) || 1;
+                    const toBook = staffList.slice(0, requestedQty);
+                    if (toBook.length > 0) {
+                        const dateStr = new Date(activityDate).toISOString().split("T")[0];
+                        const { startISO, endISO } = toGcalTimes(dateStr, activityTime, svc.durationMinutes);
+                        const summary = `CRM Booking - ${customerName}`;
+                        const eventIds: string[] = [];
+                        const calendarIds: string[] = [];
+                        for (const staff of toBook) {
+                            const eventId = await createBusyEvent(staff.calendarId, startISO, endISO, summary);
+                            if (eventId) {
+                                eventIds.push(eventId);
+                                calendarIds.push(staff.calendarId);
+                            }
+                        }
+                        if (eventIds.length > 0) {
+                            await prisma.booking.update({
+                                where: { id: booking.id },
+                                data: {
+                                    gcalEventIds: JSON.stringify(eventIds),
+                                    gcalCalendarIds: JSON.stringify(calendarIds),
+                                },
+                            });
+                        }
+                    }
+                }
+            } catch (gcalErr) {
+                console.error("gcal push failed (non-blocking):", gcalErr);
+            }
         }
 
         return NextResponse.json(booking);

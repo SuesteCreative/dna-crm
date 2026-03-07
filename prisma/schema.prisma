@@ -64,25 +64,29 @@ model Booking {
   originalTotalPrice   Float?
   originalActivityDate DateTime?
   originalActivityTime String?
+  gcalEventIds         String?  // JSON array of Google Calendar event IDs
+  gcalCalendarIds      String?  // JSON array of calendar IDs (parallel to gcalEventIds)
   partner       Partner? @relation(fields: [partnerId], references: [id])
 }
 
 model Service {
-  id              String   @id @default(cuid())
-  shopifyHandle   String?
-  name            String
-  variant         String?
-  sku             String?  @unique
-  price           Float?
-  imageUrl        String?
-  category        String?
-  isActive        Boolean  @default(true)
-  durationMinutes Int?
-  unitCapacity    Int      @default(1)
-  capacityGroup   String?
-  slotGapMinutes  Int      @default(10)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  shopifyHandle    String?
+  name             String
+  variant          String?
+  sku              String?  @unique
+  price            Float?
+  imageUrl         String?
+  category         String?
+  isActive         Boolean  @default(true)
+  durationMinutes  Int?
+  unitCapacity     Int      @default(1)
+  capacityGroup    String?
+  slotGapMinutes   Int      @default(10)
+  serviceCloseTime String?  // Per-service close time override e.g. "17:40"
+  gcalEnabled      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Schedule {
@@ -93,6 +97,16 @@ model Schedule {
   isOpen    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model GcalStaff {
+  id         String   @id @default(cuid())
+  name       String   // "Jetski 1", "Jetski 2", "Jetski 3", "Sofa/Banana"
+  calendarId String   // Google Calendar ID
+  serviceId  String?  // Optional: link to a specific Service
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model OverrideLog {

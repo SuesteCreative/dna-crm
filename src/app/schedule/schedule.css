@@ -259,3 +259,78 @@
 }
 .svc-save-btn:hover:not(:disabled) { background: #2563eb; }
 .svc-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* GCal Staff section */
+.gcal-id {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: monospace;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gcal-delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(239, 68, 68, .1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, .3);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s;
+}
+.gcal-delete-btn:hover { background: rgba(239, 68, 68, .2); }
+
+.gcal-add-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+}
+
+.gcal-add-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+}
+
+.gcal-add-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.gcal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gcal-field label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.gcal-field select {
+    padding: 6px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+}
+.gcal-field select:focus { border-color: var(--blue); }

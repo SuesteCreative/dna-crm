@@ -38,8 +38,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ slots: [], closed: true });
     }
 
-    // Generate all possible slots
-    const slotTimes = generateSlots(schedule.openTime, schedule.closeTime, {
+    // Generate all possible slots — use per-service close time if configured
+    const closeTime = service.serviceCloseTime ?? schedule.closeTime;
+    const slotTimes = generateSlots(schedule.openTime, closeTime, {
         durationMinutes: service.durationMinutes,
         slotGapMinutes: service.slotGapMinutes ?? 10,
         unitCapacity: service.unitCapacity ?? 1,
