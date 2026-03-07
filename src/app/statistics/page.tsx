@@ -8,7 +8,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import { CheckCircle, Clock, XCircle, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { CheckCircle, Clock, XCircle, TrendingUp, TrendingDown, Minus, Pencil } from "lucide-react";
 import "../Dashboard.css";
 import "./statistics.css";
 
@@ -368,6 +368,58 @@ export default function StatisticsPage() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* ── EDIÇÕES ── */}
+                        <div className="stats-section">
+                            <h2 className="stats-section-title">Edições de Reservas</h2>
+                            <div className="chart-three-col">
+                                <div className="kpi-card">
+                                    <span className="kpi-label">Reservas editadas</span>
+                                    <span className="kpi-value">{fmtInt(data.editStats?.count ?? 0)}</span>
+                                    {kpis.totalOrders > 0 && (
+                                        <span className="kpi-growth neutral">
+                                            <Pencil size={12} />
+                                            {((data.editStats?.count ?? 0) / kpis.totalOrders * 100).toFixed(1)}% do total
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="kpi-card">
+                                    <span className="kpi-label">Impacto na receita</span>
+                                    <span className="kpi-value" style={{ color: (data.editStats?.revenueDelta ?? 0) >= 0 ? "var(--green)" : "var(--red)" }}>
+                                        {(data.editStats?.revenueDelta ?? 0) >= 0 ? "+" : ""}€{fmt(Math.abs(data.editStats?.revenueDelta ?? 0))}
+                                    </span>
+                                    <span className="kpi-growth neutral">vs. valor original</span>
+                                </div>
+                                <div className="kpi-card">
+                                    <span className="kpi-label">Variação de pax</span>
+                                    <span className="kpi-value" style={{ color: (data.editStats?.paxDelta ?? 0) >= 0 ? "var(--green)" : "var(--red)" }}>
+                                        {(data.editStats?.paxDelta ?? 0) >= 0 ? "+" : ""}{fmtInt(data.editStats?.paxDelta ?? 0)}
+                                    </span>
+                                    <span className="kpi-growth neutral">pessoas vs. original</span>
+                                </div>
+                            </div>
+                            {data.editStats?.topTypeChanges?.length > 0 && (
+                                <div className="chart-card">
+                                    <div className="chart-card-title">Alterações de atividade mais frequentes</div>
+                                    <table className="stats-table">
+                                        <thead>
+                                            <tr>
+                                                <th>De → Para</th>
+                                                <th className="t-right">Vezes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.editStats.topTypeChanges.map((c: any, i: number) => (
+                                                <tr key={i}>
+                                                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.change}</td>
+                                                    <td className="t-right">{fmtInt(c.count)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
 
                         {/* ── PARCEIROS ── */}

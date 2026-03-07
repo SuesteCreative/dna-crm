@@ -57,6 +57,11 @@ model Booking {
   quantity      Int?     @default(1)
   country       String?
   showedUp      Boolean?
+  isEdited      Boolean  @default(false)
+  originalActivityType String?
+  originalPax          Int?
+  originalQuantity     Int?
+  originalTotalPrice   Float?
   partner       Partner? @relation(fields: [partnerId], references: [id])
 }
 

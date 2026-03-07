@@ -31,6 +31,11 @@ interface Booking {
   notes?: string | null;
   activityType?: string | null;
   showedUp?: boolean | null;
+  isEdited?: boolean | null;
+  originalActivityType?: string | null;
+  originalPax?: number | null;
+  originalQuantity?: number | null;
+  originalTotalPrice?: number | null;
 }
 
 interface Service {
@@ -240,6 +245,7 @@ export default function Dashboard() {
       activityDate: dateStr,
       activityTime: b.activityTime || "",
       pax: b.pax,
+      quantity: b.quantity ?? 1,
       totalPrice: b.totalPrice ?? "",
       activityType: b.activityType || "",
       status: b.status,
@@ -445,7 +451,10 @@ export default function Dashboard() {
                                     </div>
                                   </td>
                                   <td>
-                                    <div className="cell-name">{b.activityType || b.notes || "—"}</div>
+                                    <div className="cell-name">
+                                      {b.activityType || b.notes || "—"}
+                                      {b.isEdited && <span className="badge-edited" title="Reserva editada">Editada</span>}
+                                    </div>
                                   </td>
                                   <td>
                                     <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
@@ -576,11 +585,17 @@ export default function Dashboard() {
 
             <div className="drawer-original">
               <span className="drawer-original-label">Original</span>
-              <span>{editTarget.activityType || "—"}</span>
+              <span>{(editTarget.isEdited ? editTarget.originalActivityType : editTarget.activityType) || "—"}</span>
               <span className="attendance-dot">·</span>
-              <span>{editTarget.pax} pax</span>
+              <span>{editTarget.isEdited ? editTarget.originalPax : editTarget.pax} pax</span>
+              {(editTarget.isEdited ? editTarget.originalQuantity : editTarget.quantity) != null && <>
+                <span className="attendance-dot">·</span>
+                <span>{editTarget.isEdited ? editTarget.originalQuantity : editTarget.quantity}x</span>
+              </>}
               <span className="attendance-dot">·</span>
-              <span>{editTarget.totalPrice != null ? `${editTarget.totalPrice.toFixed(2)}€` : "—"}</span>
+              <span>{((editTarget.isEdited ? editTarget.originalTotalPrice : editTarget.totalPrice) ?? null) != null
+                ? `${(editTarget.isEdited ? editTarget.originalTotalPrice! : editTarget.totalPrice!).toFixed(2)}€`
+                : "—"}</span>
             </div>
 
             <div className="drawer-body">
@@ -614,6 +629,10 @@ export default function Dashboard() {
                 <div className="field">
                   <label>Pax</label>
                   <input type="number" min="1" value={editForm.pax} onChange={e => setEditForm({ ...editForm, pax: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>Qtd (unidades)</label>
+                  <input type="number" min="1" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} />
                 </div>
                 <div className="field">
                   <label>Preço real (€)</label>
