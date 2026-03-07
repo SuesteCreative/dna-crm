@@ -125,7 +125,7 @@ export default function AdminUsersPage() {
                                 <th>Utilizador</th>
                                 <th>Função Atual</th>
                                 <th>Atribuir Função</th>
-                                <th>Ligar a Parceiro</th>
+                                <th>Ligar a parceiro existente (opcional)</th>
                                 <th style={{ width: 100 }}></th>
                             </tr>
                         </thead>
