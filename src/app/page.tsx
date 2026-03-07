@@ -61,6 +61,7 @@ interface SlotInfo {
   available: number;
   capacity: number;
   blocked: boolean;
+  past?: boolean;
 }
 
 const defaultForm = {
@@ -410,6 +411,8 @@ export default function Dashboard() {
     } catch { alert("Erro de ligação"); }
   };
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
   const svcGroups: Record<string, Service[]> = {};
   for (const s of services) {
     const cat = s.category || "Outros";
@@ -739,7 +742,7 @@ export default function Dashboard() {
                 </div>
                 <div className="field">
                   <label>Data da Atividade *</label>
-                  <input type="date" value={formData.activityDate} onChange={e => {
+                  <input type="date" value={formData.activityDate} min={isPartner ? todayStr : undefined} onChange={e => {
                     const d = e.target.value;
                     setFormData({ ...formData, activityDate: d, activityTime: "" });
                     if (formData.serviceId) fetchSlots(formData.serviceId, d, formData.quantity);
@@ -755,25 +758,50 @@ export default function Dashboard() {
                           <div className="slot-loading">A carregar horários...</div>
                         ) : slotsClosed ? (
                           <div className="slot-closed">Encerrado neste dia</div>
-                        ) : (
-                          <div className="slot-grid">
-                            {slots.map(slot => (
-                              <button
-                                key={slot.time}
-                                type="button"
-                                className={`slot-btn ${formData.activityTime === slot.time ? "slot-selected" : ""} ${slot.blocked ? (canOverride && !isPartner ? "slot-override" : "slot-blocked") : "slot-free"}`}
-                                onClick={() => {
-                                  if (slot.blocked && !canOverride) return;
-                                  setFormData({ ...formData, activityTime: slot.time });
-                                }}
-                                title={slot.blocked ? `Lotado (${slot.available}/${slot.capacity} livres)` : `${slot.available}/${slot.capacity} livres`}
-                              >
-                                {slot.time}
-                                {slot.blocked && !isPartner && canOverride && <span className="slot-override-tag">Override</span>}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        ) : (() => {
+                          const slotGroups = [
+                            { label: "Manhã", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h < 12; }) },
+                            { label: "Tarde", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 12 && h < 17; }) },
+                            { label: "Final do dia", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 17; }) },
+                          ].filter(g => g.slots.length > 0);
+                          return (
+                            <div className="slot-groups">
+                              {slotGroups.map(group => (
+                                <div key={group.label} className="slot-group">
+                                  <div className="slot-group-label">{group.label}</div>
+                                  <div className="slot-grid">
+                                    {group.slots.map(slot => {
+                                      const isPast = !!slot.past;
+                                      const isBlocked = slot.blocked;
+                                      const isSelected = formData.activityTime === slot.time;
+                                      let cls = "slot-btn";
+                                      if (isSelected) cls += " slot-selected";
+                                      else if (isPast) cls += " slot-past";
+                                      else if (isBlocked) cls += canOverride && !isPartner ? " slot-override" : " slot-blocked";
+                                      else cls += " slot-free";
+                                      return (
+                                        <button
+                                          key={slot.time}
+                                          type="button"
+                                          className={cls}
+                                          disabled={isPast || (isBlocked && (!canOverride || isPartner))}
+                                          onClick={() => {
+                                            if (isPast || (isBlocked && (!canOverride || isPartner))) return;
+                                            setFormData({ ...formData, activityTime: slot.time });
+                                          }}
+                                          title={isPast ? "Horário já passou" : isBlocked ? `Lotado (${slot.available}/${slot.capacity} livres)` : `${slot.available}/${slot.capacity} livres`}
+                                        >
+                                          {slot.time}
+                                          {isBlocked && !isPartner && canOverride && !isPast && <span className="slot-override-tag">Override</span>}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   }

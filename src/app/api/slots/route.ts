@@ -11,6 +11,16 @@ export async function GET(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    const isPartner = role === "PARTNER";
+
+    // Portugal local date/time (handles DST automatically)
+    const nowUtc = new Date();
+    const ptDateStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Lisbon" }).format(nowUtc);
+    const ptTimeStr = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Lisbon", hour: "2-digit", minute: "2-digit", hour12: false,
+    }).format(nowUtc);
+    const [ptH, ptM] = ptTimeStr.split(":").map(Number);
+    const ptNowMinutes = ptH * 60 + ptM;
 
     const { searchParams } = new URL(req.url);
     const serviceId = searchParams.get("serviceId");
@@ -19,6 +29,11 @@ export async function GET(req: NextRequest) {
 
     if (!serviceId || !date) {
         return NextResponse.json({ error: "serviceId and date required" }, { status: 400 });
+    }
+
+    // Partners cannot book past dates
+    if (isPartner && date < ptDateStr) {
+        return NextResponse.json({ slots: [], closed: true, pastDate: true });
     }
 
     const prisma = await getPrisma();
@@ -134,8 +149,19 @@ export async function GET(req: NextRequest) {
         };
     });
 
+    // For partners on today: mark slots in the past as blocked
+    const finalSlots = (isPartner && date === ptDateStr)
+        ? slotResults.map(slot => {
+            const slotMinutes = timeToMinutes(slot.time);
+            if (slotMinutes < ptNowMinutes) {
+                return { ...slot, blocked: true, past: true };
+            }
+            return slot;
+        })
+        : slotResults;
+
     return NextResponse.json({
-        slots: slotResults,
+        slots: finalSlots,
         closed: false,
         canOverride: role === "SUPER_ADMIN" || role === "ADMIN" || (!role), // staff can override, partners cannot
     });
