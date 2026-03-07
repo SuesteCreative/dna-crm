@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
-import { useUser, RedirectToSignIn } from "@clerk/nextjs";
+import { useUser, useAuth, RedirectToSignIn } from "@clerk/nextjs";
 import { Plus, RefreshCcw, Waves, Zap } from "lucide-react";
 import "./services.css";
 
@@ -19,6 +19,9 @@ interface Service {
 
 export default function ServicesPage() {
     const { isLoaded, isSignedIn } = useUser();
+    const { sessionClaims } = useAuth();
+    const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    const isPartner = role === "PARTNER";
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
     const [seeding, setSeeding] = useState(false);
@@ -77,13 +80,15 @@ export default function ServicesPage() {
                     <h1 className="svc-title">Serviços</h1>
                     <p className="svc-sub">Atividades disponíveis para reserva.</p>
                 </div>
-                <div className="svc-actions">
-                    {seedMsg && <span className="seed-msg">{seedMsg}</span>}
-                    <button className="btn-seed" onClick={handleSeed} disabled={seeding}>
-                        <RefreshCcw size={15} className={seeding ? "spin" : ""} />
-                        {seeding ? "A importar..." : "Importar do Shopify CSV"}
-                    </button>
-                </div>
+                {!isPartner && (
+                    <div className="svc-actions">
+                        {seedMsg && <span className="seed-msg">{seedMsg}</span>}
+                        <button className="btn-seed" onClick={handleSeed} disabled={seeding}>
+                            <RefreshCcw size={15} className={seeding ? "spin" : ""} />
+                            {seeding ? "A importar..." : "Importar do Shopify CSV"}
+                        </button>
+                    </div>
+                )}
             </div>
 
             {loading ? (
