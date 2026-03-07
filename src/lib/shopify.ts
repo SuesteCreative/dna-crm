@@ -141,38 +141,58 @@ export async function syncShopifyOrders(
                     || order.customer?.default_address?.country_code
                     || null;
 
-                await prisma.booking.upsert({
+                // Check if booking exists and was manually edited
+                const existing = await prisma.booking.findUnique({
                     where: { shopifyId },
-                    update: {
-                        status,
-                        totalPrice,
-                        pax,
-                        quantity: totalQuantity,
-                        orderNumber,
-                        activityType,
-                        activityDate,
-                        activityTime,
-                        country,
-                    },
-                    create: {
-                        shopifyId,
-                        orderNumber,
-                        customerName,
-                        customerEmail: order.customer?.email || null,
-                        customerPhone: order.customer?.phone || null,
-                        activityDate,
-                        activityTime,
-                        activityType,
-                        pax,
-                        quantity: totalQuantity,
-                        status,
-                        source: "SHOPIFY",
-                        totalPrice,
-                        country,
-                        createdById: "shopify-sync",
-                        notes: `Shopify ${orderNumber || order.id}`,
-                    }
+                    select: { isEdited: true },
                 });
+
+                if (existing) {
+                    if (existing.isEdited) {
+                        // Preserve all manual edits — only sync status from Shopify
+                        await prisma.booking.update({
+                            where: { shopifyId },
+                            data: { status, orderNumber },
+                        });
+                    } else {
+                        // Not manually edited — update all fields from Shopify
+                        await prisma.booking.update({
+                            where: { shopifyId },
+                            data: {
+                                status,
+                                totalPrice,
+                                pax,
+                                quantity: totalQuantity,
+                                orderNumber,
+                                activityType,
+                                activityDate,
+                                activityTime,
+                                country,
+                            },
+                        });
+                    }
+                } else {
+                    await prisma.booking.create({
+                        data: {
+                            shopifyId,
+                            orderNumber,
+                            customerName,
+                            customerEmail: order.customer?.email || null,
+                            customerPhone: order.customer?.phone || null,
+                            activityDate,
+                            activityTime,
+                            activityType,
+                            pax,
+                            quantity: totalQuantity,
+                            status,
+                            source: "SHOPIFY",
+                            totalPrice,
+                            country,
+                            createdById: "shopify-sync",
+                            notes: `Shopify ${orderNumber || order.id}`,
+                        },
+                    });
+                }
 
                 upserted++;
             } catch (err: any) {
