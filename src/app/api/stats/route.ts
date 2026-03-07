@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
     const isPartner = role === "PARTNER";
-    const sessionPartnerId = (sessionClaims as any)?.publicMetadata?.partnerId as string | undefined;
+    const sessionPartnerId = (sessionClaims as any)?.metadata?.partnerId as string | undefined;
 
     const { searchParams } = new URL(req.url);
     const period      = searchParams.get("period") || "30d";
