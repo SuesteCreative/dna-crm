@@ -3,8 +3,16 @@
 export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Users, Shield, RefreshCcw, ChevronDown } from "lucide-react";
+import { Users, Shield, RefreshCcw, ChevronDown, Info } from "lucide-react";
 import "./admin-users.css";
+
+interface ProfileInfo {
+    requestName: string | null;
+    companyName: string | null;
+    nif: string | null;
+    phone: string | null;
+    website: string | null;
+}
 
 interface CrmUser {
     id: string;
@@ -14,6 +22,7 @@ interface CrmUser {
     role: string;
     partnerId: string | null;
     createdAt: number;
+    profileInfo: ProfileInfo | null;
 }
 
 interface Partner {
@@ -44,6 +53,7 @@ export default function AdminUsersPage() {
     const [saving, setSaving] = useState<string | null>(null);
     const [pendingRoles, setPendingRoles] = useState<Record<string, string>>({});
     const [pendingPartners, setPendingPartners] = useState<Record<string, string>>({});
+    const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
 
     useEffect(() => {
         if (isSignedIn) {
@@ -127,6 +137,7 @@ export default function AdminUsersPage() {
                                 <th>Atribuir Função</th>
                                 <th>Ligar a parceiro existente (opcional)</th>
                                 <th style={{ width: 100 }}></th>
+                                <th style={{ width: 48 }}></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -134,7 +145,9 @@ export default function AdminUsersPage() {
                                 const changed =
                                     pendingRoles[u.id] !== u.role ||
                                     (pendingPartners[u.id] || "") !== (u.partnerId || "");
+                                const isExpanded = expandedInfo === u.id;
                                 return (
+                                    <>
                                     <tr key={u.id}>
                                         <td>
                                             <div className="au-user">
@@ -193,7 +206,39 @@ export default function AdminUsersPage() {
                                                 </button>
                                             )}
                                         </td>
+                                        <td>
+                                            {u.profileInfo && (
+                                                <button
+                                                    className={`au-info-btn ${isExpanded ? "active" : ""}`}
+                                                    onClick={() => setExpandedInfo(isExpanded ? null : u.id)}
+                                                    title="Ver informação submetida"
+                                                >
+                                                    <Info size={15} />
+                                                </button>
+                                            )}
+                                        </td>
                                     </tr>
+                                    {isExpanded && u.profileInfo && (
+                                        <tr className="au-info-row" key={`${u.id}-info`}>
+                                            <td colSpan={6}>
+                                                <div className="au-info-panel">
+                                                    {[
+                                                        { label: "Nome", value: u.profileInfo.requestName },
+                                                        { label: "Empresa", value: u.profileInfo.companyName },
+                                                        { label: "NIF", value: u.profileInfo.nif },
+                                                        { label: "Telemóvel", value: u.profileInfo.phone },
+                                                        { label: "Website", value: u.profileInfo.website },
+                                                    ].filter(f => f.value).map(({ label, value }) => (
+                                                        <div key={label} className="au-info-field">
+                                                            <span className="au-info-label">{label}</span>
+                                                            <span className="au-info-value">{value}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </>
                                 );
                             })}
                         </tbody>

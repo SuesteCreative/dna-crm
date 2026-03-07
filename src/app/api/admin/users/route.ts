@@ -27,6 +27,13 @@ export async function GET() {
             role: (u.publicMetadata?.role as string) || "USER",
             partnerId: (u.publicMetadata?.partnerId as string) || null,
             createdAt: u.createdAt,
+            profileInfo: u.unsafeMetadata && Object.keys(u.unsafeMetadata).length > 0 ? {
+                requestName: (u.unsafeMetadata.requestName as string) || null,
+                companyName: (u.unsafeMetadata.companyName as string) || null,
+                nif: (u.unsafeMetadata.nif as string) || null,
+                phone: (u.unsafeMetadata.phone as string) || null,
+                website: (u.unsafeMetadata.website as string) || null,
+            } : null,
         }));
 
         return NextResponse.json(users);

@@ -51,6 +51,11 @@ interface Service {
   durationMinutes: number | null;
 }
 
+interface Partner {
+  id: string;
+  name: string;
+}
+
 interface SlotInfo {
   time: string;
   available: number;
@@ -61,7 +66,8 @@ interface SlotInfo {
 const defaultForm = {
   customerName: "", customerEmail: "", customerPhone: "",
   activityDate: "", activityTime: "", pax: 1, quantity: 1, totalPrice: "",
-  serviceId: "", activityType: "", discountAmount: "", discountType: "%"
+  serviceId: "", activityType: "", discountAmount: "", discountType: "%",
+  forPartnerId: "",
 };
 
 function recalcPrice(unitPrice: number | null, qty: number, discAmt: string, discType: string): string {
@@ -88,6 +94,7 @@ export default function Dashboard() {
   const [formData, setFormData] = useState(defaultForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [services, setServices] = useState<Service[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [attendanceTarget, setAttendanceTarget] = useState<Booking | null>(null);
   const [attendanceSaving, setAttendanceSaving] = useState(false);
@@ -110,6 +117,7 @@ export default function Dashboard() {
     if (isSignedIn) {
       fetchBookings();
       fetchServices();
+      if (!isPartner) fetchPartners();
     }
   }, [isSignedIn]);
 
@@ -139,6 +147,16 @@ export default function Dashboard() {
       if (res.ok) {
         const data = await res.json();
         setServices(Array.isArray(data) ? data : []);
+      }
+    } catch { }
+  };
+
+  const fetchPartners = async () => {
+    try {
+      const res = await fetch("/api/partners");
+      if (res.ok) {
+        const data = await res.json();
+        setPartners(Array.isArray(data) ? data : []);
       }
     } catch { }
   };
@@ -258,6 +276,7 @@ export default function Dashboard() {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { discountAmount, discountType, ...payload } = formData;
       const body: Record<string, any> = { ...payload };
+      if (!payload.forPartnerId) delete body.forPartnerId;
       if (override) {
         body.override = true;
         body.overrideReason = reason;
@@ -691,7 +710,21 @@ export default function Dashboard() {
                     ))}
                   </select>
                 </div>
-                {/* ... other fields ... */}
+                {!isPartner && partners.length > 0 && (
+                  <div className="field full">
+                    <label>Reserva em nome de parceiro (opcional)</label>
+                    <select
+                      className="field-select"
+                      value={formData.forPartnerId}
+                      onChange={e => setFormData({ ...formData, forPartnerId: e.target.value })}
+                    >
+                      <option value="">— Reserva direta (sem parceiro) —</option>
+                      {partners.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="field">
                   <label>Nome do Cliente *</label>
                   <input value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />

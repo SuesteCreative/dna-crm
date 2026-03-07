@@ -32,7 +32,11 @@ export async function POST(req: Request) {
             override,
             overrideReason,
             userName,
+            forPartnerId,
         } = data;
+
+        // Admins can pass forPartnerId to book on behalf of a partner
+        const adminPartnerId = !isPartner && forPartnerId ? forPartnerId : null;
 
         // Capacity check if service + time are provided
         if (serviceId && activityTime && activityDate) {
@@ -122,11 +126,11 @@ export async function POST(req: Request) {
                 quantity: parseInt(quantity) || parseInt(pax) || 1,
                 totalPrice: parseFloat(totalPrice || 0),
                 createdById: userId,
-                source: isPartner ? "PARTNER" : "MANUAL",
+                source: isPartner || adminPartnerId ? "PARTNER" : "MANUAL",
                 status: "CONFIRMED",
                 serviceId: serviceId || null,
                 activityType: activityType || null,
-                partnerId: isPartner ? (sessionPartnerId || null) : null,
+                partnerId: isPartner ? (sessionPartnerId || null) : adminPartnerId,
             },
         });
 
