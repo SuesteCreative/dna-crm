@@ -239,15 +239,16 @@ export default function Dashboard() {
   };
 
   const handleAttendance = async (booking: Booking) => {
+    const newValue = !booking.showedUp;
     setAttendanceSaving(true);
     try {
       const res = await fetch("/api/bookings/attendance", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: booking.id, showedUp: true }),
+        body: JSON.stringify({ id: booking.id, showedUp: newValue }),
       });
       if (res.ok) {
-        setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, showedUp: true } : b));
+        setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, showedUp: newValue } : b));
       }
     } catch { }
     finally {
@@ -517,14 +518,10 @@ export default function Dashboard() {
                                   <td>{statusBadge(b.status)}</td>
                                   <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
                                   <td>
-                                    {b.showedUp === true ? (
-                                      <span className="attendance-verified" title="Presença confirmada">
-                                        <UserCheck size={16} />
-                                      </span>
-                                    ) : b.status !== "CANCELLED" ? (
+                                    {b.status !== "CANCELLED" ? (
                                       <button
-                                        className="btn-attendance"
-                                        title="Confirmar presença"
+                                        className={b.showedUp ? "attendance-verified" : "btn-attendance"}
+                                        title={b.showedUp ? "Clique para desmarcar presença" : "Confirmar presença"}
                                         onClick={() => setAttendanceTarget(b)}
                                       >
                                         <UserCheck size={16} />
@@ -883,16 +880,18 @@ export default function Dashboard() {
                 <span className={`src-badge src-${attendanceTarget.source.toLowerCase()}`}>{attendanceTarget.source}</span>
               </div>
             </div>
-            <p className="attendance-question">Este cliente compareceu?</p>
+            <p className="attendance-question">
+              {attendanceTarget.showedUp ? "Este cliente NÃO compareceu?" : "Este cliente compareceu?"}
+            </p>
             <div className="attendance-actions">
               <button className="btn-ghost" onClick={() => setAttendanceTarget(null)}>Cancelar</button>
               <button
-                className="btn-attendance-confirm"
+                className={attendanceTarget.showedUp ? "btn-attendance-unmark" : "btn-attendance-confirm"}
                 disabled={attendanceSaving}
                 onClick={() => handleAttendance(attendanceTarget)}
               >
                 <UserCheck size={16} />
-                {attendanceSaving ? "A guardar..." : "Sim, compareceu"}
+                {attendanceSaving ? "A guardar..." : attendanceTarget.showedUp ? "Sim, desmarcar" : "Sim, compareceu"}
               </button>
             </div>
           </div>
