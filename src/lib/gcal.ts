@@ -70,3 +70,35 @@ export function toGcalTimes(date: string, time: string, durationMinutes: number)
         endISO: end.toISOString(),
     };
 }
+
+// Returns a map of calendarId → busy periods for the given date
+// Used to read Meety bookings (which appear as GCal events) into CRM slot availability
+export async function getFreeBusy(
+    calendarIds: string[],
+    dateStr: string // "YYYY-MM-DD"
+): Promise<Map<string, { start: string; end: string }[]>> {
+    const auth = getAuth();
+    if (!auth || calendarIds.length === 0) return new Map();
+    try {
+        const calendar = google.calendar({ version: "v3", auth });
+        const timeMin = new Date(`${dateStr}T00:00:00`).toISOString();
+        const timeMax = new Date(`${dateStr}T23:59:59`).toISOString();
+        const res = await calendar.freebusy.query({
+            requestBody: {
+                timeMin,
+                timeMax,
+                timeZone: "Europe/Lisbon",
+                items: calendarIds.map(id => ({ id })),
+            },
+        });
+        const result = new Map<string, { start: string; end: string }[]>();
+        const cals = res.data.calendars ?? {};
+        for (const calId of calendarIds) {
+            result.set(calId, (cals[calId]?.busy ?? []) as { start: string; end: string }[]);
+        }
+        return result;
+    } catch (err) {
+        console.error("gcal freebusy error:", err);
+        return new Map();
+    }
+}
