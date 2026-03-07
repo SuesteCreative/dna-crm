@@ -689,7 +689,7 @@ export default function Dashboard() {
       </section>
 
       {showModal && (
-        <div className="modal-backdrop" onClick={() => setShowModal(false)}>
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
             <div className="modal-hdr">
               <h2>Nova Reserva Manual</h2>
