@@ -72,6 +72,8 @@ export default function Dashboard() {
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [expandedGhosts, setExpandedGhosts] = useState<Record<string, boolean>>({});
+  const toggleGhost = (id: string) => setExpandedGhosts(prev => ({ ...prev, [id]: !prev[id] }));
 
   useEffect(() => {
     if (isSignedIn) {
@@ -452,9 +454,20 @@ export default function Dashboard() {
                                     </div>
                                   </td>
                                   <td>
-                                    <div className="cell-name">
-                                      {b.activityType || b.notes || "—"}
-                                      {b.isEdited && <span className="badge-edited" title="Reserva editada">Editada</span>}
+                                    <div className="cell-name cell-activity-row">
+                                      <span>{b.activityType || b.notes || "—"}</span>
+                                      {b.isEdited && (
+                                        <span className="activity-badges">
+                                          <span className="badge-edited">Editada</span>
+                                          <button
+                                            className="btn-ghost-toggle"
+                                            title={expandedGhosts[b.id] ? "Esconder original" : "Ver original"}
+                                            onClick={() => toggleGhost(b.id)}
+                                          >
+                                            <ChevronDown size={11} className={expandedGhosts[b.id] ? "ghost-ico open" : "ghost-ico"} />
+                                          </button>
+                                        </span>
+                                      )}
                                     </div>
                                   </td>
                                   <td>
@@ -486,26 +499,39 @@ export default function Dashboard() {
                                     </button>
                                   </td>
                                 </tr>
-                                {b.isEdited && (
-                                  <tr className="row-ghost-original">
-                                    <td />
-                                    <td>
-                                      <div style={{ display: "flex", justifyContent: "center" }}>
-                                        <span className="qty-badge qty-badge-ghost">{b.originalQuantity ?? b.quantity ?? 1}</span>
-                                      </div>
-                                    </td>
-                                    <td colSpan={2}>
-                                      <span className="ghost-label">Original</span>
-                                      <span className="ghost-text">{b.originalActivityType || "—"}</span>
-                                    </td>
-                                    <td><span className="pax-pill pax-pill-ghost">{b.originalPax ?? b.pax} pax</span></td>
-                                    <td /><td />
-                                    <td className="price-cell ghost-text">
-                                      {b.originalTotalPrice != null ? `${b.originalTotalPrice.toFixed(2)}€` : "—"}
-                                    </td>
-                                    <td /><td />
-                                  </tr>
-                                )}
+                                {b.isEdited && expandedGhosts[b.id] && (() => {
+                                  const origQty   = b.originalQuantity ?? b.quantity ?? 1;
+                                  const origType  = b.originalActivityType ?? b.activityType ?? "—";
+                                  const origPax   = b.originalPax ?? b.pax;
+                                  const origPrice = b.originalTotalPrice;
+                                  const qtyChg    = origQty !== (b.quantity ?? 1);
+                                  const typeChg   = b.originalActivityType !== null && b.originalActivityType !== b.activityType;
+                                  const paxChg    = b.originalPax !== null && b.originalPax !== b.pax;
+                                  const priceChg  = origPrice !== null && origPrice !== b.totalPrice;
+                                  return (
+                                    <tr className="row-ghost-original">
+                                      <td />
+                                      <td>
+                                        <div style={{ display: "flex", justifyContent: "center" }}>
+                                          <span className={`qty-badge qty-badge-ghost${qtyChg ? " ghost-struck" : ""}`}>{origQty}</span>
+                                        </div>
+                                      </td>
+                                      <td>
+                                        <div className="cell-activity-row">
+                                          <span className={typeChg ? "ghost-text" : "ghost-muted"}>{origType}</span>
+                                          <span className="ghost-label">Original</span>
+                                        </div>
+                                      </td>
+                                      <td />
+                                      <td><span className={`pax-pill pax-pill-ghost${paxChg ? " ghost-struck" : ""}`}>{origPax} pax</span></td>
+                                      <td /><td />
+                                      <td className={`price-cell${priceChg ? " ghost-text" : " ghost-muted"}`}>
+                                        {origPrice != null ? `${origPrice.toFixed(2)}€` : (b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—")}
+                                      </td>
+                                      <td /><td />
+                                    </tr>
+                                  );
+                                })()}
                                 </Fragment>
                               ))}
                             </tbody>
