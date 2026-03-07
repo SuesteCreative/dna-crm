@@ -12,6 +12,7 @@ export async function POST(req: Request) {
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
     const isPartner = role === "PARTNER";
+    const sessionPartnerId = (sessionClaims as any)?.publicMetadata?.partnerId as string | undefined;
 
     try {
         const prisma = await getPrisma();
@@ -125,6 +126,7 @@ export async function POST(req: Request) {
                 status: "CONFIRMED",
                 serviceId: serviceId || null,
                 activityType: activityType || null,
+                partnerId: isPartner ? (sessionPartnerId || null) : null,
             },
         });
 
