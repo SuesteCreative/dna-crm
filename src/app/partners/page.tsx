@@ -1,8 +1,9 @@
 "use client";
 
 export const dynamic = "force-dynamic";
-import { useUser, RedirectToSignIn } from "@clerk/nextjs";
+import { useUser, useAuth, RedirectToSignIn } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
     Users, Plus, Search, Mail, Phone,
     MapPin, Globe, Loader2, X, AlertCircle
@@ -30,6 +31,9 @@ const defaultForm = {
 
 export default function PartnersPage() {
     const { isLoaded, isSignedIn, user } = useUser();
+    const { sessionClaims } = useAuth();
+    const router = useRouter();
+    const role = (sessionClaims as any)?.metadata?.role as string | undefined;
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -75,6 +79,7 @@ export default function PartnersPage() {
 
     if (!isLoaded) return null;
     if (!isSignedIn) return <RedirectToSignIn />;
+    if (role === "PARTNER") { router.replace("/"); return null; }
 
     return (
         <div className="ptn-root">

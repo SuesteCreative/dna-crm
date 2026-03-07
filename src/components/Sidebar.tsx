@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle
+    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle
 } from "lucide-react";
 import { useState } from "react";
 
@@ -19,19 +19,12 @@ export function Sidebar() {
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
     const isAdmin = role === "SUPER_ADMIN" || role === "ADMIN";
-
-    const navItems = [
-        { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/" },
-        { id: "services", label: "Serviços", icon: Waves, path: "/services" },
-        { id: "partners", label: "Parceiros", icon: Users, path: "/partners" },
-        { id: "statistics", label: "Estatísticas", icon: BarChart2, path: "/statistics" },
-    ];
+    const isPartner = role === "PARTNER";
 
     const handleSync = async () => {
         setSyncing(true);
         try {
             await fetch("/api/shopify/sync", { method: "POST" });
-            // We don't handle the toast here, but we trigger the sync
             router.refresh();
         } catch (e) {
             console.error("Sync failed", e);
@@ -48,24 +41,64 @@ export function Sidebar() {
 
             <nav className="crm-nav">
                 <p className="nav-label">Principal</p>
-                {navItems.map((item) => (
-                    <button
-                        key={item.id}
-                        className={`nav-item ${pathname === item.path ? "active" : ""}`}
-                        onClick={() => router.push(item.path)}
-                    >
-                        <item.icon size={18} />
-                        <span>{item.label}</span>
-                        {pathname === item.path && <ChevronRight size={14} className="nav-arrow" />}
-                    </button>
-                ))}
 
-                <p className="nav-label">Integrações</p>
-                <button className="nav-item" onClick={handleSync} disabled={syncing}>
-                    <ShoppingBag size={18} />
-                    <span>{syncing ? "Sincronizando..." : "Sync Shopify"}</span>
-                    {syncing && <RefreshCcw size={14} className="spin" />}
+                <button
+                    className={`nav-item ${pathname === "/" ? "active" : ""}`}
+                    onClick={() => router.push("/")}
+                >
+                    <LayoutDashboard size={18} />
+                    <span>Dashboard</span>
+                    {pathname === "/" && <ChevronRight size={14} className="nav-arrow" />}
                 </button>
+
+                <button
+                    className={`nav-item ${pathname === "/services" ? "active" : ""}`}
+                    onClick={() => router.push("/services")}
+                >
+                    <Waves size={18} />
+                    <span>Serviços</span>
+                    {pathname === "/services" && <ChevronRight size={14} className="nav-arrow" />}
+                </button>
+
+                {!isPartner && (
+                    <button
+                        className={`nav-item ${pathname === "/partners" ? "active" : ""}`}
+                        onClick={() => router.push("/partners")}
+                    >
+                        <Users size={18} />
+                        <span>Parceiros</span>
+                        {pathname === "/partners" && <ChevronRight size={14} className="nav-arrow" />}
+                    </button>
+                )}
+
+                <button
+                    className={`nav-item ${pathname === "/statistics" ? "active" : ""}`}
+                    onClick={() => router.push("/statistics")}
+                >
+                    <BarChart2 size={18} />
+                    <span>Estatísticas</span>
+                    {pathname === "/statistics" && <ChevronRight size={14} className="nav-arrow" />}
+                </button>
+
+                <button
+                    className={`nav-item ${pathname === "/profile" ? "active" : ""}`}
+                    onClick={() => router.push("/profile")}
+                >
+                    <UserCircle size={18} />
+                    <span>Meu Perfil</span>
+                    {pathname === "/profile" && <ChevronRight size={14} className="nav-arrow" />}
+                </button>
+
+                {!isPartner && (
+                    <>
+                        <p className="nav-label">Integrações</p>
+                        <button className="nav-item" onClick={handleSync} disabled={syncing}>
+                            <ShoppingBag size={18} />
+                            <span>{syncing ? "Sincronizando..." : "Sync Shopify"}</span>
+                            {syncing && <RefreshCcw size={14} className="spin" />}
+                        </button>
+                    </>
+                )}
 
                 {isAdmin && (
                     <>

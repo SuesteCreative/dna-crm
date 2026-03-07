@@ -454,12 +454,16 @@ export default function Dashboard() {
           <p className="page-sub">Gerencie todas as atividades e agendamentos.</p>
         </div>
         <div className="topbar-actions">
-          <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
-          <button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button>
-          <button className={`btn-outline ${syncing ? "syncing" : ""}`} onClick={handleSync} disabled={syncing}>
-            <RefreshCcw size={16} className={syncing ? "spin" : ""} />
-            {syncing ? "Sincronizando..." : "Sync Shopify"}
-          </button>
+          {!isPartner && (
+            <>
+              <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
+              <button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button>
+              <button className={`btn-outline ${syncing ? "syncing" : ""}`} onClick={handleSync} disabled={syncing}>
+                <RefreshCcw size={16} className={syncing ? "spin" : ""} />
+                {syncing ? "Sincronizando..." : "Sync Shopify"}
+              </button>
+            </>
+          )}
           <button className="btn-primary" onClick={() => { setShowModal(true); setSlots([]); setFormData(defaultForm); setCreateUnitPrice(null); }}>
             <Plus size={16} /> Nova Reserva
           </button>

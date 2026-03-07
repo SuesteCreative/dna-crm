@@ -2,8 +2,8 @@
 
 export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
-import { Users, Shield, RefreshCcw, ChevronDown, Info } from "lucide-react";
+import { useUser, useAuth } from "@clerk/nextjs";
+import { Users, Shield, RefreshCcw, ChevronDown, Info, KeyRound, X } from "lucide-react";
 import "./admin-users.css";
 
 interface ProfileInfo {
@@ -47,6 +47,10 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default function AdminUsersPage() {
     const { isLoaded, isSignedIn } = useUser();
+    const { sessionClaims } = useAuth();
+    const myRole = (sessionClaims as any)?.metadata?.role as string | undefined;
+    const isSuperAdmin = myRole === "SUPER_ADMIN";
+
     const [users, setUsers] = useState<CrmUser[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(true);
@@ -54,6 +58,10 @@ export default function AdminUsersPage() {
     const [pendingRoles, setPendingRoles] = useState<Record<string, string>>({});
     const [pendingPartners, setPendingPartners] = useState<Record<string, string>>({});
     const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
+    const [resetTarget, setResetTarget] = useState<CrmUser | null>(null);
+    const [resetPw, setResetPw] = useState("");
+    const [resetSaving, setResetSaving] = useState(false);
+    const [resetMsg, setResetMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
     useEffect(() => {
         if (isSignedIn) {
@@ -111,6 +119,31 @@ export default function AdminUsersPage() {
         finally { setSaving(null); }
     };
 
+    const handleResetPassword = async () => {
+        if (!resetTarget || !resetPw) return;
+        setResetSaving(true);
+        setResetMsg(null);
+        try {
+            const res = await fetch("/api/admin/users/reset-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ targetUserId: resetTarget.id, newPassword: resetPw }),
+            });
+            const d = await res.json();
+            if (res.ok) {
+                setResetMsg({ type: "success", text: "Palavra-passe alterada com sucesso." });
+                setResetPw("");
+                setTimeout(() => { setResetTarget(null); setResetMsg(null); }, 2000);
+            } else {
+                setResetMsg({ type: "error", text: d.error || "Erro ao alterar palavra-passe." });
+            }
+        } catch {
+            setResetMsg({ type: "error", text: "Erro de ligação." });
+        } finally {
+            setResetSaving(false);
+        }
+    };
+
     if (!isLoaded || !isSignedIn) return null;
 
     return (
@@ -138,6 +171,7 @@ export default function AdminUsersPage() {
                                 <th>Ligar a parceiro existente (opcional)</th>
                                 <th style={{ width: 100 }}></th>
                                 <th style={{ width: 48 }}></th>
+                                {isSuperAdmin && <th style={{ width: 48 }}></th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -217,10 +251,21 @@ export default function AdminUsersPage() {
                                                 </button>
                                             )}
                                         </td>
+                                        {isSuperAdmin && (
+                                            <td>
+                                                <button
+                                                    className="au-pw-btn"
+                                                    onClick={() => { setResetTarget(u); setResetPw(""); setResetMsg(null); }}
+                                                    title="Redefinir palavra-passe"
+                                                >
+                                                    <KeyRound size={15} />
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                     {isExpanded && u.profileInfo && (
                                         <tr className="au-info-row" key={`${u.id}-info`}>
-                                            <td colSpan={6}>
+                                            <td colSpan={isSuperAdmin ? 7 : 6}>
                                                 <div className="au-info-panel">
                                                     {[
                                                         { label: "Nome", value: u.profileInfo.requestName },
@@ -243,6 +288,44 @@ export default function AdminUsersPage() {
                             })}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {resetTarget && (
+                <div className="modal-backdrop" onClick={() => setResetTarget(null)}>
+                    <div className="au-pw-modal" onClick={e => e.stopPropagation()}>
+                        <div className="au-pw-modal-hdr">
+                            <div>
+                                <div className="au-pw-modal-title">Redefinir Palavra-passe</div>
+                                <div className="au-pw-modal-sub">{resetTarget.name} · {resetTarget.email}</div>
+                            </div>
+                            <button className="modal-close" onClick={() => setResetTarget(null)}><X size={18} /></button>
+                        </div>
+                        <div className="au-pw-modal-body">
+                            <label className="au-pw-label">Nova palavra-passe</label>
+                            <input
+                                type="password"
+                                className="au-pw-input"
+                                value={resetPw}
+                                onChange={e => setResetPw(e.target.value)}
+                                placeholder="Mínimo 8 caracteres"
+                                autoFocus
+                            />
+                            {resetMsg && (
+                                <div className={`au-pw-msg ${resetMsg.type}`}>{resetMsg.text}</div>
+                            )}
+                        </div>
+                        <div className="au-pw-modal-footer">
+                            <button className="btn-ghost" onClick={() => setResetTarget(null)}>Cancelar</button>
+                            <button
+                                className="au-save-btn"
+                                disabled={resetSaving || resetPw.length < 8}
+                                onClick={handleResetPassword}
+                            >
+                                {resetSaving ? "A alterar..." : "Redefinir"}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
