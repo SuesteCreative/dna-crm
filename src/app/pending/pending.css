@@ -1,0 +1,170 @@
+/* ── Pending page — dark theme ────────────────────────────── */
+.pending-root {
+    min-height: 100vh;
+    background: #0b0f1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    font-family: 'Inter', sans-serif;
+}
+
+.pending-card {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+/* Logo */
+.pending-logo {
+    height: 52px;
+    width: auto;
+    margin-bottom: 32px;
+}
+
+/* Status badge */
+.pending-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f59e0b;
+    margin-bottom: 20px;
+}
+
+/* Title block */
+.pending-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f1f5f9;
+    text-align: center;
+    margin: 0 0 8px;
+}
+
+.pending-sub {
+    font-size: 14px;
+    color: #64748b;
+    text-align: center;
+    line-height: 1.6;
+    max-width: 340px;
+    margin: 0 0 32px;
+}
+
+/* Form card */
+.pending-form {
+    width: 100%;
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 28px 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.pending-form-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+/* Field */
+.pending-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.pending-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: .01em;
+}
+
+.pending-input {
+    background: #0b0f1a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: #f1f5f9;
+    outline: none;
+    width: 100%;
+    font-family: inherit;
+    transition: border-color .15s;
+    box-sizing: border-box;
+}
+
+.pending-input::placeholder { color: #374151; }
+.pending-input:focus { border-color: #3b82f6; }
+
+/* Submit button */
+.pending-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity .15s, background .2s;
+    margin-top: 4px;
+}
+
+.pending-submit.unsaved {
+    background: #3b82f6;
+    color: #fff;
+}
+.pending-submit.unsaved:hover { opacity: .88; }
+
+.pending-submit.saved {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    cursor: default;
+}
+
+.pending-submit:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Step indicator at bottom */
+.pending-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 20px;
+}
+.pending-step-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+}
+
+/* Sign-out row */
+.pending-signout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+    font-size: 12px;
+}

@@ -3,6 +3,7 @@
 import { UserButton, useUser } from "@clerk/nextjs";
 import { Clock, CheckCircle } from "lucide-react";
 import { useState } from "react";
+import "./pending.css";
 
 export default function PendingPage() {
     const { user } = useUser();
@@ -39,117 +40,71 @@ export default function PendingPage() {
     };
 
     const alreadySaved = !!(user?.unsafeMetadata?.requestName || user?.unsafeMetadata?.companyName);
+    const isSubmitted = saved || alreadySaved;
+
+    const fields = [
+        { label: "Nome", key: "requestName", required: true, placeholder: "O seu nome completo" },
+        { label: "Nome da Empresa (opcional)", key: "companyName", required: false, placeholder: "Ex: Hotel Alvor" },
+        { label: "NIF (opcional)", key: "nif", required: false, placeholder: "Ex: 123456789" },
+        { label: "Telemóvel", key: "phone", required: false, placeholder: "Ex: +351 912 345 678" },
+        { label: "Website (opcional)", key: "website", required: false, placeholder: "Ex: https://..." },
+    ];
 
     return (
-        <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "100vh",
-            background: "var(--bg)",
-            gap: "24px",
-            padding: "32px",
-            textAlign: "center",
-        }}>
-            <img src="/SVG/logo-white.svg" alt="DNA" style={{ height: 64, width: "auto", marginBottom: 8 }} />
+        <div className="pending-root">
+            <div className="pending-card">
+                <img src="/SVG/logo-white.svg" alt="DNA" className="pending-logo" />
 
-            <div style={{
-                width: 64,
-                height: 64,
-                borderRadius: "16px",
-                background: "rgba(245, 158, 11, 0.15)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--amber)",
-            }}>
-                <Clock size={32} />
-            </div>
+                <div className="pending-badge">
+                    <Clock size={28} />
+                </div>
 
-            <div>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>
-                    Acesso Pendente
-                </h1>
-                <p style={{ fontSize: 14, color: "var(--muted)", maxWidth: 380, lineHeight: 1.6 }}>
+                <h1 className="pending-title">Acesso Pendente</h1>
+                <p className="pending-sub">
                     A sua conta foi criada com sucesso. Aguarde que um administrador atribua as suas permissões de acesso.
                 </p>
-            </div>
 
-            {/* Info form */}
-            <form onSubmit={handleSubmit} style={{
-                background: "var(--card)",
-                border: "1px solid var(--border)",
-                borderRadius: 12,
-                padding: "24px",
-                width: "100%",
-                maxWidth: 420,
-                textAlign: "left",
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-            }}>
-                <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
-                    Preencha os seus dados para facilitar o processo de aprovação:
-                </p>
-
-                {[
-                    { label: "Nome", key: "requestName", required: true, placeholder: "O seu nome completo" },
-                    { label: "Nome da Empresa (opcional)", key: "companyName", required: false, placeholder: "Ex: Hotel Alvor" },
-                    { label: "NIF (opcional)", key: "nif", required: false, placeholder: "Ex: 123456789" },
-                    { label: "Telemóvel", key: "phone", required: false, placeholder: "Ex: +351 912 345 678" },
-                    { label: "Website (opcional)", key: "website", required: false, placeholder: "Ex: https://..." },
-                ].map(({ label, key, required, placeholder }) => (
-                    <div key={key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)" }}>
-                            {label}{required && " *"}
-                        </label>
-                        <input
-                            type="text"
-                            value={form[key as keyof typeof form]}
-                            onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                            placeholder={placeholder}
-                            required={required}
-                            style={{
-                                background: "var(--bg)",
-                                border: "1px solid var(--border)",
-                                borderRadius: 7,
-                                padding: "8px 11px",
-                                fontSize: 13,
-                                color: "var(--text)",
-                                outline: "none",
-                                width: "100%",
-                            }}
-                        />
+                <form onSubmit={handleSubmit} className="pending-form">
+                    <div className="pending-form-title">
+                        Complete o seu perfil
                     </div>
-                ))}
 
-                <button
-                    type="submit"
-                    disabled={saving}
-                    style={{
-                        marginTop: 4,
-                        background: saved || alreadySaved ? "var(--green, #22c55e)" : "var(--primary)",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 7,
-                        padding: "9px 18px",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor: saving ? "not-allowed" : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 6,
-                        opacity: saving ? 0.7 : 1,
-                    }}
-                >
-                    {(saved || alreadySaved) && <CheckCircle size={14} />}
-                    {saving ? "A guardar..." : (saved || alreadySaved) ? "Informação guardada" : "Guardar informação"}
-                </button>
-            </form>
+                    {fields.map(({ label, key, required, placeholder }) => (
+                        <div key={key} className="pending-field">
+                            <label className="pending-label">
+                                {label}{required && " *"}
+                            </label>
+                            <input
+                                type="text"
+                                className="pending-input"
+                                value={form[key as keyof typeof form]}
+                                onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                                placeholder={placeholder}
+                                required={required}
+                            />
+                        </div>
+                    ))}
 
-            <UserButton afterSignOutUrl="/sign-in" />
+                    <button
+                        type="submit"
+                        disabled={saving || isSubmitted}
+                        className={`pending-submit ${isSubmitted ? "saved" : "unsaved"}`}
+                    >
+                        <CheckCircle size={14} />
+                        {saving ? "A guardar..." : isSubmitted ? "Informação guardada" : "Guardar informação"}
+                    </button>
+                </form>
+
+                <div className="pending-step">
+                    <span className="pending-step-dot" />
+                    Preencha os dados acima e aguarde aprovação
+                </div>
+
+                <div className="pending-signout">
+                    <span>Sessão iniciada como {user?.primaryEmailAddress?.emailAddress}</span>
+                    <UserButton afterSignOutUrl="/sign-in" />
+                </div>
+            </div>
         </div>
     );
 }
