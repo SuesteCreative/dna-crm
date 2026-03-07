@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { generateSlots, timeToMinutes, timesOverlap } from "@/lib/slots";
+import { getFreeBusy, toGcalTimes } from "@/lib/gcal";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +11,6 @@ export async function GET(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-    const isStaff = role === "SUPER_ADMIN" || role === "ADMIN" || role === undefined || role === null;
-    // Partners can also check slots but cannot override
 
     const { searchParams } = new URL(req.url);
     const serviceId = searchParams.get("serviceId");
@@ -76,24 +75,56 @@ export async function GET(req: NextRequest) {
 
     const totalCapacity = service.unitCapacity ?? 1;
 
+    // If gcalEnabled, fetch real-time busy periods from Google Calendar (includes Meety bookings)
+    let gcalBusyMap: Map<string, { start: string; end: string }[]> = new Map();
+    let gcalStaffIds: string[] = [];
+    if (service.gcalEnabled) {
+        const gcalStaff = await prisma.gcalStaff.findMany({
+            where: { serviceId: service.id },
+            select: { calendarId: true },
+            orderBy: { order: "asc" },
+        });
+        gcalStaffIds = gcalStaff.map(s => s.calendarId);
+        if (gcalStaffIds.length > 0) {
+            gcalBusyMap = await getFreeBusy(gcalStaffIds, date);
+        }
+    }
+
     // For each slot, compute how many units are already booked (overlapping)
     const slotResults = slotTimes.map((slotTime) => {
         const slotStart = timeToMinutes(slotTime);
         const slotDuration = service.durationMinutes!;
 
-        let usedCapacity = 0;
+        // CRM-based count (bookings in DB)
+        let crmUsed = 0;
         for (const booking of existingBookings) {
             if (!booking.activityTime) continue;
             const bookingStart = timeToMinutes(booking.activityTime);
-            // Find the duration for this booking's service
             const bService = bookedServices.find(s => s.id === booking.serviceId);
             const bDuration = bService?.durationMinutes ?? slotDuration;
-
             if (timesOverlap(slotStart, slotDuration, bookingStart, bDuration)) {
-                usedCapacity += booking.quantity ?? 1;
+                crmUsed += booking.quantity ?? 1;
             }
         }
 
+        // GCal-based count (Meety bookings + CRM bookings reflected in calendars)
+        let gcalUsed = 0;
+        if (gcalStaffIds.length > 0) {
+            const { startISO, endISO } = toGcalTimes(date, slotTime, slotDuration);
+            const slotStartMs = new Date(startISO).getTime();
+            const slotEndMs = new Date(endISO).getTime();
+            for (const calId of gcalStaffIds) {
+                const busy = gcalBusyMap.get(calId) ?? [];
+                const isBusy = busy.some(b =>
+                    new Date(b.start).getTime() < slotEndMs &&
+                    new Date(b.end).getTime() > slotStartMs
+                );
+                if (isBusy) gcalUsed++;
+            }
+        }
+
+        // Use GCal count when available (it includes Meety), otherwise fall back to CRM count
+        const usedCapacity = gcalStaffIds.length > 0 ? Math.max(crmUsed, gcalUsed) : crmUsed;
         const available = Math.max(0, totalCapacity - usedCapacity);
         return {
             time: slotTime,
