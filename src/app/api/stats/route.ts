@@ -44,6 +44,7 @@ interface BookingRow {
     originalActivityTime:  string | null;
     pax:                   number;
     quantity:              number | null;
+    showedUp:              boolean | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -226,27 +227,60 @@ export async function GET(req: NextRequest) {
         .map(([country, val]) => ({ name: country, ...val }))
         .sort((a, b) => b.revenue - a.revenue);
 
-    // Bookings by partner
-    const partnerBMap: Record<string, { name: string; count: number; revenue: number; commissionPct: number; commissionEarned: number }> = {};
+    // No-show stats (across all active bookings)
+    const noShowBookings    = activeBookings.filter(b => b.showedUp === false);
+    const showedUpBookings  = activeBookings.filter(b => b.showedUp === true);
+    const noShowCount       = noShowBookings.length;
+    const noShowRevenue     = noShowBookings.reduce((sum, b) => sum + (b.totalPrice ?? 0), 0);
+    const showedUpCount     = showedUpBookings.length;
+    const markedCount       = noShowCount + showedUpCount;
+    const showRate          = markedCount > 0 ? (showedUpCount / markedCount) * 100 : null;
+
+    // Bookings by partner — commission only on non-no-show bookings
+    const partnerBMap: Record<string, {
+        name: string; count: number; revenue: number;
+        noShowCount: number; noShowRevenue: number;
+        revenueEligible: number;
+        commissionPct: number; commissionEarned: number;
+    }> = {};
     for (const b of bookings) {
         if (!b.partnerId) continue;
         const id = b.partnerId;
         const pInfo = partnerMap[id];
-        if (!partnerBMap[id]) partnerBMap[id] = { name: pInfo?.name || "Desconhecido", count: 0, revenue: 0, commissionPct: pInfo?.commission ?? 0, commissionEarned: 0 };
+        if (!partnerBMap[id]) partnerBMap[id] = {
+            name: pInfo?.name || "Desconhecido",
+            count: 0, revenue: 0,
+            noShowCount: 0, noShowRevenue: 0,
+            revenueEligible: 0,
+            commissionPct: pInfo?.commission ?? 0, commissionEarned: 0,
+        };
         partnerBMap[id].count++;
         partnerBMap[id].revenue += b.totalPrice ?? 0;
+        if (b.showedUp === false) {
+            partnerBMap[id].noShowCount++;
+            partnerBMap[id].noShowRevenue += b.totalPrice ?? 0;
+        } else {
+            partnerBMap[id].revenueEligible += b.totalPrice ?? 0;
+        }
     }
     for (const entry of Object.values(partnerBMap)) {
-        entry.commissionEarned = entry.revenue * (entry.commissionPct / 100);
+        entry.commissionEarned = entry.revenueEligible * (entry.commissionPct / 100);
     }
     const bookingsByPartner = Object.values(partnerBMap).sort((a, b) => b.count - a.count);
 
-    // For partner role: compute their own commission
+    // For partner role: compute their own commission (excluding no-shows)
     let partnerCommissionPct = 0;
     let partnerCommissionEarned = 0;
+    let partnerNoShowCount = 0;
+    let partnerNoShowRevenue = 0;
     if (isPartner && sessionPartnerId && partnerMap[sessionPartnerId]) {
         partnerCommissionPct = partnerMap[sessionPartnerId].commission;
-        partnerCommissionEarned = totalRevenue * (partnerCommissionPct / 100);
+        const myBookings = activeBookings.filter(b => b.partnerId === sessionPartnerId);
+        const myNoShows  = myBookings.filter(b => b.showedUp === false);
+        partnerNoShowCount   = myNoShows.length;
+        partnerNoShowRevenue = myNoShows.reduce((sum, b) => sum + (b.totalPrice ?? 0), 0);
+        const myEligible     = myBookings.filter(b => b.showedUp !== false).reduce((sum, b) => sum + (b.totalPrice ?? 0), 0);
+        partnerCommissionEarned = myEligible * (partnerCommissionPct / 100);
     }
 
     // Edit stats
@@ -288,7 +322,13 @@ export async function GET(req: NextRequest) {
         statusBreakdown,
         topCountries,
         bookingsByPartner,
-        partnerSelf: isPartner ? { commissionPct: partnerCommissionPct, commissionEarned: partnerCommissionEarned } : null,
+        noShowStats: { count: noShowCount, revenue: noShowRevenue, showRate },
+        partnerSelf: isPartner ? {
+            commissionPct: partnerCommissionPct,
+            commissionEarned: partnerCommissionEarned,
+            noShowCount: partnerNoShowCount,
+            noShowRevenue: partnerNoShowRevenue,
+        } : null,
         editStats: {
             count: editedBookings.length,
             revenueDelta: editRevenueDelta,
