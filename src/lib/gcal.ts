@@ -61,9 +61,23 @@ export async function deleteBusyEvent(
     }
 }
 
-// Builds start/end ISO strings from date "YYYY-MM-DD", time "HH:MM", duration in minutes
+// Builds start/end UTC ISO strings from date "YYYY-MM-DD", time "HH:MM" in Portugal local time
 export function toGcalTimes(date: string, time: string, durationMinutes: number) {
-    const start = new Date(`${date}T${time}:00`);
+    // Probe Portugal's UTC offset at noon on this date (handles DST automatically)
+    const probe = new Date(`${date}T12:00:00Z`);
+    const ptHour = Number(
+        new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Europe/Lisbon",
+            hour: "2-digit",
+            hour12: false,
+        }).format(probe)
+    );
+    const offsetMinutes = (ptHour - 12) * 60; // minutes Portugal is ahead of UTC
+
+    // Convert Portugal local slot time to UTC
+    const [h, m] = time.split(":").map(Number);
+    const baseMs = new Date(`${date}T00:00:00Z`).getTime();
+    const start = new Date(baseMs + (h * 60 + m - offsetMinutes) * 60_000);
     const end = new Date(start.getTime() + durationMinutes * 60_000);
     return {
         startISO: start.toISOString(),
