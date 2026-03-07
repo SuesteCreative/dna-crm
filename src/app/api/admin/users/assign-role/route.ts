@@ -35,24 +35,43 @@ export async function POST(req: Request) {
         }
 
         const clerk = await clerkClient();
+        const clerkUser = await clerk.users.getUser(targetUserId);
+        const email = clerkUser.emailAddresses[0]?.emailAddress;
+        const name = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || email || "Parceiro";
+
+        // If setting to PARTNER, resolve or auto-create a Partner record
+        let resolvedPartnerId = partnerId || null;
+        if (role === "PARTNER") {
+            const prisma = await getPrisma();
+            if (!resolvedPartnerId && email) {
+                // Auto-create partner from their profile if none exists
+                const existing = await prisma.partner.findUnique({ where: { email } });
+                if (existing) {
+                    resolvedPartnerId = existing.id;
+                } else {
+                    const created = await prisma.partner.create({
+                        data: { name, email },
+                    });
+                    resolvedPartnerId = created.id;
+                }
+            }
+        }
 
         const metadata: Record<string, any> = { role };
-        if (partnerId) metadata.partnerId = partnerId;
+        if (resolvedPartnerId) metadata.partnerId = resolvedPartnerId;
 
         await clerk.users.updateUserMetadata(targetUserId, {
             publicMetadata: metadata,
         });
 
-        // Sync to DB if we have an email
+        // Sync to DB
         try {
-            const clerkUser = await clerk.users.getUser(targetUserId);
-            const email = clerkUser.emailAddresses[0]?.emailAddress;
             if (email) {
                 const prisma = await getPrisma();
                 await prisma.user.upsert({
                     where: { email },
-                    update: { role, ...(partnerId ? { partnerId } : {}) },
-                    create: { email, role, ...(partnerId ? { partnerId } : {}) },
+                    update: { role, ...(resolvedPartnerId ? { partnerId: resolvedPartnerId } : {}) },
+                    create: { email, role, ...(resolvedPartnerId ? { partnerId: resolvedPartnerId } : {}) },
                 });
             }
         } catch (dbErr) {
