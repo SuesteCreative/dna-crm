@@ -23,17 +23,24 @@ const MONTH_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","N
 const DOW_PT   = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 
 interface BookingRow {
-    activityDate:  Date;
-    activityTime:  string | null;
-    totalPrice:    number | null;
-    source:        string | null;
-    status:        string | null;
-    customerEmail: string | null;
-    customerName:  string | null;
-    serviceId:     string | null;
-    activityType:  string | null;
-    partnerId:     string | null;
-    country:       string | null;
+    activityDate:          Date;
+    activityTime:          string | null;
+    totalPrice:            number | null;
+    source:                string | null;
+    status:                string | null;
+    customerEmail:         string | null;
+    customerName:          string | null;
+    serviceId:             string | null;
+    activityType:          string | null;
+    partnerId:             string | null;
+    country:               string | null;
+    isEdited:              boolean;
+    originalActivityType:  string | null;
+    originalPax:           number | null;
+    originalQuantity:      number | null;
+    originalTotalPrice:    number | null;
+    pax:                   number;
+    quantity:              number | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -73,22 +80,7 @@ export async function GET(req: NextRequest) {
     }
 
     const [bookings, partners, services] = await Promise.all([
-        prisma.booking.findMany({
-            where: dateFilter,
-            select: {
-                activityDate:  true,
-                activityTime:  true,
-                totalPrice:    true,
-                source:        true,
-                status:        true,
-                customerEmail: true,
-                customerName:  true,
-                serviceId:     true,
-                activityType:  true,
-                partnerId:     true,
-                country:       true,
-            },
-        }) as unknown as Promise<BookingRow[]>,
+        prisma.booking.findMany({ where: dateFilter }) as unknown as Promise<BookingRow[]>,
         prisma.partner.findMany({ select: { id: true, name: true } }),
         prisma.service.findMany({ select: { id: true, name: true, variant: true } }),
     ]);
@@ -232,6 +224,33 @@ export async function GET(req: NextRequest) {
     }
     const bookingsByPartner = Object.values(partnerBMap).sort((a, b) => b.count - a.count);
 
+    // Edit stats
+    const editedBookings = bookings.filter(b => b.isEdited);
+    const editRevenueDelta = editedBookings.reduce((sum, b) => {
+        const actual   = b.totalPrice ?? 0;
+        const original = b.originalTotalPrice ?? actual;
+        return sum + (actual - original);
+    }, 0);
+
+    // Activity type changes: from → to
+    const typeChangeMap: Record<string, number> = {};
+    for (const b of editedBookings) {
+        const from = b.originalActivityType || "—";
+        const to   = b.activityType || "—";
+        if (from === to) continue;
+        const key = `${from} → ${to}`;
+        typeChangeMap[key] = (typeChangeMap[key] || 0) + 1;
+    }
+    const topTypeChanges = Object.entries(typeChangeMap)
+        .map(([change, count]) => ({ change, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
+
+    // Pax delta
+    const paxDelta = editedBookings.reduce((sum, b) => {
+        return sum + (b.pax - (b.originalPax ?? b.pax));
+    }, 0);
+
     return NextResponse.json({
         kpis: { totalRevenue, totalOrders, avgTicket, activeCustomers, revenueGrowth },
         revenueByMonth,
@@ -244,5 +263,11 @@ export async function GET(req: NextRequest) {
         statusBreakdown,
         topCountries,
         bookingsByPartner,
+        editStats: {
+            count: editedBookings.length,
+            revenueDelta: editRevenueDelta,
+            paxDelta,
+            topTypeChanges,
+        },
     });
 }

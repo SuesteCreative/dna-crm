@@ -1189,6 +1189,23 @@ body {
 .btn-attendance-confirm:hover { opacity: .88; }
 .btn-attendance-confirm:disabled { opacity: .5; cursor: not-allowed; }
 
+/* ── EDITED BADGE ──────────────────────────────────────── */
+.badge-edited {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--amber);
+    background: var(--amber-dim);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
 /* ── EDIT BUTTON ───────────────────────────────────────── */
 .btn-edit {
     display: flex;
