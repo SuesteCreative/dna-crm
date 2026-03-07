@@ -36,6 +36,8 @@ interface Booking {
   originalPax?: number | null;
   originalQuantity?: number | null;
   originalTotalPrice?: number | null;
+  originalActivityDate?: string | null;
+  originalActivityTime?: string | null;
 }
 
 interface Service {
@@ -504,10 +506,18 @@ export default function Dashboard() {
                                   const origType  = b.originalActivityType ?? b.activityType ?? "—";
                                   const origPax   = b.originalPax ?? b.pax;
                                   const origPrice = b.originalTotalPrice;
+                                  const origDate  = b.originalActivityDate ? new Date(b.originalActivityDate).toLocaleDateString("pt-PT") : null;
+                                  const origTime  = b.originalActivityTime ?? null;
                                   const qtyChg    = origQty !== (b.quantity ?? 1);
                                   const typeChg   = b.originalActivityType !== null && b.originalActivityType !== b.activityType;
                                   const paxChg    = b.originalPax !== null && b.originalPax !== b.pax;
                                   const priceChg  = origPrice !== null && origPrice !== b.totalPrice;
+                                  const curDate   = new Date(b.activityDate).toLocaleDateString("pt-PT");
+                                  const curTime   = b.activityTime ?? null;
+                                  const dateChg   = origDate !== null && origDate !== curDate;
+                                  const timeChg   = origTime !== null && origTime !== curTime;
+                                  const showDate  = origDate !== null;
+                                  const showTime  = origTime !== null || timeChg;
                                   return (
                                     <tr className="row-ghost-original">
                                       <td />
@@ -522,7 +532,14 @@ export default function Dashboard() {
                                           <span className="ghost-label">Original</span>
                                         </div>
                                       </td>
-                                      <td />
+                                      <td>
+                                        {showDate && (
+                                          <div className={dateChg ? "ghost-text" : "ghost-muted"}>{origDate}</div>
+                                        )}
+                                        {showTime && (
+                                          <div className={timeChg ? "ghost-text" : "ghost-muted"}>{origTime || "—"}</div>
+                                        )}
+                                      </td>
                                       <td><span className={`pax-pill pax-pill-ghost${paxChg ? " ghost-struck" : ""}`}>{origPax} pax</span></td>
                                       <td /><td />
                                       <td className={`price-cell${priceChg ? " ghost-text" : " ghost-muted"}`}>
@@ -644,6 +661,14 @@ export default function Dashboard() {
               <span>{((editTarget.isEdited ? editTarget.originalTotalPrice : editTarget.totalPrice) ?? null) != null
                 ? `${(editTarget.isEdited ? editTarget.originalTotalPrice! : editTarget.totalPrice!).toFixed(2)}€`
                 : "—"}</span>
+              {editTarget.isEdited && editTarget.originalActivityDate && <>
+                <span className="attendance-dot">·</span>
+                <span>{new Date(editTarget.originalActivityDate).toLocaleDateString("pt-PT")}</span>
+                {editTarget.originalActivityTime && <>
+                  <span className="attendance-dot">·</span>
+                  <span>{editTarget.originalActivityTime}</span>
+                </>}
+              </>}
             </div>
 
             <div className="drawer-body">

@@ -39,6 +39,8 @@ interface BookingRow {
     originalPax:           number | null;
     originalQuantity:      number | null;
     originalTotalPrice:    number | null;
+    originalActivityDate:  Date | null;
+    originalActivityTime:  string | null;
     pax:                   number;
     quantity:              number | null;
 }

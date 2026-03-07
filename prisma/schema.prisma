@@ -62,6 +62,8 @@ model Booking {
   originalPax          Int?
   originalQuantity     Int?
   originalTotalPrice   Float?
+  originalActivityDate DateTime?
+  originalActivityTime String?
   partner       Partner? @relation(fields: [partnerId], references: [id])
 }
 
