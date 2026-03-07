@@ -168,3 +168,56 @@
 
 .au-save-btn:hover { opacity: .85; }
 .au-save-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Info button */
+.au-info-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 5px 7px;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color .15s, border-color .15s, background .15s;
+}
+
+.au-info-btn:hover,
+.au-info-btn.active {
+    color: var(--blue);
+    border-color: var(--blue);
+    background: var(--blue-dim);
+}
+
+/* Info expanded row */
+.au-info-row td { padding: 0 !important; border-bottom: 1px solid var(--border); }
+
+.au-info-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    padding: 14px 20px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+}
+
+.au-info-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 140px;
+}
+
+.au-info-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+}
+
+.au-info-value {
+    font-size: 13px;
+    color: var(--text);
+}
