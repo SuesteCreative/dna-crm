@@ -1602,23 +1602,42 @@ body {
 /* ── Slot Picker ─────────────────────────────────────────── */
 .slot-picker-wrap { grid-column: 1 / -1; }
 
-.slot-grid {
+.slot-groups {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.slot-group {}
+
+.slot-group-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+
+.slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
     gap: 6px;
-    margin-top: 6px;
 }
 
 .slot-btn {
     position: relative;
-    padding: 6px 10px;
-    border-radius: 6px;
+    padding: 7px 4px;
+    border-radius: 7px;
     border: 1.5px solid transparent;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all .15s;
     font-family: inherit;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .slot-free {
@@ -1640,6 +1659,15 @@ body {
     color: #ef4444;
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+.slot-past {
+    background: var(--surface2);
+    border-color: var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+    opacity: 0.45;
+    text-decoration: line-through;
 }
 
 .slot-override {
