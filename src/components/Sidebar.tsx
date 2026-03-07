@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle
+    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Send
 } from "lucide-react";
 import { useState } from "react";
 
@@ -13,6 +13,9 @@ export function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const [syncing, setSyncing] = useState(false);
+    const [showBugReport, setShowBugReport] = useState(false);
+    const [bugForm, setBugForm] = useState({ subject: "", description: "" });
+    const [bugSent, setBugSent] = useState(false);
 
     if (!userId) return null;
     if (pathname.startsWith("/pending") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
@@ -33,7 +36,21 @@ export function Sidebar() {
         }
     };
 
+    const handleBugSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const subject = encodeURIComponent(`[Bug Report] ${bugForm.subject}`);
+        const body = encodeURIComponent(bugForm.description);
+        window.open(`mailto:booking@desportosnauticosalvor.com?subject=${subject}&body=${body}`, "_blank");
+        setBugSent(true);
+        setTimeout(() => {
+            setShowBugReport(false);
+            setBugForm({ subject: "", description: "" });
+            setBugSent(false);
+        }, 2000);
+    };
+
     return (
+        <>
         <aside className="crm-sidebar">
             <div className="brand">
                 <img src="/SVG/logo-white.svg" alt="DNA" style={{ height: 52, width: "auto" }} />
@@ -129,6 +146,12 @@ export function Sidebar() {
                         </button>
                     </>
                 )}
+
+                <div className="nav-spacer" />
+                <button className="nav-item nav-bug-report" onClick={() => setShowBugReport(true)}>
+                    <Bug size={18} />
+                    <span>Reportar um Bug</span>
+                </button>
             </nav>
 
             <div className="sidebar-user">
@@ -143,5 +166,51 @@ export function Sidebar() {
                 </div>
             </div>
         </aside>
+
+        {showBugReport && (
+            <div className="bug-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setShowBugReport(false); }}>
+                <div className="bug-modal">
+                    <div className="bug-modal-hdr">
+                        <div>
+                            <div className="bug-modal-title">Reportar um Bug</div>
+                            <div className="bug-modal-sub">A sua mensagem será enviada para a equipa DNA.</div>
+                        </div>
+                        <button className="bug-modal-close" onClick={() => setShowBugReport(false)}><X size={18} /></button>
+                    </div>
+                    <form onSubmit={handleBugSubmit} className="bug-modal-body">
+                        <div className="bug-field">
+                            <label className="bug-label">Assunto *</label>
+                            <input
+                                type="text"
+                                className="bug-input"
+                                value={bugForm.subject}
+                                onChange={e => setBugForm(f => ({ ...f, subject: e.target.value }))}
+                                placeholder="Ex: Slot não está a bloquear"
+                                required
+                            />
+                        </div>
+                        <div className="bug-field">
+                            <label className="bug-label">Descrição *</label>
+                            <textarea
+                                className="bug-input bug-textarea"
+                                rows={5}
+                                value={bugForm.description}
+                                onChange={e => setBugForm(f => ({ ...f, description: e.target.value }))}
+                                placeholder="Descreva o problema com o máximo de detalhe possível: o que fez, o que aconteceu e o que era esperado..."
+                                required
+                            />
+                        </div>
+                        <div className="bug-modal-footer">
+                            <button type="button" className="bug-btn-cancel" onClick={() => setShowBugReport(false)}>Cancelar</button>
+                            <button type="submit" className="bug-btn-send" disabled={bugSent}>
+                                <Send size={13} />
+                                {bugSent ? "A abrir email..." : "Enviar Relatório"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+        </>
     );
 }

@@ -9,7 +9,7 @@ export async function GET() {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-    const partnerId = (sessionClaims as any)?.publicMetadata?.partnerId as string | undefined;
+    const partnerId = (sessionClaims as any)?.metadata?.partnerId as string | undefined;
 
     try {
         const prisma = await getPrisma();
