@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
     AreaChart, Area, BarChart, Bar,
@@ -71,6 +71,9 @@ function BarRankList({ items, valueKey, valuePrefix = "", maxItems = 10 }: {
 
 export default function StatisticsPage() {
     const { isLoaded, isSignedIn } = useUser();
+    const { sessionClaims } = useAuth();
+    const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    const isPartner = role === "PARTNER";
     const router = useRouter();
     const [period, setPeriod] = useState("30d");
     const [customStart, setCustomStart] = useState("");
@@ -170,16 +173,32 @@ export default function StatisticsPage() {
                                 <span className="kpi-label">Ticket Médio</span>
                                 <span className="kpi-value">€{fmt(kpis.avgTicket ?? 0)}</span>
                             </div>
-                            <div className="kpi-card">
-                                <span className="kpi-label">Clientes Ativos</span>
-                                <span className="kpi-value">{fmtInt(kpis.activeCustomers ?? 0)}</span>
-                            </div>
-                            <div className="kpi-card">
-                                <span className="kpi-label">Crescimento</span>
-                                <span className="kpi-value" style={{ color: growth === null ? "var(--muted)" : growth >= 0 ? "var(--green)" : "var(--red)" }}>
-                                    {growth === null ? "—" : `${growth >= 0 ? "+" : ""}${growth.toFixed(1)}%`}
-                                </span>
-                            </div>
+                            {!isPartner && (
+                                <div className="kpi-card">
+                                    <span className="kpi-label">Clientes Ativos</span>
+                                    <span className="kpi-value">{fmtInt(kpis.activeCustomers ?? 0)}</span>
+                                </div>
+                            )}
+                            {!isPartner && (
+                                <div className="kpi-card">
+                                    <span className="kpi-label">Crescimento</span>
+                                    <span className="kpi-value" style={{ color: growth === null ? "var(--muted)" : growth >= 0 ? "var(--green)" : "var(--red)" }}>
+                                        {growth === null ? "—" : `${growth >= 0 ? "+" : ""}${growth.toFixed(1)}%`}
+                                    </span>
+                                </div>
+                            )}
+                            {isPartner && data.partnerSelf && (
+                                <>
+                                    <div className="kpi-card">
+                                        <span className="kpi-label">Taxa de Comissão</span>
+                                        <span className="kpi-value">{data.partnerSelf.commissionPct}%</span>
+                                    </div>
+                                    <div className="kpi-card">
+                                        <span className="kpi-label">Comissão Estimada</span>
+                                        <span className="kpi-value" style={{ color: "var(--green)" }}>€{fmt(data.partnerSelf.commissionEarned ?? 0)}</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {/* ── VENDAS ── */}
@@ -231,7 +250,7 @@ export default function StatisticsPage() {
                             </div>
                         </div>
 
-                        {/* ── CLIENTES POR PAÍS ── */}
+                        {/* ── CLIENTES POR PAÍS ── */}{!isPartner && (<>
                         <div className="stats-section">
                             <h2 className="stats-section-title">Clientes por País</h2>
                             {data.topCountries?.length > 0 ? (
@@ -370,7 +389,9 @@ export default function StatisticsPage() {
                             </div>
                         </div>
 
-                        {/* ── EDIÇÕES ── */}
+                        </>)}{/* end !isPartner sections */}
+
+                        {/* ── EDIÇÕES ── */}{!isPartner && (
                         <div className="stats-section">
                             <h2 className="stats-section-title">Edições de Reservas</h2>
                             <div className="chart-three-col">
@@ -422,18 +443,22 @@ export default function StatisticsPage() {
                             )}
                         </div>
 
+                        )}{/* end !isPartner edit section */}
+
                         {/* ── PARCEIROS ── */}
-                        {data.bookingsByPartner?.length > 0 && (
+                        {!isPartner && data.bookingsByPartner?.length > 0 && (
                             <div className="stats-section">
                                 <h2 className="stats-section-title">Marcações por Parceiro</h2>
                                 <div className="chart-card">
-                                    <div className="chart-card-title">Ordens e receita por parceiro</div>
+                                    <div className="chart-card-title">Ordens, receita e comissão por parceiro</div>
                                     <table className="stats-table">
                                         <thead>
                                             <tr>
                                                 <th>Parceiro</th>
                                                 <th className="t-right">Ordens</th>
                                                 <th className="t-right">Receita</th>
+                                                <th className="t-right">Comissão %</th>
+                                                <th className="t-right">Comissão Est.</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -442,6 +467,8 @@ export default function StatisticsPage() {
                                                     <td>{p.name}</td>
                                                     <td className="t-right">{fmtInt(p.count)}</td>
                                                     <td className="t-right">€{fmt(p.revenue)}</td>
+                                                    <td className="t-right">{p.commissionPct}%</td>
+                                                    <td className="t-right" style={{ color: "var(--green)" }}>€{fmt(p.commissionEarned)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

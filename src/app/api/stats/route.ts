@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { getPrisma } from "@/lib/prisma";
 
 function getDateRange(period: string): { start: Date; end: Date } {
@@ -46,6 +47,13 @@ interface BookingRow {
 }
 
 export async function GET(req: NextRequest) {
+    const { userId, sessionClaims } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    const isPartner = role === "PARTNER";
+    const sessionPartnerId = (sessionClaims as any)?.publicMetadata?.partnerId as string | undefined;
+
     const { searchParams } = new URL(req.url);
     const period      = searchParams.get("period") || "30d";
     const customStart = searchParams.get("startDate");
@@ -66,7 +74,8 @@ export async function GET(req: NextRequest) {
         ({ start, end } = getDateRange(period));
     }
 
-    const dateFilter = isAll ? {} : { activityDate: { gte: start, lte: end } };
+    const partnerFilter = isPartner && sessionPartnerId ? { partnerId: sessionPartnerId } : {};
+    const dateFilter = isAll ? { ...partnerFilter } : { activityDate: { gte: start, lte: end }, ...partnerFilter };
 
     // Previous period for growth calc
     let prevRevenue = 0;
@@ -75,7 +84,7 @@ export async function GET(req: NextRequest) {
         const prevStart = new Date(start.getTime() - duration);
         const prevEnd   = new Date(start.getTime() - 1);
         const prev = await prisma.booking.aggregate({
-            where: { activityDate: { gte: prevStart, lte: prevEnd }, status: { not: "CANCELLED" } },
+            where: { activityDate: { gte: prevStart, lte: prevEnd }, status: { not: "CANCELLED" }, ...partnerFilter },
             _sum: { totalPrice: true },
         });
         prevRevenue = (prev._sum.totalPrice as number) ?? 0;
@@ -83,11 +92,13 @@ export async function GET(req: NextRequest) {
 
     const [bookings, partners, services] = await Promise.all([
         prisma.booking.findMany({ where: dateFilter }) as unknown as Promise<BookingRow[]>,
-        prisma.partner.findMany({ select: { id: true, name: true } }),
+        prisma.partner.findMany({ select: { id: true, name: true, commission: true } }),
         prisma.service.findMany({ select: { id: true, name: true, variant: true } }),
     ]);
 
-    const partnerMap: Record<string, string> = Object.fromEntries(partners.map(p => [p.id, p.name]));
+    const partnerMap: Record<string, { name: string; commission: number }> = Object.fromEntries(
+        partners.map(p => [p.id, { name: p.name, commission: p.commission ?? 0 }])
+    );
     const serviceMap: Record<string, string> = Object.fromEntries(
         services.map(s => [s.id, s.variant ? `${s.name} – ${s.variant}` : s.name])
     );
@@ -216,15 +227,27 @@ export async function GET(req: NextRequest) {
         .sort((a, b) => b.revenue - a.revenue);
 
     // Bookings by partner
-    const partnerBMap: Record<string, { name: string; count: number; revenue: number }> = {};
+    const partnerBMap: Record<string, { name: string; count: number; revenue: number; commissionPct: number; commissionEarned: number }> = {};
     for (const b of bookings) {
         if (!b.partnerId) continue;
         const id = b.partnerId;
-        if (!partnerBMap[id]) partnerBMap[id] = { name: partnerMap[id] || "Desconhecido", count: 0, revenue: 0 };
+        const pInfo = partnerMap[id];
+        if (!partnerBMap[id]) partnerBMap[id] = { name: pInfo?.name || "Desconhecido", count: 0, revenue: 0, commissionPct: pInfo?.commission ?? 0, commissionEarned: 0 };
         partnerBMap[id].count++;
         partnerBMap[id].revenue += b.totalPrice ?? 0;
     }
+    for (const entry of Object.values(partnerBMap)) {
+        entry.commissionEarned = entry.revenue * (entry.commissionPct / 100);
+    }
     const bookingsByPartner = Object.values(partnerBMap).sort((a, b) => b.count - a.count);
+
+    // For partner role: compute their own commission
+    let partnerCommissionPct = 0;
+    let partnerCommissionEarned = 0;
+    if (isPartner && sessionPartnerId && partnerMap[sessionPartnerId]) {
+        partnerCommissionPct = partnerMap[sessionPartnerId].commission;
+        partnerCommissionEarned = totalRevenue * (partnerCommissionPct / 100);
+    }
 
     // Edit stats
     const editedBookings = bookings.filter(b => b.isEdited);
@@ -265,6 +288,7 @@ export async function GET(req: NextRequest) {
         statusBreakdown,
         topCountries,
         bookingsByPartner,
+        partnerSelf: isPartner ? { commissionPct: partnerCommissionPct, commissionEarned: partnerCommissionEarned } : null,
         editStats: {
             count: editedBookings.length,
             revenueDelta: editRevenueDelta,
