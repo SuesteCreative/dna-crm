@@ -1,7 +1,7 @@
 "use client";
 
 export const dynamic = "force-dynamic";
-import { useUser, RedirectToSignIn } from "@clerk/nextjs";
+import { useUser, useAuth, RedirectToSignIn } from "@clerk/nextjs";
 import { useEffect, useState, Fragment } from "react";
 import {
   Calendar, RefreshCcw, Plus, Search,
@@ -48,6 +48,14 @@ interface Service {
   sku: string | null;
   price: number | null;
   category: string | null;
+  durationMinutes: number | null;
+}
+
+interface SlotInfo {
+  time: string;
+  available: number;
+  capacity: number;
+  blocked: boolean;
 }
 
 const defaultForm = {
@@ -66,7 +74,10 @@ function recalcPrice(unitPrice: number | null, qty: number, discAmt: string, dis
 }
 
 export default function Dashboard() {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { sessionClaims } = useAuth();
+  const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+  const isPartner = role === "PARTNER";
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filtered, setFiltered] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +99,12 @@ export default function Dashboard() {
   const toggleGhost = (id: string) => setExpandedGhosts(prev => ({ ...prev, [id]: !prev[id] }));
   const [createUnitPrice, setCreateUnitPrice] = useState<number | null>(null);
   const [editUnitPrice, setEditUnitPrice] = useState<number | null>(null);
+  const [slots, setSlots] = useState<SlotInfo[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsClosed, setSlotsClosed] = useState(false);
+  const [canOverride, setCanOverride] = useState(false);
+  const [overrideModal, setOverrideModal] = useState<{ time: string; available: number; capacity: number } | null>(null);
+  const [overrideReason, setOverrideReason] = useState("");
 
   useEffect(() => {
     if (isSignedIn) {
@@ -124,6 +141,23 @@ export default function Dashboard() {
         setServices(Array.isArray(data) ? data : []);
       }
     } catch { }
+  };
+
+  const fetchSlots = async (serviceId: string, date: string, quantity: number) => {
+    if (!serviceId || !date) { setSlots([]); return; }
+    const svc = services.find(s => s.id === serviceId);
+    if (!svc?.durationMinutes) { setSlots([]); return; }
+    setSlotsLoading(true);
+    try {
+      const res = await fetch(`/api/slots?serviceId=${serviceId}&date=${date}&quantity=${quantity}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSlotsClosed(data.closed ?? false);
+        setCanOverride(data.canOverride ?? false);
+        setSlots(data.slots || []);
+      }
+    } catch { }
+    finally { setSlotsLoading(false); }
   };
 
   // Helper function to call the sync API
@@ -196,37 +230,67 @@ export default function Dashboard() {
     const svc = services.find(s => s.id === serviceId);
     if (!svc) {
       setCreateUnitPrice(null);
-      setFormData({ ...formData, serviceId: "", activityType: "", totalPrice: "" });
+      setSlots([]);
+      setFormData({ ...formData, serviceId: "", activityType: "", totalPrice: "", activityTime: "" });
       return;
     }
     const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
     const unitPrice = svc.price ?? null;
     setCreateUnitPrice(unitPrice);
-    setFormData({
+    const newForm = {
       ...formData,
       serviceId: svc.id,
       activityType: label,
+      activityTime: svc.durationMinutes ? "" : formData.activityTime,
       totalPrice: recalcPrice(unitPrice, formData.quantity, formData.discountAmount, formData.discountType),
-    });
+    };
+    setFormData(newForm);
+    if (svc.durationMinutes && formData.activityDate) {
+      fetchSlots(svc.id, formData.activityDate, formData.quantity);
+    } else {
+      setSlots([]);
+    }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault(); setFormError(null);
+  const submitCreate = async (override = false, reason = "") => {
+    setFormError(null);
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { discountAmount, discountType, ...payload } = formData;
+      const body: Record<string, any> = { ...payload };
+      if (override) {
+        body.override = true;
+        body.overrideReason = reason;
+        body.userName = user?.fullName || user?.primaryEmailAddress?.emailAddress || "Staff";
+      }
       const res = await fetch("/api/bookings/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(body)
       });
       if (res.ok) {
-        setShowModal(false); setFormData(defaultForm); fetchBookings();
+        setShowModal(false);
+        setFormData(defaultForm);
+        setSlots([]);
+        setOverrideModal(null);
+        setOverrideReason("");
+        fetchBookings();
       } else {
         const d = await res.json();
-        setFormError(d.error || "Erro ao criar reserva");
+        if (d.error === "SLOT_FULL" && d.canOverride) {
+          setOverrideModal({ time: formData.activityTime, available: d.available, capacity: d.capacity });
+        } else if (d.error === "SLOT_FULL") {
+          setFormError(`Slot sem disponibilidade (${d.available}/${d.capacity} livres)`);
+        } else {
+          setFormError(d.error || "Erro ao criar reserva");
+        }
       }
     } catch { setFormError("Erro de ligação"); }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitCreate(false, "");
   };
 
   const handleDelete = async (id: string) => {
@@ -374,7 +438,7 @@ export default function Dashboard() {
             <RefreshCcw size={16} className={syncing ? "spin" : ""} />
             {syncing ? "Sincronizando..." : "Sync Shopify"}
           </button>
-          <button className="btn-primary" onClick={() => setShowModal(true)}>
+          <button className="btn-primary" onClick={() => { setShowModal(true); setSlots([]); setFormData(defaultForm); setCreateUnitPrice(null); }}>
             <Plus size={16} /> Nova Reserva
           </button>
         </div>
@@ -642,12 +706,51 @@ export default function Dashboard() {
                 </div>
                 <div className="field">
                   <label>Data da Atividade *</label>
-                  <input type="date" value={formData.activityDate} onChange={e => setFormData({ ...formData, activityDate: e.target.value })} required />
+                  <input type="date" value={formData.activityDate} onChange={e => {
+                    const d = e.target.value;
+                    setFormData({ ...formData, activityDate: d, activityTime: "" });
+                    if (formData.serviceId) fetchSlots(formData.serviceId, d, formData.quantity);
+                  }} required />
                 </div>
-                <div className="field">
-                  <label>Hora</label>
-                  <input type="time" value={formData.activityTime} onChange={e => setFormData({ ...formData, activityTime: e.target.value })} />
-                </div>
+                {(() => {
+                  const svc = services.find(s => s.id === formData.serviceId);
+                  if (svc?.durationMinutes && formData.activityDate) {
+                    return (
+                      <div className="field full slot-picker-wrap">
+                        <label>Horário {formData.activityTime && <span className="slot-selected-label">— {formData.activityTime} selecionado</span>}</label>
+                        {slotsLoading ? (
+                          <div className="slot-loading">A carregar horários...</div>
+                        ) : slotsClosed ? (
+                          <div className="slot-closed">Encerrado neste dia</div>
+                        ) : (
+                          <div className="slot-grid">
+                            {slots.map(slot => (
+                              <button
+                                key={slot.time}
+                                type="button"
+                                className={`slot-btn ${formData.activityTime === slot.time ? "slot-selected" : ""} ${slot.blocked ? (canOverride && !isPartner ? "slot-override" : "slot-blocked") : "slot-free"}`}
+                                onClick={() => {
+                                  if (slot.blocked && !canOverride) return;
+                                  setFormData({ ...formData, activityTime: slot.time });
+                                }}
+                                title={slot.blocked ? `Lotado (${slot.available}/${slot.capacity} livres)` : `${slot.available}/${slot.capacity} livres`}
+                              >
+                                {slot.time}
+                                {slot.blocked && !isPartner && canOverride && <span className="slot-override-tag">Override</span>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="field">
+                      <label>Hora</label>
+                      <input type="time" value={formData.activityTime} onChange={e => setFormData({ ...formData, activityTime: e.target.value })} />
+                    </div>
+                  );
+                })()}
                 <div className="field">
                   <label>Nº Pessoas *</label>
                   <input type="number" min="1" value={formData.pax} onChange={e => setFormData({ ...formData, pax: parseInt(e.target.value) })} required />
@@ -657,6 +760,7 @@ export default function Dashboard() {
                   <input type="number" min="1" value={formData.quantity} onChange={e => {
                     const qty = parseInt(e.target.value) || 1;
                     setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, qty, formData.discountAmount, formData.discountType) });
+                    if (formData.serviceId && formData.activityDate) fetchSlots(formData.serviceId, formData.activityDate, qty);
                   }} />
                 </div>
                 <div className="field full discount-row">
@@ -861,6 +965,40 @@ export default function Dashboard() {
             </div>
           </aside>
         </>
+      )}
+
+      {overrideModal && (
+        <div className="modal-backdrop">
+          <div className="modal-box override-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2>Slot Lotado — Override</h2>
+              <button className="modal-close" onClick={() => setOverrideModal(null)}><X size={20} /></button>
+            </div>
+            <div className="override-info">
+              <p>O slot das <strong>{overrideModal.time}</strong> está lotado ({overrideModal.available}/{overrideModal.capacity} livres).</p>
+              <p>Como staff, pode forçar a reserva. Indique o motivo:</p>
+            </div>
+            <div className="field" style={{ margin: "0 0 16px" }}>
+              <label>Motivo do override *</label>
+              <textarea
+                rows={3}
+                value={overrideReason}
+                onChange={e => setOverrideReason(e.target.value)}
+                placeholder="Ex: Cliente VIP, equipamento extra disponível..."
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-ghost" onClick={() => setOverrideModal(null)}>Cancelar</button>
+              <button
+                className="btn-override-confirm"
+                disabled={!overrideReason.trim()}
+                onClick={() => submitCreate(true, overrideReason)}
+              >
+                Confirmar Override
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {attendanceTarget && (

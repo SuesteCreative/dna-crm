@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    ChevronRight, RefreshCcw, Shield, BarChart2
+    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle
 } from "lucide-react";
 import { useState } from "react";
 
@@ -77,6 +77,22 @@ export function Sidebar() {
                             <Shield size={18} />
                             <span>Utilizadores</span>
                             {pathname === "/admin/users" && <ChevronRight size={14} className="nav-arrow" />}
+                        </button>
+                        <button
+                            className={`nav-item ${pathname === "/schedule" ? "active" : ""}`}
+                            onClick={() => router.push("/schedule")}
+                        >
+                            <Clock size={18} />
+                            <span>Horário</span>
+                            {pathname === "/schedule" && <ChevronRight size={14} className="nav-arrow" />}
+                        </button>
+                        <button
+                            className={`nav-item ${pathname === "/admin/logs" ? "active" : ""}`}
+                            onClick={() => router.push("/admin/logs")}
+                        >
+                            <AlertTriangle size={18} />
+                            <span>Logs Override</span>
+                            {pathname === "/admin/logs" && <ChevronRight size={14} className="nav-arrow" />}
                         </button>
                     </>
                 )}
