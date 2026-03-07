@@ -27,6 +27,8 @@ interface ServiceRow {
     serviceCloseTime: string | null;
     gcalEnabled: boolean;
     isActive: boolean;
+    minPax: number | null;
+    maxPax: number | null;
 }
 
 interface GcalStaffRow {
@@ -113,6 +115,8 @@ export default function SchedulePage() {
                 slotGapMinutes: svc.slotGapMinutes,
                 serviceCloseTime: svc.serviceCloseTime || null,
                 gcalEnabled: svc.gcalEnabled,
+                minPax: svc.minPax || null,
+                maxPax: svc.maxPax || null,
             }),
         });
         setSvcSaving(null);
@@ -237,6 +241,8 @@ export default function SchedulePage() {
                                 <th>Grupo Capacidade</th>
                                 <th>Gap slots (min)</th>
                                 <th>Fecho serviço</th>
+                                <th>Pax mín</th>
+                                <th>Pax máx</th>
                                 <th>GCal</th>
                                 <th></th>
                             </tr>
@@ -288,6 +294,24 @@ export default function SchedulePage() {
                                             value={svc.serviceCloseTime ?? ""}
                                             className="svc-input wide"
                                             onChange={e => updateSvc(svc.id, { serviceCloseTime: e.target.value || null })}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="number" min="1"
+                                            value={svc.minPax ?? ""}
+                                            placeholder="—"
+                                            className="svc-input"
+                                            onChange={e => updateSvc(svc.id, { minPax: parseInt(e.target.value) || null })}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="number" min="1"
+                                            value={svc.maxPax ?? ""}
+                                            placeholder="—"
+                                            className="svc-input"
+                                            onChange={e => updateSvc(svc.id, { maxPax: parseInt(e.target.value) || null })}
                                         />
                                     </td>
                                     <td>

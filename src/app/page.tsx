@@ -49,6 +49,8 @@ interface Service {
   price: number | null;
   category: string | null;
   durationMinutes: number | null;
+  minPax: number | null;
+  maxPax: number | null;
 }
 
 interface Partner {
@@ -256,16 +258,23 @@ export default function Dashboard() {
     const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
     const unitPrice = svc.price ?? null;
     setCreateUnitPrice(unitPrice);
+    // Pax-priced services (e.g. sofa, banana): qty is always 1, price = unitPrice × pax
+    const isPaxPriced = svc.minPax != null;
+    const initPax = isPaxPriced ? (svc.minPax ?? 2) : formData.pax;
+    const initQty = isPaxPriced ? 1 : formData.quantity;
+    const priceMultiplier = isPaxPriced ? initPax : initQty;
     const newForm = {
       ...formData,
       serviceId: svc.id,
       activityType: label,
       activityTime: svc.durationMinutes ? "" : formData.activityTime,
-      totalPrice: recalcPrice(unitPrice, formData.quantity, formData.discountAmount, formData.discountType),
+      pax: initPax,
+      quantity: initQty,
+      totalPrice: recalcPrice(unitPrice, priceMultiplier, formData.discountAmount, formData.discountType),
     };
     setFormData(newForm);
     if (svc.durationMinutes && formData.activityDate) {
-      fetchSlots(svc.id, formData.activityDate, formData.quantity);
+      fetchSlots(svc.id, formData.activityDate, 1);
     } else {
       setSlots([]);
     }
@@ -816,18 +825,41 @@ export default function Dashboard() {
                     </div>
                   );
                 })()}
-                <div className="field">
-                  <label>Nº Pessoas *</label>
-                  <input type="number" min="1" value={formData.pax} onChange={e => setFormData({ ...formData, pax: parseInt(e.target.value) })} required />
-                </div>
-                <div className="field">
-                  <label>Quantidade (unidades)</label>
-                  <input type="number" min="1" value={formData.quantity} onChange={e => {
-                    const qty = parseInt(e.target.value) || 1;
-                    setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, qty, formData.discountAmount, formData.discountType) });
-                    if (formData.serviceId && formData.activityDate) fetchSlots(formData.serviceId, formData.activityDate, qty);
-                  }} />
-                </div>
+                {(() => {
+                  const svc = services.find(s => s.id === formData.serviceId);
+                  const isPaxPriced = svc?.minPax != null;
+                  return (
+                    <>
+                      <div className="field">
+                        <label>Nº Pessoas *{isPaxPriced && svc?.minPax != null && <span className="field-hint"> (mín {svc.minPax}{svc.maxPax ? `, máx ${svc.maxPax}` : ""})</span>}</label>
+                        <input
+                          type="number"
+                          min={isPaxPriced ? (svc?.minPax ?? 1) : 1}
+                          max={isPaxPriced ? (svc?.maxPax ?? undefined) : undefined}
+                          value={formData.pax}
+                          onChange={e => {
+                            const p = parseInt(e.target.value) || 1;
+                            const newPrice = isPaxPriced
+                              ? recalcPrice(createUnitPrice, p, formData.discountAmount, formData.discountType)
+                              : formData.totalPrice as string;
+                            setFormData({ ...formData, pax: p, totalPrice: newPrice });
+                          }}
+                          required
+                        />
+                      </div>
+                      {!isPaxPriced && (
+                        <div className="field">
+                          <label>Quantidade (unidades)</label>
+                          <input type="number" min="1" value={formData.quantity} onChange={e => {
+                            const qty = parseInt(e.target.value) || 1;
+                            setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, qty, formData.discountAmount, formData.discountType) });
+                            if (formData.serviceId && formData.activityDate) fetchSlots(formData.serviceId, formData.activityDate, qty);
+                          }} />
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 <div className="field full discount-row">
                   <label>Desconto</label>
                   <div className="discount-wrap">
@@ -853,9 +885,13 @@ export default function Dashboard() {
                   <label>Preço Total (€)</label>
                   <div className="price-display-wrap">
                     <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
-                    {createUnitPrice != null && (
-                      <span className="price-base-hint">{createUnitPrice}€ × {formData.quantity} unid.</span>
-                    )}
+                    {createUnitPrice != null && (() => {
+                      const svc = services.find(s => s.id === formData.serviceId);
+                      const isPaxPriced = svc?.minPax != null;
+                      return isPaxPriced
+                        ? <span className="price-base-hint">{createUnitPrice}€ × {formData.pax} pax</span>
+                        : <span className="price-base-hint">{createUnitPrice}€ × {formData.quantity} unid.</span>;
+                    })()}
                   </div>
                 </div>
               </div>

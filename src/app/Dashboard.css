@@ -1038,6 +1038,14 @@ body {
     letter-spacing: .05em;
 }
 
+.field-hint {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--teal);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
 .field input {
     background: var(--surface2);
     border: 1px solid var(--border);

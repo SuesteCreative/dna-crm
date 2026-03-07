@@ -24,6 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             slotGapMinutes: body.slotGapMinutes ?? 10,
             serviceCloseTime: body.serviceCloseTime ?? null,
             gcalEnabled: body.gcalEnabled ?? false,
+            minPax: body.minPax ?? null,
+            maxPax: body.maxPax ?? null,
         },
     });
 
