@@ -42,6 +42,8 @@ export async function PATCH(req: NextRequest) {
                     originalPax: current.pax,
                     originalQuantity: current.quantity,
                     originalTotalPrice: current.totalPrice,
+                    originalActivityDate: current.activityDate,
+                    originalActivityTime: current.activityTime,
                 }),
             },
         });
