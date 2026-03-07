@@ -51,9 +51,18 @@ interface Service {
 
 const defaultForm = {
   customerName: "", customerEmail: "", customerPhone: "",
-  activityDate: "", activityTime: "", pax: 1, totalPrice: "",
-  serviceId: "", activityType: ""
+  activityDate: "", activityTime: "", pax: 1, quantity: 1, totalPrice: "",
+  serviceId: "", activityType: "", discountAmount: "", discountType: "%"
 };
+
+function recalcPrice(unitPrice: number | null, qty: number, discAmt: string, discType: string): string {
+  if (unitPrice == null) return "";
+  const base = unitPrice * qty;
+  const d = parseFloat(discAmt) || 0;
+  if (d <= 0) return base.toFixed(2);
+  const final = discType === "%" ? base * (1 - d / 100) : base - d;
+  return Math.max(0, final).toFixed(2);
+}
 
 export default function Dashboard() {
   const { isLoaded, isSignedIn } = useUser();
@@ -76,6 +85,8 @@ export default function Dashboard() {
   const [editError, setEditError] = useState<string | null>(null);
   const [expandedGhosts, setExpandedGhosts] = useState<Record<string, boolean>>({});
   const toggleGhost = (id: string) => setExpandedGhosts(prev => ({ ...prev, [id]: !prev[id] }));
+  const [createUnitPrice, setCreateUnitPrice] = useState<number | null>(null);
+  const [editUnitPrice, setEditUnitPrice] = useState<number | null>(null);
 
   useEffect(() => {
     if (isSignedIn) {
@@ -181,25 +192,32 @@ export default function Dashboard() {
     Object.values(grouped[year]).some(monthList => anyFutureInGroup(monthList));
 
   const handleServiceSelect = (serviceId: string) => {
-    // ... existing handleServiceSelect logic
     const svc = services.find(s => s.id === serviceId);
-    if (!svc) { setFormData({ ...formData, serviceId: "", activityType: "", totalPrice: "" }); return; }
+    if (!svc) {
+      setCreateUnitPrice(null);
+      setFormData({ ...formData, serviceId: "", activityType: "", totalPrice: "" });
+      return;
+    }
     const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
+    const unitPrice = svc.price ?? null;
+    setCreateUnitPrice(unitPrice);
     setFormData({
       ...formData,
       serviceId: svc.id,
       activityType: label,
-      totalPrice: svc.price?.toString() || ""
+      totalPrice: recalcPrice(unitPrice, formData.quantity, formData.discountAmount, formData.discountType),
     });
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault(); setFormError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { discountAmount, discountType, ...payload } = formData;
       const res = await fetch("/api/bookings/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         setShowModal(false); setFormData(defaultForm); fetchBookings();
@@ -240,6 +258,19 @@ export default function Dashboard() {
   const openEdit = (b: Booking) => {
     setEditTarget(b);
     setEditError(null);
+    // Resolve unit price for recalc
+    let unitPrice: number | null = null;
+    const svcById = b.serviceId ? services.find(s => s.id === b.serviceId) : null;
+    if (svcById?.price != null) {
+      unitPrice = svcById.price;
+    } else if (b.activityType) {
+      const svcByType = services.find(s => {
+        const label = s.variant ? `${s.name} - ${s.variant}` : s.name;
+        return label === b.activityType || (s.variant ? `${s.name} — ${s.variant}` : s.name) === b.activityType;
+      });
+      unitPrice = svcByType?.price ?? null;
+    }
+    setEditUnitPrice(unitPrice);
     const d = new Date(b.activityDate);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     setEditForm({
@@ -254,6 +285,8 @@ export default function Dashboard() {
       activityType: b.activityType || "",
       status: b.status,
       notes: b.notes || "",
+      discountAmount: "",
+      discountType: "%",
     });
   };
 
@@ -261,10 +294,12 @@ export default function Dashboard() {
     if (!editTarget) return;
     setEditSaving(true); setEditError(null);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { discountAmount, discountType, ...editPayload } = editForm;
       const res = await fetch("/api/bookings/update", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editTarget.id, ...editForm }),
+        body: JSON.stringify({ id: editTarget.id, ...editPayload }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -620,8 +655,41 @@ export default function Dashboard() {
                   <input type="number" min="1" value={formData.pax} onChange={e => setFormData({ ...formData, pax: parseInt(e.target.value) })} required />
                 </div>
                 <div className="field">
+                  <label>Quantidade (unidades)</label>
+                  <input type="number" min="1" value={formData.quantity} onChange={e => {
+                    const qty = parseInt(e.target.value) || 1;
+                    setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, qty, formData.discountAmount, formData.discountType) });
+                  }} />
+                </div>
+                <div className="field full discount-row">
+                  <label>Desconto</label>
+                  <div className="discount-wrap">
+                    <input
+                      type="number" min="0" step="0.01" placeholder="0"
+                      value={formData.discountAmount}
+                      onChange={e => {
+                        const discAmt = e.target.value;
+                        setFormData({ ...formData, discountAmount: discAmt, totalPrice: recalcPrice(createUnitPrice, formData.quantity, discAmt, formData.discountType) });
+                      }}
+                    />
+                    <div className="discount-type-toggle">
+                      <button type="button" className={formData.discountType === "%" ? "active" : ""} onClick={() => {
+                        setFormData({ ...formData, discountType: "%", totalPrice: recalcPrice(createUnitPrice, formData.quantity, formData.discountAmount, "%") });
+                      }}>%</button>
+                      <button type="button" className={formData.discountType === "€" ? "active" : ""} onClick={() => {
+                        setFormData({ ...formData, discountType: "€", totalPrice: recalcPrice(createUnitPrice, formData.quantity, formData.discountAmount, "€") });
+                      }}>€</button>
+                    </div>
+                  </div>
+                </div>
+                <div className="field full price-display-row">
                   <label>Preço Total (€)</label>
-                  <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
+                  <div className="price-display-wrap">
+                    <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
+                    {createUnitPrice != null && (
+                      <span className="price-base-hint">{createUnitPrice}€ × {formData.quantity} unid.</span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="modal-actions">
@@ -678,7 +746,14 @@ export default function Dashboard() {
               <div className="form-grid">
                 <div className="field full">
                   <label>Tipo de atividade</label>
-                  <select className="field-select" value={editForm.activityType} onChange={e => setEditForm({ ...editForm, activityType: e.target.value })}>
+                  <select className="field-select" value={editForm.activityType} onChange={e => {
+                    const val = e.target.value;
+                    const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === val);
+                    const unitPrice = svc?.price ?? null;
+                    setEditUnitPrice(unitPrice);
+                    const newPrice = recalcPrice(unitPrice, editForm.quantity, editForm.discountAmount, editForm.discountType);
+                    setEditForm({ ...editForm, activityType: val, totalPrice: newPrice || editForm.totalPrice });
+                  }}>
                     <option value="">— Livre —</option>
                     {Object.entries(svcGroups).map(([cat, items]) => (
                       <optgroup key={cat} label={cat}>
@@ -705,11 +780,44 @@ export default function Dashboard() {
                 </div>
                 <div className="field">
                   <label>Qtd (unidades)</label>
-                  <input type="number" min="1" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} />
+                  <input type="number" min="1" value={editForm.quantity} onChange={e => {
+                    const qty = parseInt(e.target.value) || 1;
+                    const newPrice = recalcPrice(editUnitPrice, qty, editForm.discountAmount, editForm.discountType);
+                    setEditForm({ ...editForm, quantity: qty, totalPrice: newPrice || editForm.totalPrice });
+                  }} />
                 </div>
-                <div className="field">
+                <div className="field full discount-row">
+                  <label>Desconto</label>
+                  <div className="discount-wrap">
+                    <input
+                      type="number" min="0" step="0.01" placeholder="0"
+                      value={editForm.discountAmount || ""}
+                      onChange={e => {
+                        const discAmt = e.target.value;
+                        const newPrice = recalcPrice(editUnitPrice, editForm.quantity, discAmt, editForm.discountType);
+                        setEditForm({ ...editForm, discountAmount: discAmt, totalPrice: newPrice || editForm.totalPrice });
+                      }}
+                    />
+                    <div className="discount-type-toggle">
+                      <button type="button" className={(editForm.discountType || "%") === "%" ? "active" : ""} onClick={() => {
+                        const newPrice = recalcPrice(editUnitPrice, editForm.quantity, editForm.discountAmount, "%");
+                        setEditForm({ ...editForm, discountType: "%", totalPrice: newPrice || editForm.totalPrice });
+                      }}>%</button>
+                      <button type="button" className={editForm.discountType === "€" ? "active" : ""} onClick={() => {
+                        const newPrice = recalcPrice(editUnitPrice, editForm.quantity, editForm.discountAmount, "€");
+                        setEditForm({ ...editForm, discountType: "€", totalPrice: newPrice || editForm.totalPrice });
+                      }}>€</button>
+                    </div>
+                  </div>
+                </div>
+                <div className="field price-display-row">
                   <label>Preço real (€)</label>
-                  <input type="number" step="0.01" value={editForm.totalPrice} onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })} />
+                  <div className="price-display-wrap">
+                    <input type="number" step="0.01" value={editForm.totalPrice} onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })} />
+                    {editUnitPrice != null && (
+                      <span className="price-base-hint">{editUnitPrice}€ × {editForm.quantity} unid.</span>
+                    )}
+                  </div>
                 </div>
                 <div className="field full">
                   <label>Estado</label>
