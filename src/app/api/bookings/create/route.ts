@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { timeToMinutes, timesOverlap } from "@/lib/slots";
 import { createBusyEvent, toGcalTimes } from "@/lib/gcal";
 
@@ -12,7 +12,14 @@ export async function POST(req: Request) {
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
     const isPartner = role === "PARTNER";
-    const sessionPartnerId = (sessionClaims as any)?.metadata?.partnerId as string | undefined;
+
+    // Read partnerId directly from Clerk (bypasses JWT template/caching limitations)
+    let sessionPartnerId: string | undefined;
+    if (isPartner) {
+        const clerk = await clerkClient();
+        const clerkUser = await clerk.users.getUser(userId);
+        sessionPartnerId = clerkUser.publicMetadata?.partnerId as string | undefined;
+    }
 
     try {
         const prisma = await getPrisma();
