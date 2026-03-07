@@ -85,6 +85,8 @@ model Service {
   slotGapMinutes   Int      @default(10)
   serviceCloseTime String?  // Per-service close time override e.g. "17:40"
   gcalEnabled      Boolean  @default(false)
+  minPax           Int?     // Min attendees (pax-priced services, e.g. sofa/banana)
+  maxPax           Int?     // Max attendees
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
