@@ -343,6 +343,39 @@ everything else                                              → must have role 
 3. API: original entry period → `MORNING`, status → `CARRIED_OVER`
 4. New `ConcessionEntry` created: tomorrow, target spot, period=`MORNING`, `isCarryOver=true`, `isPaid=true`
 
+### Spot State Logic (Concession)
+
+A spot on a given date can hold up to **2 active entries**: one `MORNING` + one `AFTERNOON`, OR one `FULL_DAY`.
+
+| State | Colour | Condition |
+|---|---|---|
+| `free` | dark surface | no active entries |
+| `morning` | amber | MORNING entry (no reservation) |
+| `afternoon` | blue | AFTERNOON entry (no reservation) |
+| `full` | purple | FULL_DAY entry (no reservation) |
+| `reserved` | red | any period entry linked to a `ConcessionReservation` (FULL_DAY or single period) |
+| `split` | amber top / blue bottom | both MORNING + AFTERNOON occupied (regardless of reservation) |
+
+**Split cell display:** the grid card is split horizontally — top half shows morning client, bottom half shows afternoon client.
+
+**SpotPanel behaviour:**
+- FREE → full booking form (period selector: Morning / Afternoon / Full Day)
+- MORNING only → shows morning info + "Estender para Dia Inteiro" + "Libertar Manhã" + **"+ Tarde livre — Registar cliente"** expander
+- AFTERNOON only → shows afternoon info + "Libertar Tarde" + **"+ Manhã livre — Registar cliente"** expander
+- SPLIT → shows both periods' info separately, each with its own "Libertar" button
+- FULL DAY → shows info + "Carry-over da Tarde" + "Libertar Tudo"
+
+### Reservation Conflict Resolution
+
+When `POST /api/concessions/[slug]/reservations` detects a period conflict:
+1. All entries for the concession across the requested dates are batch-fetched in one query
+2. Blocked dates per spot are computed in memory (no N+1 queries)
+3. Returns **HTTP 409** with `{ error, message, conflictDates, alternatives[] }`
+4. `alternatives[]` lists up to 6 other spots sorted by fewest blocked dates — spots free for all days listed first
+5. The Reservations drawer shows the alternative list; clicking "Usar este" swaps the spot in the form instantly
+
+Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod || newPeriod === "FULL_DAY"`
+
 ### Booking Edit Tracking
 - When a booking is edited, original values saved to `original*` fields
 - `isEdited = true` flag set
@@ -386,6 +419,9 @@ everything else                                              → must have role 
 | `eb09dcd` | Fix current-month highlight (always orange regardless of future bookings) |
 | `d7b89de` | **Concessão module** (full beach chair management) |
 | `ac91e04` | Fix: await getPrisma() in all concession API routes |
+| `93f6a69` | Concessão seed button on empty state, TreePalm icon, sidebar overlap fix, Trópico first |
+| `fb6257b` | Dropdown text fix, color swap (full=purple, reserved=red), R badge, calendar view in Reservations, Calculator date inputs + Proceed button |
+| `d7c3e21` | Split-cell grid (morning/afternoon halves), book second period from SpotPanel, reservation conflict with smart alternatives |
 
 ---
 
