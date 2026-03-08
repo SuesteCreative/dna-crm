@@ -68,7 +68,7 @@ function periodLabel(p: string) {
 }
 
 function bedLabel(b: string) {
-  return b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "3 camas (extra)" : "2 camas";
+  return b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "2 camas + cama extra" : "2 camas";
 }
 
 function nextDay(date: string) {
@@ -98,7 +98,8 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [fClient, setFClient] = useState("");
   const [fPhone, setFPhone] = useState("");
-  const [fBeds, setFBeds] = useState("TWO_BEDS");
+  const [fBeds, setFBeds] = useState<"ONE_BED" | "TWO_BEDS">("TWO_BEDS");
+  const [fExtraBed, setFExtraBed] = useState(false);
   const [fPrice, setFPrice] = useState("0");
   const [fPaid, setFPaid] = useState(true);
   const [fNotes, setFNotes] = useState("");
@@ -116,7 +117,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
   function openForm(mode: FormMode) {
     const period = modeToPeriod(mode);
     setFormMode(mode);
-    setFClient(""); setFPhone(""); setFBeds("TWO_BEDS");
+    setFClient(""); setFPhone(""); setFBeds("TWO_BEDS"); setFExtraBed(false);
     setFPrice(String(calcPrice(period, "TWO_BEDS", concession)));
     setFPaid(true); setFNotes(""); setFError("");
   }
@@ -125,6 +126,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
     if (!fClient.trim()) { setFError("Nome do cliente obrigatório"); return; }
     const period = modeToPeriod(formMode);
     const override = formMode === "rerent-morning" || formMode === "rerent-afternoon";
+    const bedConfig = fBeds === "TWO_BEDS" && fExtraBed ? "EXTRA_BED" : fBeds;
     setBusy(true); setFError("");
     const res = await fetch(`/api/concessions/${concession.slug}/entries`, {
       method: "POST",
@@ -132,7 +134,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
       body: JSON.stringify({
         spotId: spot.id, date, period,
         clientName: fClient.trim(), clientPhone: fPhone.trim() || null,
-        bedConfig: fBeds, totalPrice: parseFloat(fPrice), isPaid: fPaid,
+        bedConfig, totalPrice: parseFloat(fPrice), isPaid: fPaid,
         notes: fNotes.trim() || null, override,
       }),
     });
@@ -238,10 +240,14 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
         <div className="field-row">
           <div className="field-group">
             <label>Camas</label>
-            <select value={fBeds} onChange={(e) => { setFBeds(e.target.value); setFPrice(String(calcPrice(period, e.target.value, concession))); }}>
+            <select value={fBeds} onChange={(e) => {
+              const b = e.target.value as "ONE_BED" | "TWO_BEDS";
+              setFBeds(b);
+              setFExtraBed(false);
+              setFPrice(String(calcPrice(period, b, concession)));
+            }}>
               <option value="TWO_BEDS">2 camas</option>
               <option value="ONE_BED">1 cama (chapéu)</option>
-              <option value="EXTRA_BED">3 camas (extra)</option>
             </select>
           </div>
           <div className="field-group">
@@ -249,6 +255,19 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
             <input type="number" step="0.5" min="0" value={fPrice} onChange={(e) => setFPrice(e.target.value)} />
           </div>
         </div>
+        {fBeds === "TWO_BEDS" && (
+          <div className="toggle-row">
+            <span>+ Cama Extra (+{concession.priceExtraBed.toFixed(2)}€)</span>
+            <label className="toggle-switch">
+              <input type="checkbox" checked={fExtraBed} onChange={(e) => {
+                setFExtraBed(e.target.checked);
+                const newBedConfig = e.target.checked ? "EXTRA_BED" : "TWO_BEDS";
+                setFPrice(String(calcPrice(period, newBedConfig, concession)));
+              }} />
+              <span className="toggle-slider" />
+            </label>
+          </div>
+        )}
         <div className="toggle-row">
           <span>Pago</span>
           <label className="toggle-switch">

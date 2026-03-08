@@ -29,7 +29,7 @@ function calcDays(start: string, end: string) {
   return Math.max(1, Math.round((e.getTime() - s.getTime()) / 86400000) + 1);
 }
 function periodLabel(p: string) { return p === "MORNING" ? "Manhã" : p === "AFTERNOON" ? "Tarde" : "Dia Inteiro"; }
-function bedLabel(b: string) { return b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "3 camas" : "2 camas"; }
+function bedLabel(b: string) { return b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "2 camas + cama extra" : "2 camas"; }
 function calcPrice(period: string, bedConfig: string, days: number, c: Concession) {
   const base = period === "MORNING" ? c.priceMorning : period === "AFTERNOON" ? c.priceAfternoon : c.priceFull;
   const daily = bedConfig === "ONE_BED" ? c.priceOneBed : bedConfig === "EXTRA_BED" ? base + c.priceExtraBed : base;
@@ -464,13 +464,31 @@ export default function Reservations({ concession, initialReservation, onInitHan
                 </div>
                 <div className="field-group">
                   <label>Camas</label>
-                  <select value={form.bedConfig} onChange={(e) => setForm((p) => ({ ...p, bedConfig: e.target.value }))}>
+                  <select
+                    value={form.bedConfig === "EXTRA_BED" ? "TWO_BEDS" : form.bedConfig}
+                    onChange={(e) => {
+                      const b = e.target.value;
+                      setForm((p) => ({ ...p, bedConfig: b === "ONE_BED" ? "ONE_BED" : "TWO_BEDS" }));
+                    }}
+                  >
                     <option value="TWO_BEDS">2 camas</option>
-                    <option value="ONE_BED">1 cama</option>
-                    <option value="EXTRA_BED">3 camas (extra)</option>
+                    <option value="ONE_BED">1 cama (chapéu)</option>
                   </select>
                 </div>
               </div>
+              {form.bedConfig !== "ONE_BED" && (
+                <div className="toggle-row">
+                  <span style={{ fontSize: "0.85rem", color: "#aaa" }}>+ Cama Extra (+{concession.priceExtraBed.toFixed(2)}€/dia)</span>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={form.bedConfig === "EXTRA_BED"}
+                      onChange={(e) => setForm((p) => ({ ...p, bedConfig: e.target.checked ? "EXTRA_BED" : "TWO_BEDS" }))}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              )}
               <div className="field-row">
                 <div className="field-group">
                   <label>Preço total (€)</label>

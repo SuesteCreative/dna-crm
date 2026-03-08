@@ -28,9 +28,11 @@ export default function Calculator({ concession, onProceed }: Props) {
   const [startDate, setStartDate] = useState(today());
   const [endDate, setEndDate] = useState(today());
   const [period, setPeriod] = useState("FULL_DAY");
-  const [bedConfig, setBedConfig] = useState("TWO_BEDS");
+  const [baseBeds, setBaseBeds] = useState<"ONE_BED" | "TWO_BEDS">("TWO_BEDS");
+  const [extraBed, setExtraBed] = useState(false);
   const [discount, setDiscount] = useState<Discount>("none");
 
+  const bedConfig = baseBeds === "ONE_BED" ? "ONE_BED" : extraBed ? "EXTRA_BED" : "TWO_BEDS";
   const days = calcDays(startDate, endDate);
 
   const { basePerDay, subtotal, discountAmount, total, freeDays, billableDays } = useMemo(() => {
@@ -49,7 +51,7 @@ export default function Calculator({ concession, onProceed }: Props) {
   }, [spots, days, period, bedConfig, discount, concession]);
 
   const periodLabel = period === "MORNING" ? "Manhã" : period === "AFTERNOON" ? "Tarde" : "Dia Inteiro";
-  const bedLabel = bedConfig === "ONE_BED" ? "1 cama" : bedConfig === "EXTRA_BED" ? "3 camas (extra)" : "2 camas";
+  const bedLabel = bedConfig === "ONE_BED" ? "1 cama" : bedConfig === "EXTRA_BED" ? "2 camas + cama extra" : "2 camas";
 
   const handleProceed = () => {
     onProceed?.({
@@ -90,7 +92,7 @@ export default function Calculator({ concession, onProceed }: Props) {
         {/* Other inputs */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem" }}>
           <div className="field-group">
-            <label>Nº de lugares</label>
+            <label>Nº de Chapéus</label>
             <input type="number" min={1} max={50} value={spots}
               onChange={(e) => setSpots(Math.max(1, parseInt(e.target.value) || 1))} />
           </div>
@@ -104,10 +106,13 @@ export default function Calculator({ concession, onProceed }: Props) {
           </div>
           <div className="field-group">
             <label>Camas</label>
-            <select value={bedConfig} onChange={(e) => setBedConfig(e.target.value)}>
+            <select value={baseBeds} onChange={(e) => {
+              const b = e.target.value as "ONE_BED" | "TWO_BEDS";
+              setBaseBeds(b);
+              if (b === "ONE_BED") setExtraBed(false);
+            }}>
               <option value="TWO_BEDS">2 camas</option>
               <option value="ONE_BED">1 cama (chapéu)</option>
-              <option value="EXTRA_BED">3 camas (extra)</option>
             </select>
           </div>
           <div className="field-group">
@@ -124,11 +129,22 @@ export default function Calculator({ concession, onProceed }: Props) {
           </div>
         </div>
 
+        {/* Extra bed toggle */}
+        {baseBeds === "TWO_BEDS" && (
+          <div className="toggle-row" style={{ marginTop: "-0.3rem" }}>
+            <span style={{ fontSize: "0.85rem", color: "#aaa" }}>+ Cama Extra (+{concession.priceExtraBed.toFixed(2)}€/dia)</span>
+            <label className="toggle-switch">
+              <input type="checkbox" checked={extraBed} onChange={(e) => setExtraBed(e.target.checked)} />
+              <span className="toggle-slider" />
+            </label>
+          </div>
+        )}
+
         {/* Breakdown */}
         <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, overflow: "hidden" }}>
           {[
             { label: `Preço base/dia (${periodLabel}, ${bedLabel})`, value: `${basePerDay.toFixed(2)}€` },
-            { label: `× ${spots} lugar${spots !== 1 ? "es" : ""}`, value: `${(basePerDay * spots).toFixed(2)}€` },
+            { label: `× ${spots} chapéu${spots !== 1 ? "s" : ""}`, value: `${(basePerDay * spots).toFixed(2)}€` },
             { label: `× ${discount === "free_day" && freeDays > 0 ? `${billableDays} dias faturáveis (${freeDays} grátis)` : `${days} dias`}`, value: `${subtotal.toFixed(2)}€` },
           ].map((row, i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.55rem 0.9rem", borderBottom: "1px solid rgba(255,255,255,0.06)", fontSize: "0.84rem" }}>
@@ -145,7 +161,7 @@ export default function Calculator({ concession, onProceed }: Props) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.9rem", background: "rgba(249,115,22,0.08)" }}>
             <div>
               <span style={{ fontWeight: 700, fontSize: "1rem", color: "#f1f1f1" }}>Total</span>
-              {spots > 1 && <div style={{ fontSize: "0.75rem", color: "#888" }}>{(total / spots).toFixed(2)}€ por lugar</div>}
+              {spots > 1 && <div style={{ fontSize: "0.75rem", color: "#888" }}>{(total / spots).toFixed(2)}€ por chapéu</div>}
             </div>
             <span style={{ fontWeight: 800, fontSize: "1.4rem", color: "#f97316" }}>{total.toFixed(2)}€</span>
           </div>
