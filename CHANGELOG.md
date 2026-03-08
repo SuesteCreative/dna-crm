@@ -14,7 +14,7 @@
 | Database | PostgreSQL via Prisma ORM v5 | Hosted on Supabase |
 | Styling | Plain CSS per page | No Tailwind — each page has its own `.css` file |
 | Icons | `lucide-react` | |
-| Export | `xlsx` (Excel) + `jspdf` + `jspdf-autotable` (PDF) | |
+| Export | `exceljs` (styled Excel) + `xlsx` (client-side) + `jspdf` + `jspdf-autotable` (PDF) | |
 | Charts | `recharts` | Statistics page only |
 | Email | `resend` | Bug reports only |
 | Calendar | `googleapis` | Google Calendar two-way sync |
@@ -422,6 +422,10 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `93f6a69` | Concessão seed button on empty state, TreePalm icon, sidebar overlap fix, Trópico first |
 | `fb6257b` | Dropdown text fix, color swap (full=purple, reserved=red), R badge, calendar view in Reservations, Calculator date inputs + Proceed button |
 | `d7c3e21` | Split-cell grid (morning/afternoon halves), book second period from SpotPanel, reservation conflict with smart alternatives |
+| `ba927c8` | Bug fixes: timezone (UTC→Lisbon), cancel releases all entries, walk-in AFTERNOON blocked by active FULL_DAY, daily note in localStorage, carry-over of carry-over blocked, date fields disabled in edit mode |
+| `7f9d5ea` | Fix Calculator price passthrough (skipAutoCalcRef), "+ Adicionar Chapéu" button in reservations form, reservation date/period edit (PUT regenerates daily entries), note + legend moved below spot grid |
+| `14803f9` | Bug 5: pre-validate all spots before creating any reservation (avoid partial bookings), extra spot creation reports failures explicitly |
+| `7f9d5ea` | exceljs styled export (colour-coded rows, section headers, bold totals), legend redesign, carry-over hides EXTRA_BED option, spacing between grid and note area |
 
 ---
 

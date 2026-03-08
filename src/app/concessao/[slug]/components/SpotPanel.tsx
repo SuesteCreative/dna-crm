@@ -320,10 +320,12 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
               </div>
               <div className="field-group">
                 <label>Camas (amanhã)</label>
-                <select value={coBeds || fullDayEntries[0].bedConfig} onChange={(e) => setCoBeds(e.target.value)}>
+                <select
+                  value={(coBeds || fullDayEntries[0].bedConfig) === "EXTRA_BED" ? "TWO_BEDS" : (coBeds || fullDayEntries[0].bedConfig)}
+                  onChange={(e) => setCoBeds(e.target.value)}
+                >
                   <option value="TWO_BEDS">2 camas</option>
                   <option value="ONE_BED">1 cama (chapéu)</option>
-                  <option value="EXTRA_BED">3 camas (extra)</option>
                 </select>
               </div>
               {coError && <p className="form-error">{coError}</p>}

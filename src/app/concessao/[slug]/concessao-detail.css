@@ -751,6 +751,7 @@
 
 /* ── Daily note + legend ───────────────────────────────────── */
 .daily-note-area {
+  margin-top: 1.5rem;
   margin-bottom: 1.2rem;
   display: flex;
   flex-direction: column;
@@ -797,6 +798,7 @@ details[open].daily-legend summary::before { content: "▼ "; }
   border-radius: 2px;
   margin-right: 5px;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 .leg-dot.free     { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
 .leg-dot.morning  { background: #f97316; }
@@ -804,3 +806,37 @@ details[open].daily-legend summary::before { content: "▼ "; }
 .leg-dot.full     { background: #a855f7; }
 .leg-dot.reserved { background: #ef4444; }
 .leg-dot.split    { background: linear-gradient(180deg, #f97316 50%, #3b82f6 50%); }
+
+/* Color grid inside legend */
+.leg-colors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.3rem 0.6rem;
+  margin-top: 0.3rem;
+}
+.leg-colors > div {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+/* Action list inside legend */
+.leg-actions {
+  list-style: none;
+  padding: 0;
+  margin: 0.3rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.leg-actions li {
+  font-size: 0.8rem;
+  color: #aaa;
+  line-height: 1.45;
+}
+.leg-actions li strong {
+  color: #f97316;
+  font-weight: 700;
+  margin-right: 0.25rem;
+}

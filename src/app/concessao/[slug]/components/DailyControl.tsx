@@ -233,32 +233,36 @@ export default function DailyControl({ concession }: { concession: Concession })
           <div className="daily-legend-body">
             <div className="legend-section">
               <strong>Cores dos lugares</strong>
-              <ul>
-                <li><span className="leg-dot free" /> Livre — sem nenhuma entrada</li>
-                <li><span className="leg-dot morning" /> Manhã — ocupado 09h–14h</li>
-                <li><span className="leg-dot afternoon" /> Tarde — ocupado 14h–19h</li>
-                <li><span className="leg-dot full" /> Dia Inteiro — ocupado todo o dia</li>
-                <li><span className="leg-dot reserved" /> Reserva — vem de uma reserva prévia</li>
-                <li><span className="leg-dot split" /> Split — manhã e tarde com clientes diferentes</li>
+              <div className="leg-colors">
+                <div><span className="leg-dot free" /> Livre</div>
+                <div><span className="leg-dot morning" /> Manhã (09h–14h)</div>
+                <div><span className="leg-dot afternoon" /> Tarde (14h–19h)</div>
+                <div><span className="leg-dot full" /> Dia Inteiro</div>
+                <div><span className="leg-dot reserved" /> Reserva pré-existente</div>
+                <div><span className="leg-dot split" /> Split (dois clientes)</div>
+              </div>
+              <strong style={{ marginTop: "0.8rem" }}>
+                Badge <span style={{ color: "#ef4444" }}>R</span>
+              </strong>
+              <p style={{ fontSize: "0.8rem", color: "#aaa", margin: "0.2rem 0 0", lineHeight: 1.45 }}>
+                Entrada proveniente de uma reserva prévia. Ver detalhes em <em>Reservas</em>.
+              </p>
+              <strong style={{ marginTop: "0.8rem" }}>
+                ★ Carry-over
+              </strong>
+              <p style={{ fontSize: "0.8rem", color: "#aaa", margin: "0.2rem 0 0", lineHeight: 1.45 }}>
+                Cliente pagou Dia Inteiro mas saiu cedo. A tarde é transferida para amanhã como <em>pré-pago</em>.
+              </p>
+            </div>
+            <div className="legend-section">
+              <strong>Ações no painel</strong>
+              <ul className="leg-actions">
+                <li><strong>Registar</strong> — walk-in para o período selecionado</li>
+                <li><strong>Estender para Dia Inteiro</strong> — converte Manhã em Dia Inteiro (cobra diferença)</li>
+                <li><strong>Libertar</strong> — cancela a entrada; lugar fica disponível</li>
+                <li><strong>Re-alugar</strong> — substitui cliente no mesmo período (override)</li>
+                <li><strong>Carry-over da Tarde</strong> — transfere tarde não usada para amanhã num spot à escolha</li>
               </ul>
-            </div>
-            <div className="legend-section">
-              <strong>Ações no painel de lugar</strong>
-              <ul>
-                <li><em>Registar</em> — cria uma nova entrada (walk-in) para o período selecionado.</li>
-                <li><em>Estender para Dia Inteiro</em> — converte uma entrada de Manhã em Dia Inteiro, cobrando apenas a diferença de preço (Dia Inteiro − Manhã).</li>
-                <li><em>Libertar</em> — cancela/remove a entrada do período. O lugar fica livre para novo aluguer.</li>
-                <li><em>Re-alugar</em> — permite registar um novo cliente no mesmo período do mesmo dia (override). Útil quando o cliente original saiu e outro ocupou o lugar.</li>
-                <li><em>Carry-over de Tarde</em> — cliente pagou Dia Inteiro mas saiu ao meio-dia. A tarde não utilizada é transferida para amanhã como crédito pré-pago (isCarryOver = true).</li>
-              </ul>
-            </div>
-            <div className="legend-section">
-              <strong>Carry-over</strong>
-              <p>Quando um cliente paga Dia Inteiro mas sai cedo, pode transferir o período de tarde para o dia seguinte. A entrada criada amanhã aparece marcada como <em>pré-pago</em> e não gera nova cobrança.</p>
-            </div>
-            <div className="legend-section">
-              <strong>Badge R</strong>
-              <p>O <strong>R</strong> vermelho nos cartões indica que a entrada vem de uma reserva (pré-reserva com datas definidas). Pode verificar os detalhes na aba <em>Reservas</em>.</p>
             </div>
           </div>
         </details>
