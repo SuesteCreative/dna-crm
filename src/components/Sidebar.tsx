@@ -53,7 +53,9 @@ export function Sidebar() {
         <>
         <aside className="crm-sidebar">
             <div className="brand">
-                <img src="/SVG/logo-white.svg" alt="DNA" style={{ height: 52, width: "auto" }} />
+                <a href="https://desportosnauticosalvor.com/" target="_blank" rel="noopener noreferrer">
+                    <img src="/SVG/logo-white.svg" alt="DNA" style={{ height: 64, width: "auto", display: "block" }} />
+                </a>
             </div>
 
             <nav className="crm-nav">

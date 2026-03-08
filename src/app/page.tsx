@@ -6,7 +6,7 @@ import { useEffect, useState, Fragment } from "react";
 import {
   Calendar, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
-  TrendingUp, Activity, UserCheck,
+  TrendingUp, Activity, UserCheck, UserX,
   AlertCircle, Trash2, ChevronDown, ChevronRight, Pencil
 } from "lucide-react";
 import { format } from "date-fns";
@@ -442,8 +442,21 @@ export default function Dashboard() {
   }
 
   const confirmed = bookings.filter(b => b.status === "CONFIRMED").length;
-  const pending = bookings.filter(b => b.status === "PENDING").length;
   const revenue = bookings.reduce((s, b) => s + (b.totalPrice || 0), 0);
+  const noShows = bookings.filter(b =>
+    new Date(b.activityDate) < todayStart &&
+    b.status !== "CANCELLED" &&
+    !b.showedUp
+  );
+  const noShowByPartner = partners
+    .map(p => ({ name: p.name, id: p.id, count: noShows.filter(b => b.partnerId === p.id).length }))
+    .filter(p => p.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+  const noShowByChannel = (["SHOPIFY", "MANUAL", "PARTNER"] as const)
+    .map(src => ({ src, count: noShows.filter(b => b.source === src).length }))
+    .filter(x => x.count > 0)
+    .sort((a, b) => b.count - a.count);
 
   const statusBadge = (s: string) => {
     const cls: Record<string, string> = { CONFIRMED: "badge-confirmed", PENDING: "badge-pending", CANCELLED: "badge-cancelled" };
@@ -525,10 +538,10 @@ export default function Dashboard() {
           <div className="tile-info"><span className="tile-val">{confirmed}</span><span className="tile-lbl">Confirmadas</span></div>
           <CheckCircle size={40} className="tile-bg-ico" />
         </div>
-        <div className="stat-tile amber">
-          <div className="tile-ico"><Clock size={22} /></div>
-          <div className="tile-info"><span className="tile-val">{pending}</span><span className="tile-lbl">Pendentes</span></div>
-          <Clock size={40} className="tile-bg-ico" />
+        <div className="stat-tile red">
+          <div className="tile-ico"><UserX size={22} /></div>
+          <div className="tile-info"><span className="tile-val">{noShows.length}</span><span className="tile-lbl">Não Compareceu</span></div>
+          <UserX size={40} className="tile-bg-ico" />
         </div>
         <div className="stat-tile teal">
           <div className="tile-ico"><Activity size={22} /></div>
@@ -536,6 +549,40 @@ export default function Dashboard() {
           <TrendingUp size={40} className="tile-bg-ico" />
         </div>
       </section>
+
+      {!isPartner && (noShowByPartner.length > 0 || noShowByChannel.length > 0) && (
+        <div className="noshow-breakdown">
+          {noShowByPartner.length > 0 && (
+            <div className="noshow-card">
+              <div className="noshow-card-title">Parceiros — Não Compareceu</div>
+              <div className="noshow-list">
+                {noShowByPartner.map(p => {
+                  const color = partnerColorMap.get(p.id) ?? PARTNER_PALETTE[0];
+                  return (
+                    <div key={p.id} className="noshow-row">
+                      <span className="noshow-row-name" style={{ color: color.text }}>{p.name}</span>
+                      <span className="noshow-row-count">{p.count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {noShowByChannel.length > 0 && (
+            <div className="noshow-card">
+              <div className="noshow-card-title">Canal — Não Compareceu</div>
+              <div className="noshow-list">
+                {noShowByChannel.map(x => (
+                  <div key={x.src} className="noshow-row">
+                    <span className="noshow-row-name">{x.src}</span>
+                    <span className="noshow-row-count">{x.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <section className="dashboard-content">
         <div className="table-card-header">
@@ -592,15 +639,15 @@ export default function Dashboard() {
                           <table className="crm-table">
                             <thead>
                               <tr>
-                                <th>Cliente</th>
-                                <th style={{ width: "80px" }}>Qtd</th>
+                                <th style={{ width: "17%" }}>Cliente</th>
+                                <th style={{ width: "54px", textAlign: "center" }}>Qtd</th>
                                 <th>Atividade</th>
-                                <th>Data / Hora</th>
-                                <th>Pax</th>
-                                <th>Fonte</th>
-                                <th>Status</th>
-                                <th>Preço</th>
-                                <th style={{ width: "44px" }}>Pres.</th>
+                                <th style={{ width: "118px" }}>Data / Hora</th>
+                                <th style={{ width: "66px", textAlign: "center" }}>Pax</th>
+                                <th style={{ width: "128px" }}>Fonte</th>
+                                <th style={{ width: "116px" }}>Status</th>
+                                <th style={{ width: "80px", textAlign: "right" }}>Preço</th>
+                                <th style={{ width: "46px", textAlign: "center" }}>Pres.</th>
                                 <th style={{ width: "44px" }}></th>
                               </tr>
                             </thead>
