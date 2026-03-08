@@ -162,6 +162,35 @@
   color: #f97316;
 }
 
+/* Empty state */
+.conc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.conc-empty-icon {
+  color: rgba(249,115,22,0.4);
+}
+
+.conc-empty-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text, #f1f1f1);
+  margin: 0;
+}
+
+.conc-empty-sub {
+  font-size: 0.85rem;
+  color: var(--color-muted, #888);
+  max-width: 380px;
+  margin: 0;
+}
+
 /* Settings */
 .conc-settings {
   display: grid;

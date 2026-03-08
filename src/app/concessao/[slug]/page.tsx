@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useParams } from "next/navigation";
-import { Umbrella, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator } from "lucide-react";
+import { TreePalm, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator } from "lucide-react";
 import DailyControl from "./components/DailyControl";
 import Reservations from "./components/Reservations";
 import PriceList from "./components/PriceList";
@@ -50,7 +50,7 @@ export default function ConcessaoDetailPage() {
   if (!concession) {
     return (
       <div className="cd-loading">
-        <Umbrella size={32} className="cd-spin" />
+        <TreePalm size={32} className="cd-spin" />
       </div>
     );
   }
@@ -69,7 +69,7 @@ export default function ConcessaoDetailPage() {
           <ArrowLeft size={16} /> Concessões
         </button>
         <div className="cd-title-row">
-          <Umbrella size={24} className="cd-title-icon" />
+          <TreePalm size={24} className="cd-title-icon" />
           <h1 className="cd-title">{concession.name}</h1>
           <span className="cd-loc">{concession.location}</span>
         </div>

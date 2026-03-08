@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { Umbrella, MapPin, LayoutGrid, Settings, ChevronRight, Loader2 } from "lucide-react";
+import { TreePalm, MapPin, LayoutGrid, Settings, ChevronRight, Loader2 } from "lucide-react";
 import "./concessao.css";
 
 interface Concession {
@@ -34,6 +34,7 @@ export default function ConcessaoPage() {
   const [prices, setPrices] = useState<Record<string, Record<string, string>>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -62,6 +63,24 @@ export default function ConcessaoPage() {
     setPrices((prev) => ({ ...prev, [slug]: { ...prev[slug], [field]: value } }));
   };
 
+  const handleSeed = async () => {
+    setSeeding(true);
+    await fetch("/api/concessions/seed", { method: "POST" });
+    const res = await fetch("/api/concessions");
+    const data = await res.json();
+    setConcessions(data);
+    const init: Record<string, Record<string, string>> = {};
+    data.forEach((c: Concession) => {
+      init[c.slug] = {
+        priceFull: String(c.priceFull), priceMorning: String(c.priceMorning),
+        priceAfternoon: String(c.priceAfternoon), priceExtraBed: String(c.priceExtraBed),
+        priceOneBed: String(c.priceOneBed),
+      };
+    });
+    setPrices(init);
+    setSeeding(false);
+  };
+
   const handleSave = async (slug: string) => {
     setSaving((p) => ({ ...p, [slug]: true }));
     await fetch(`/api/concessions/${slug}`, {
@@ -86,7 +105,7 @@ export default function ConcessaoPage() {
     <div className="conc-page">
       <div className="conc-header">
         <div className="conc-header-left">
-          <Umbrella size={28} className="conc-header-icon" />
+          <TreePalm size={28} className="conc-header-icon" />
           <div>
             <h1 className="conc-title">Concessão</h1>
             <p className="conc-subtitle">Gestão de espreguiçadeiras e chapéus de praia</p>
@@ -108,7 +127,19 @@ export default function ConcessaoPage() {
         </div>
       </div>
 
-      {tab === "selector" && (
+      {tab === "selector" && concessions.length === 0 && (
+        <div className="conc-empty">
+          <TreePalm size={48} className="conc-empty-icon" />
+          <p className="conc-empty-title">Sem concessões configuradas</p>
+          <p className="conc-empty-sub">Clique no botão abaixo para criar as concessões Trópico e Subnauta com os lugares padrão.</p>
+          <button className="conc-settings-save" style={{ maxWidth: 260 }} onClick={handleSeed} disabled={seeding}>
+            {seeding ? <Loader2 size={15} className="conc-spin" /> : <TreePalm size={15} />}
+            {seeding ? "A inicializar..." : "Inicializar Concessões"}
+          </button>
+        </div>
+      )}
+
+      {tab === "selector" && concessions.length > 0 && (
         <div className="conc-cards">
           {concessions.map((c) => (
             <button
@@ -117,7 +148,7 @@ export default function ConcessaoPage() {
               onClick={() => router.push(`/concessao/${c.slug}`)}
             >
               <div className="conc-card-top">
-                <Umbrella size={36} className="conc-card-icon" />
+                <TreePalm size={36} className="conc-card-icon" />
                 <ChevronRight size={20} className="conc-card-arrow" />
               </div>
               <h2 className="conc-card-name">{c.name}</h2>
@@ -139,7 +170,7 @@ export default function ConcessaoPage() {
           {concessions.map((c) => (
             <div key={c.slug} className="conc-settings-card">
               <div className="conc-settings-card-header">
-                <Umbrella size={20} />
+                <TreePalm size={20} />
                 <h3>{c.name}</h3>
                 <span className="conc-settings-meta">{c.location} · {c.rows}×{c.cols} lugares</span>
               </div>
