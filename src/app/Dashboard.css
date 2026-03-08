@@ -999,6 +999,12 @@ body {
     border-left: 2px solid rgba(249, 115, 22, 0.35);
     border-radius: 0 6px 6px 0;
     margin-bottom: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+.day-hdr:hover {
+    background: rgba(249, 115, 22, 0.09);
 }
 
 .day-hdr-title {

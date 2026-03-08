@@ -121,6 +121,8 @@ export default function Dashboard() {
   const toggleGhost = (id: string) => setExpandedGhosts(prev => ({ ...prev, [id]: !prev[id] }));
   const [dayViewMonths, setDayViewMonths] = useState<Record<string, boolean>>({});
   const toggleDayView = (key: string) => setDayViewMonths(prev => ({ ...prev, [key]: !prev[key] }));
+  const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
+  const toggleDay = (key: string) => setCollapsedDays(prev => ({ ...prev, [key]: !prev[key] }));
   const [createUnitPrice, setCreateUnitPrice] = useState<number | null>(null);
   const [editUnitPrice, setEditUnitPrice] = useState<number | null>(null);
   const [slots, setSlots] = useState<SlotInfo[]>([]);
@@ -792,7 +794,7 @@ export default function Dashboard() {
                   const hasFuture = anyFutureInGroup(monthBookings);
                   const hasToday = !hasFuture && anyTodayInGroup(monthBookings);
                   const isCurrentCalMonth = year === currentYearStr && month === currentMonthKey;
-                  const monthClass = hasFuture ? "is-future" : (isCurrentCalMonth || hasToday) ? "is-today" : "";
+                  const monthClass = isCurrentCalMonth ? "is-today" : hasFuture ? "is-future" : hasToday ? "is-today" : "";
                   return (
                     <div key={mKey} className={`month-section ${monthClass}`}>
                       <div className={`month-box-hdr ${monthClass}`} onClick={() => toggleGroup(mKey)}>
@@ -825,13 +827,17 @@ export default function Dashboard() {
                             ).sort(([a], [b]) => a.localeCompare(b)).map(([dayKey, dayBookings]) => {
                               const dayDate = new Date(dayKey + "T12:00:00");
                               const dayStr = format(dayDate, "EEEE, d 'de' MMMM", { locale: pt });
+                              const dKey = `${mKey}-${dayKey}`;
                               return (
                                 <div key={dayKey} className="day-section">
-                                  <div className="day-hdr">
-                                    <span className="day-hdr-title">{dayStr.charAt(0).toUpperCase() + dayStr.slice(1)}</span>
+                                  <div className="day-hdr" style={{ cursor: "pointer" }} onClick={() => toggleDay(dKey)}>
+                                    <span className="day-hdr-title">
+                                      <ChevronDown size={12} className={collapsedDays[dKey] ? "group-ico collapsed" : "group-ico"} style={{ marginRight: 6, verticalAlign: "middle" }} />
+                                      {dayStr.charAt(0).toUpperCase() + dayStr.slice(1)}
+                                    </span>
                                     <span className="day-badge">{dayBookings.length} {dayBookings.length === 1 ? 'reserva' : 'reservas'}</span>
                                   </div>
-                                  {renderBookingTable(dayBookings)}
+                                  {!collapsedDays[dKey] && renderBookingTable(dayBookings)}
                                 </div>
                               );
                             })}
