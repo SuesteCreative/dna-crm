@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
   if (!date) return NextResponse.json({ error: "date required" }, { status: 400 });
 
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const concession = await prisma.concession.findUnique({
     where: { slug: params.slug },
     include: { spots: { orderBy: { spotNumber: "asc" } } },

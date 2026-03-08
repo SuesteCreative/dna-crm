@@ -14,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const date = searchParams.get("date");
   if (!date) return NextResponse.json({ error: "date required" }, { status: 400 });
 
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const concession = await prisma.concession.findUnique({ where: { slug: params.slug } });
   if (!concession) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const body = await req.json();
   const { spotId, date, period, clientName, clientPhone, bedConfig, totalPrice, isPaid, notes } = body;
 

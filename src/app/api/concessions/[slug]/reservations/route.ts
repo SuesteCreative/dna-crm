@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const clientName = searchParams.get("clientName");
   const spotNumber = searchParams.get("spotNumber");
 
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const concession = await prisma.concession.findUnique({ where: { slug: params.slug } });
   if (!concession) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const body = await req.json();
   const { spotId, clientName, clientPhone, clientEmail, startDate, endDate, period, bedConfig, totalPrice, isPaid, notes } = body;
 

@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
   if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const concession = await prisma.concession.findUnique({
     where: { slug: params.slug },
     include: {
@@ -27,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
   if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const body = await req.json();
   const { priceFull, priceMorning, priceAfternoon, priceExtraBed, priceOneBed } = body;
   const updated = await prisma.concession.update({

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const body = await req.json();
   const { targetSpotId, targetDate, bedConfig } = body;
 

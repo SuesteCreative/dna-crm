@@ -10,7 +10,7 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
   if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const body = await req.json();
   const { period, clientName, clientPhone, bedConfig, totalPrice, isPaid, notes, status } = body;
 
@@ -37,7 +37,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { slug: st
   if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   await prisma.concessionEntry.update({
     where: { id: params.id },
     data: { status: "RELEASED" },

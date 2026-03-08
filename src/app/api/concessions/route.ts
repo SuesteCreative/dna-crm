@@ -10,7 +10,7 @@ export async function GET() {
   if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const concessions = await prisma.concession.findMany({
     include: { _count: { select: { spots: true } } },
     orderBy: { name: "asc" },

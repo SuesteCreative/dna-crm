@@ -38,7 +38,7 @@ export async function POST() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const results: string[] = [];
 
   for (const c of CONCESSIONS) {
