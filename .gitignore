@@ -40,3 +40,14 @@ next-env.d.ts
 
 # Cloudflare
 .wrangler
+
+# Credentials & data exports (never commit these)
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!next.config.json
+*.csv
+*.xlsx
+*.xls
+meety/

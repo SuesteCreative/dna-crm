@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { UserButton, useAuth } from "@clerk/nextjs";
+import { UserButton, useAuth, useUser } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
     ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Send
@@ -10,12 +10,15 @@ import { useState } from "react";
 
 export function Sidebar() {
     const { userId, sessionClaims } = useAuth();
+    const { user } = useUser();
     const pathname = usePathname();
     const router = useRouter();
     const [syncing, setSyncing] = useState(false);
     const [showBugReport, setShowBugReport] = useState(false);
     const [bugForm, setBugForm] = useState({ subject: "", description: "" });
     const [bugSent, setBugSent] = useState(false);
+    const [bugSending, setBugSending] = useState(false);
+    const [bugError, setBugError] = useState<string | null>(null);
 
     if (!userId) return null;
     if (pathname.startsWith("/pending") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
@@ -36,17 +39,35 @@ export function Sidebar() {
         }
     };
 
-    const handleBugSubmit = (e: React.FormEvent) => {
+    const handleBugSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const subject = encodeURIComponent(`[Bug Report] ${bugForm.subject}`);
-        const body = encodeURIComponent(bugForm.description);
-        window.open(`mailto:booking@desportosnauticosalvor.com?subject=${subject}&body=${body}`, "_blank");
-        setBugSent(true);
-        setTimeout(() => {
-            setShowBugReport(false);
-            setBugForm({ subject: "", description: "" });
-            setBugSent(false);
-        }, 2000);
+        setBugSending(true);
+        setBugError(null);
+        try {
+            const res = await fetch("/api/bug-report", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    subject: bugForm.subject,
+                    description: bugForm.description,
+                    senderEmail: user?.primaryEmailAddress?.emailAddress,
+                }),
+            });
+            if (res.ok) {
+                setBugSent(true);
+                setTimeout(() => {
+                    setShowBugReport(false);
+                    setBugForm({ subject: "", description: "" });
+                    setBugSent(false);
+                }, 2000);
+            } else {
+                setBugError("Erro ao enviar. Tente novamente.");
+            }
+        } catch {
+            setBugError("Erro de ligação.");
+        } finally {
+            setBugSending(false);
+        }
     };
 
     return (
@@ -202,11 +223,12 @@ export function Sidebar() {
                                 required
                             />
                         </div>
+                        {bugError && <div className="bug-error">{bugError}</div>}
                         <div className="bug-modal-footer">
                             <button type="button" className="bug-btn-cancel" onClick={() => setShowBugReport(false)}>Cancelar</button>
-                            <button type="submit" className="bug-btn-send" disabled={bugSent}>
+                            <button type="submit" className="bug-btn-send" disabled={bugSent || bugSending}>
                                 <Send size={13} />
-                                {bugSent ? "A abrir email..." : "Enviar Relatório"}
+                                {bugSent ? "Enviado!" : bugSending ? "A enviar..." : "Enviar Relatório"}
                             </button>
                         </div>
                     </form>

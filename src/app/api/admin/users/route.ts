@@ -21,7 +21,8 @@ export async function GET() {
 
         const users = response.data.map((u) => ({
             id: u.id,
-            name: [u.firstName, u.lastName].filter(Boolean).join(" ") || "—",
+            name: [u.firstName, u.lastName].filter(Boolean).join(" ") ||
+                  (u.unsafeMetadata?.requestName as string) || "—",
             email: u.emailAddresses[0]?.emailAddress || "—",
             imageUrl: u.imageUrl,
             role: (u.publicMetadata?.role as string) || "USER",

@@ -45,7 +45,12 @@ export default function ProfilePage() {
         setSaving(true);
         setSaveMsg(null);
         try {
+            const nameParts = form.requestName.trim().split(/\s+/);
+            const firstName = nameParts[0] || "";
+            const lastName = nameParts.slice(1).join(" ") || undefined;
             await user.update({
+                firstName,
+                lastName,
                 unsafeMetadata: {
                     requestName: form.requestName,
                     companyName: form.companyName,

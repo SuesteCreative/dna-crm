@@ -313,6 +313,12 @@ body {
 .bug-btn-send:hover { opacity: .88; }
 .bug-btn-send:disabled { opacity: .6; cursor: default; }
 
+.bug-error {
+    font-size: 12px;
+    color: var(--red);
+    margin: 0 0 8px;
+}
+
 .sidebar-user {
     padding: 16px 20px;
     border-top: 1px solid var(--border);

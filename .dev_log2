@@ -155,3 +155,22 @@
 <w>  at resolve commonjs C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\webpack\loaders\next-barrel-loader.js
  Ô£ô Compiled in 34ms
  Ô£ô Compiled in 165ms (398 modules)
+ Ô£ô Compiled in 488ms (587 modules)
+ Ô£ô Compiled in 250ms (587 modules)
+ Ô£ô Compiled in 156ms (398 modules)
+ Ô£ô Compiled in 229ms (587 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (192kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ Ô£ô Compiled in 206ms (189 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (192kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\cache\webpack\edge-server-development\0.pack.gz_' -> 'C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\cache\webpack\edge-server-development\0.pack.gz'
+ Ô£ô Compiled in 426ms (587 modules)
+ Ô£ô Compiled in 213ms (587 modules)
+ Ô£ô Compiled in 162ms (587 modules)
+ Ô£ô Compiled in 181ms (587 modules)
+ Ô£ô Compiled in 171ms (587 modules)
+ Ô£ô Compiled in 74ms (189 modules)
+ Ô£ô Compiled in 89ms (398 modules)
+ Ô£ô Compiled in 93ms (398 modules)
+ Ô£ô Compiled in 125ms (399 modules)
+ Ô£ô Compiled in 158ms (398 modules)
+ Ô£ô Compiled in 80ms (398 modules)

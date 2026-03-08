@@ -28,3 +28,5 @@
 <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (192kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
    Reload env: .env
  Ô£ô Compiled in 206ms (439 modules)
+ Ô£ô Compiled in 557ms (439 modules)
+ Ô£ô Compiled in 267ms (439 modules)

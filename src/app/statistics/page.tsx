@@ -75,7 +75,7 @@ export default function StatisticsPage() {
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
     const isPartner = role === "PARTNER";
     const router = useRouter();
-    const [period, setPeriod] = useState("30d");
+    const [period, setPeriod] = useState("all");
     const [customStart, setCustomStart] = useState("");
     const [customEnd, setCustomEnd] = useState("");
     const [data, setData] = useState<any>(null);
