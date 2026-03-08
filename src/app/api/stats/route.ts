@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getPrisma } from "@/lib/prisma";
+import { fixMojibake } from "@/lib/encoding";
 
 function getDateRange(period: string): { start: Date; end: Date } {
     const end = new Date();
@@ -174,7 +175,7 @@ export async function GET(req: NextRequest) {
     const custMap: Record<string, { name: string; email: string; count: number; revenue: number }> = {};
     for (const b of bookings) {
         const email = b.customerEmail || "desconhecido";
-        if (!custMap[email]) custMap[email] = { name: b.customerName || email, email, count: 0, revenue: 0 };
+        if (!custMap[email]) custMap[email] = { name: fixMojibake(b.customerName || email), email, count: 0, revenue: 0 };
         custMap[email].count++;
         custMap[email].revenue += b.totalPrice ?? 0;
     }

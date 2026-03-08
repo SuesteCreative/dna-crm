@@ -45,6 +45,17 @@ const ROLE_COLORS: Record<string, string> = {
     SUPER_ADMIN: "role-superadmin",
 };
 
+const PARTNER_PALETTE: { bg: string; text: string }[] = [
+    { bg: "rgba(59,130,246,.18)",  text: "#3b82f6" },
+    { bg: "rgba(20,184,166,.18)",  text: "#14b8a6" },
+    { bg: "rgba(168,85,247,.18)",  text: "#a855f7" },
+    { bg: "rgba(245,158,11,.18)",  text: "#f59e0b" },
+    { bg: "rgba(236,72,153,.18)",  text: "#ec4899" },
+    { bg: "rgba(34,197,94,.18)",   text: "#22c55e" },
+    { bg: "rgba(249,115,22,.18)",  text: "#f97316" },
+    { bg: "rgba(99,102,241,.18)",  text: "#6366f1" },
+];
+
 export default function AdminUsersPage() {
     const { isLoaded, isSignedIn } = useUser();
     const { sessionClaims } = useAuth();
@@ -193,9 +204,20 @@ export default function AdminUsersPage() {
                                             </div>
                                         </td>
                                         <td>
-                                            <span className={`role-badge ${ROLE_COLORS[u.role] || "role-user"}`}>
-                                                {ROLE_LABELS[u.role] || u.role}
-                                            </span>
+                                            {u.role === "PARTNER" && u.partnerId ? (() => {
+                                                const idx = partners.findIndex(p => p.id === u.partnerId);
+                                                const color = PARTNER_PALETTE[(idx >= 0 ? idx : 0) % PARTNER_PALETTE.length];
+                                                const label = partners.find(p => p.id === u.partnerId)?.name ?? "Parceiro";
+                                                return (
+                                                    <span className="role-badge" style={{ background: color.bg, color: color.text }}>
+                                                        {label}
+                                                    </span>
+                                                );
+                                            })() : (
+                                                <span className={`role-badge ${ROLE_COLORS[u.role] || "role-user"}`}>
+                                                    {ROLE_LABELS[u.role] || u.role}
+                                                </span>
+                                            )}
                                         </td>
                                         <td>
                                             <div className="au-select-wrap">

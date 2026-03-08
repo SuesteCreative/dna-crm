@@ -1,4 +1,5 @@
 import { getPrisma } from "./prisma";
+import { fixMojibake } from "./encoding";
 
 export async function syncShopifyOrders(
     domain?: string,
@@ -110,9 +111,11 @@ export async function syncShopifyOrders(
                 const shopifyId = order.id.toString();
                 const orderNumber = order.order_number ? `#${order.order_number}` : null;
 
-                const customerName = `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim()
+                const customerName = fixMojibake(
+                    `${order.customer?.first_name || ""} ${order.customer?.last_name || ""}`.trim()
                     || order.customer?.email
-                    || "Consumidor Final";
+                    || "Consumidor Final"
+                );
 
                 const status = (order.cancelled_at) ? "CANCELLED" : (order.financial_status === "paid" ? "CONFIRMED" : "PENDING");
                 const totalPrice = parseFloat(order.total_price) || 0;
