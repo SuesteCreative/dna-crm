@@ -21,6 +21,14 @@ export default clerkMiddleware(async (auth, request) => {
     // /pending is accessible to all authenticated users
     if (path.startsWith("/pending")) return;
 
+    // /concessao/* — only SUPER_ADMIN and ADMIN
+    if (path.startsWith("/concessao")) {
+        if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
+            return NextResponse.redirect(new URL("/pending", request.url));
+        }
+        return;
+    }
+
     // /admin/* — only SUPER_ADMIN and ADMIN
     if (path.startsWith("/admin")) {
         if (role !== "SUPER_ADMIN" && role !== "ADMIN") {

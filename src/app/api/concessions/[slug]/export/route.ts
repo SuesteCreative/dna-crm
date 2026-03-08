@@ -1,0 +1,159 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { getPrisma } from "@/lib/prisma";
+import * as XLSX from "xlsx";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+  const { sessionClaims } = await auth();
+  const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const date = searchParams.get("date");
+  const format = searchParams.get("format") ?? "xlsx"; // "xlsx" | "json"
+
+  if (!date) return NextResponse.json({ error: "date required" }, { status: 400 });
+
+  const prisma = getPrisma();
+  const concession = await prisma.concession.findUnique({
+    where: { slug: params.slug },
+    include: { spots: { orderBy: { spotNumber: "asc" } } },
+  });
+  if (!concession) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const entries = await prisma.concessionEntry.findMany({
+    where: { concessionId: concession.id, date, status: { not: "RELEASED" } },
+    include: { spot: true, reservation: true },
+  });
+
+  // Build full spot list (one row per spot — may have up to 2 entries per spot)
+  const spotRows: Record<string, any>[] = concession.spots.map((spot) => {
+    const spotEntries = entries.filter((e) => e.spotId === spot.id);
+    if (spotEntries.length === 0) {
+      return {
+        Lugar: spot.spotNumber,
+        Cliente: "—",
+        Telefone: "—",
+        Modalidade: "Livre",
+        Camas: "—",
+        Pago: "—",
+        "Preço (€)": "—",
+        Reserva: "Não",
+        "Carry-over": "—",
+        Notas: "—",
+      };
+    }
+    // Merge multiple entries (e.g. MORNING + AFTERNOON) into one display row
+    const periodLabel = (p: string) =>
+      p === "MORNING" ? "Manhã" : p === "AFTERNOON" ? "Tarde" : "Dia Inteiro";
+    const bedLabel = (b: string) =>
+      b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "3 camas" : "2 camas";
+    const primary = spotEntries[0];
+    const periods = spotEntries.map((e) => periodLabel(e.period)).join(" + ");
+    const totalPrice = spotEntries.reduce((sum, e) => sum + e.totalPrice, 0);
+    const allPaid = spotEntries.every((e) => e.isPaid);
+    return {
+      Lugar: spot.spotNumber,
+      Cliente: primary.clientName,
+      Telefone: primary.clientPhone ?? "—",
+      Modalidade: periods,
+      Camas: bedLabel(primary.bedConfig),
+      Pago: allPaid ? "✓" : "✗",
+      "Preço (€)": totalPrice.toFixed(2),
+      Reserva: primary.reservationId ? "Sim" : "Não",
+      "Carry-over": primary.isCarryOver ? "Sim (pré-pago)" : "Não",
+      Notas: primary.notes ?? "—",
+    };
+  });
+
+  // Build summary
+  const activeEntries = entries.filter((e) => e.status !== "RELEASED");
+  const totalSpots = concession.spots.length;
+  const occupiedSpotIds = new Set(activeEntries.map((e) => e.spotId));
+  const occupiedCount = occupiedSpotIds.size;
+  const morningCount = activeEntries.filter((e) => e.period === "MORNING").length;
+  const afternoonCount = activeEntries.filter((e) => e.period === "AFTERNOON").length;
+  const fullDayCount = activeEntries.filter((e) => e.period === "FULL_DAY").length;
+  const paidRevenue = activeEntries.filter((e) => e.isPaid).reduce((s, e) => s + e.totalPrice, 0);
+  const unpaidRevenue = activeEntries.filter((e) => !e.isPaid).reduce((s, e) => s + e.totalPrice, 0);
+  const reservationRevenue = activeEntries.filter((e) => e.reservationId).reduce((s, e) => s + e.totalPrice, 0);
+  const walkInRevenue = activeEntries.filter((e) => !e.reservationId).reduce((s, e) => s + e.totalPrice, 0);
+  const carryOvers = activeEntries.filter((e) => e.isCarryOver);
+
+  if (format === "json") {
+    return NextResponse.json({
+      spots: spotRows,
+      summary: {
+        date,
+        concession: concession.name,
+        totalSpots,
+        occupiedCount,
+        freeCount: totalSpots - occupiedCount,
+        morningCount,
+        afternoonCount,
+        fullDayCount,
+        paidRevenue,
+        unpaidRevenue,
+        totalRevenue: paidRevenue + unpaidRevenue,
+        reservationRevenue,
+        walkInRevenue,
+        carryOverCount: carryOvers.length,
+      },
+    });
+  }
+
+  // Build Excel workbook
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1 — Controlo do Dia
+  const ws1 = XLSX.utils.json_to_sheet(spotRows);
+  const colWidths = [
+    { wch: 6 }, { wch: 22 }, { wch: 14 }, { wch: 16 }, { wch: 10 },
+    { wch: 6 }, { wch: 10 }, { wch: 8 }, { wch: 18 }, { wch: 30 },
+  ];
+  ws1["!cols"] = colWidths;
+  XLSX.utils.book_append_sheet(wb, ws1, "Controlo do Dia");
+
+  // Sheet 2 — Resumo do Dia
+  const now = new Date().toLocaleString("pt-PT", { timeZone: "Europe/Lisbon" });
+  const summaryRows = [
+    ["Relatório gerado em:", now],
+    [""],
+    ["Data", date],
+    ["Concessão", concession.name],
+    [""],
+    ["Total de lugares", totalSpots],
+    ["Lugares ocupados", occupiedCount],
+    ["Lugares livres", totalSpots - occupiedCount],
+    [""],
+    ["Entradas Manhã", morningCount],
+    ["Entradas Tarde", afternoonCount],
+    ["Entradas Dia Inteiro", fullDayCount],
+    [""],
+    ["Receita paga", `${paidRevenue.toFixed(2)}€`],
+    ["Receita não paga", `${unpaidRevenue.toFixed(2)}€`],
+    ["Receita total", `${(paidRevenue + unpaidRevenue).toFixed(2)}€`],
+    [""],
+    ["Receita de reservas", `${reservationRevenue.toFixed(2)}€`],
+    ["Receita walk-in", `${walkInRevenue.toFixed(2)}€`],
+    [""],
+    ["Carry-overs (pré-pago)", carryOvers.length],
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(summaryRows);
+  ws2["!cols"] = [{ wch: 28 }, { wch: 22 }];
+  XLSX.utils.book_append_sheet(wb, ws2, "Resumo do Dia");
+
+  const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  const filename = `controlo-${params.slug}-${date}.xlsx`;
+
+  return new NextResponse(buf, {
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
+}

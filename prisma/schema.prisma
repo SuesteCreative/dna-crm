@@ -123,3 +123,83 @@ model OverrideLog {
   date        String   // "YYYY-MM-DD"
   createdAt   DateTime @default(now())
 }
+
+// ── CONCESSION MODELS ────────────────────────────────────
+
+model Concession {
+  id             String   @id @default(cuid())
+  slug           String   @unique // "tropico" | "subnauta"
+  name           String
+  location       String
+  rows           Int
+  cols           Int
+  priceFull      Float
+  priceMorning   Float
+  priceAfternoon Float
+  priceExtraBed  Float
+  priceOneBed    Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  spots          ConcessionSpot[]
+  entries        ConcessionEntry[]
+  reservations   ConcessionReservation[]
+}
+
+model ConcessionSpot {
+  id           String     @id @default(cuid())
+  concessionId String
+  concession   Concession @relation(fields: [concessionId], references: [id])
+  spotNumber   Int
+  row          Int
+  col          Int
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  entries      ConcessionEntry[]
+  reservations ConcessionReservation[]
+
+  @@unique([concessionId, spotNumber])
+}
+
+model ConcessionEntry {
+  id            String     @id @default(cuid())
+  concessionId  String
+  concession    Concession @relation(fields: [concessionId], references: [id])
+  spotId        String
+  spot          ConcessionSpot @relation(fields: [spotId], references: [id])
+  date          String     // "YYYY-MM-DD"
+  period        String     // "MORNING" | "AFTERNOON" | "FULL_DAY"
+  clientName    String
+  clientPhone   String?
+  bedConfig     String     @default("TWO_BEDS") // "TWO_BEDS" | "ONE_BED" | "EXTRA_BED"
+  totalPrice    Float
+  isPaid        Boolean    @default(true)
+  notes         String?
+  reservationId String?
+  reservation   ConcessionReservation? @relation(fields: [reservationId], references: [id])
+  isCarryOver   Boolean    @default(false)
+  status        String     @default("ACTIVE") // "ACTIVE" | "RELEASED" | "CARRIED_OVER"
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model ConcessionReservation {
+  id           String     @id @default(cuid())
+  concessionId String
+  concession   Concession @relation(fields: [concessionId], references: [id])
+  spotId       String
+  spot         ConcessionSpot @relation(fields: [spotId], references: [id])
+  clientName   String
+  clientPhone  String?
+  clientEmail  String?
+  startDate    String     // "YYYY-MM-DD"
+  endDate      String     // "YYYY-MM-DD"
+  period       String     // "MORNING" | "AFTERNOON" | "FULL_DAY"
+  bedConfig    String     @default("TWO_BEDS")
+  totalPrice   Float
+  isPaid       Boolean    @default(false)
+  notes        String?
+  status       String     @default("ACTIVE") // "ACTIVE" | "COMPLETED" | "CANCELLED"
+  entries      ConcessionEntry[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
