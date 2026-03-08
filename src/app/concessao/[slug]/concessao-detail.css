@@ -151,6 +151,46 @@
     rgba(251,146,60,0.28) 50%,
     rgba(59,130,246,0.28) 50%
   );
+  min-height: 88px;
+  justify-content: flex-start;
+  padding: 4px 4px 4px;
+}
+
+.spot-split-top,
+.spot-split-bot {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 30px;
+  padding: 2px 0;
+}
+
+.spot-split-divider {
+  width: 85%;
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+
+.spot-client-sm {
+  font-size: 0.6rem;
+  color: #fff;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.spot-bed-sm {
+  font-size: 0.5rem;
+  color: rgba(255,255,255,0.5);
 }
 
 .spot-num {

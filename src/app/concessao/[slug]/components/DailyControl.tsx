@@ -149,9 +149,10 @@ export default function DailyControl({ concession }: { concession: Concession })
       >
         {spotStates.map(({ spot, entries: spotEntries }) => {
           const status = spotStatus(spotEntries);
-          const primaryEntry = spotEntries.find((e) =>
-            e.status === "ACTIVE" || e.status === "CARRIED_OVER"
-          );
+          const active = spotEntries.filter(e => e.status === "ACTIVE" || e.status === "CARRIED_OVER");
+          const morningEnt = active.find(e => e.period === "MORNING");
+          const afternoonEnt = active.find(e => e.period === "AFTERNOON");
+          const primaryEntry = active.find(e => e.period === "FULL_DAY") || morningEnt || afternoonEnt;
           return (
             <div
               key={spot.id}
@@ -161,11 +162,25 @@ export default function DailyControl({ concession }: { concession: Concession })
             >
               <span className="spot-num">{spot.spotNumber}</span>
               {status === "reserved" && <span className="spot-res-badge">R</span>}
-              {primaryEntry && (
+              {status === "split" ? (
                 <>
-                  <span className="spot-client">{primaryEntry.clientName}</span>
-                  <span className="spot-bed">{bedIcon(primaryEntry.bedConfig)}</span>
+                  <div className="spot-split-top">
+                    <span className="spot-client-sm">{morningEnt?.clientName ?? ""}</span>
+                    <span className="spot-bed-sm">{morningEnt ? bedIcon(morningEnt.bedConfig) : ""}</span>
+                  </div>
+                  <div className="spot-split-divider" />
+                  <div className="spot-split-bot">
+                    <span className="spot-client-sm">{afternoonEnt?.clientName ?? ""}</span>
+                    <span className="spot-bed-sm">{afternoonEnt ? bedIcon(afternoonEnt.bedConfig) : ""}</span>
+                  </div>
                 </>
+              ) : (
+                primaryEntry && (
+                  <>
+                    <span className="spot-client">{primaryEntry.clientName}</span>
+                    <span className="spot-bed">{bedIcon(primaryEntry.bedConfig)}</span>
+                  </>
+                )
               )}
             </div>
           );

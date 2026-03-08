@@ -102,6 +102,9 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // Add-second-period form toggle
+  const [showAddForm, setShowAddForm] = useState(false);
+
   // Carry-over state
   const [showCarryOver, setShowCarryOver] = useState(false);
   const [coTargetSpot, setCoTargetSpot] = useState("");
@@ -255,9 +258,9 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
           {/* ── MORNING only ── */}
           {!isFree && morningEntry && !afternoonEntry && !fullDayEntry && (
             <>
+              <div style={{ fontSize: "0.72rem", color: "#fb923c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Manhã</div>
               <div className="info-row"><span className="label">Cliente</span><span className="value">{morningEntry.clientName}</span></div>
               {morningEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{morningEntry.clientPhone}</span></div>}
-              <div className="info-row"><span className="label">Modalidade</span><span className="value">{periodLabel(morningEntry.period)}</span></div>
               <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(morningEntry.bedConfig)}</span></div>
               <div className="info-row"><span className="label">Preço</span><span className="value">{morningEntry.totalPrice.toFixed(2)}€ {morningEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
               {morningEntry.notes && <div className="info-row"><span className="label">Notas</span><span className="value">{morningEntry.notes}</span></div>}
@@ -268,31 +271,131 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
               <button className="action-btn danger" onClick={() => handleDelete(morningEntry.id)} disabled={busy}>
                 Libertar Manhã
               </button>
+              <div className="action-divider" />
+              {!showAddForm ? (
+                <button className="action-btn blue" onClick={() => setShowAddForm(true)} disabled={busy}>
+                  + Tarde livre — Registar cliente
+                </button>
+              ) : (
+                <>
+                  <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — novo cliente</div>
+                  <div className="field-group">
+                    <label>Nome do cliente *</label>
+                    <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
+                  </div>
+                  <div className="field-group">
+                    <label>Telefone</label>
+                    <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
+                  </div>
+                  <div className="field-row">
+                    <div className="field-group">
+                      <label>Camas</label>
+                      <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
+                        <option value="TWO_BEDS">2 camas</option>
+                        <option value="ONE_BED">1 cama (chapéu)</option>
+                        <option value="EXTRA_BED">3 camas (extra)</option>
+                      </select>
+                    </div>
+                    <div className="field-group">
+                      <label>Preço (€)</label>
+                      <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="toggle-row">
+                    <span>Pago</span>
+                    <label className="toggle-switch">
+                      <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                  {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                    <button className="action-btn primary" onClick={handleRegister} disabled={busy}>
+                      {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar Tarde
+                    </button>
+                    <button className="action-btn danger" onClick={() => setShowAddForm(false)} disabled={busy}>Cancelar</button>
+                  </div>
+                </>
+              )}
             </>
           )}
 
           {/* ── AFTERNOON only ── */}
           {!isFree && afternoonEntry && !morningEntry && !fullDayEntry && (
             <>
+              <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde</div>
               <div className="info-row"><span className="label">Cliente</span><span className="value">{afternoonEntry.clientName}</span></div>
               {afternoonEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{afternoonEntry.clientPhone}</span></div>}
-              <div className="info-row"><span className="label">Modalidade</span><span className="value">{periodLabel(afternoonEntry.period)}</span></div>
               <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(afternoonEntry.bedConfig)}</span></div>
               <div className="info-row"><span className="label">Preço</span><span className="value">{afternoonEntry.totalPrice.toFixed(2)}€ {afternoonEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
               <div className="action-divider" />
               <button className="action-btn danger" onClick={() => handleDelete(afternoonEntry.id)} disabled={busy}>
                 Libertar Tarde
               </button>
+              <div className="action-divider" />
+              {!showAddForm ? (
+                <button className="action-btn warning" onClick={() => setShowAddForm(true)} disabled={busy}>
+                  + Manhã livre — Registar cliente
+                </button>
+              ) : (
+                <>
+                  <div style={{ fontSize: "0.72rem", color: "#fb923c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Manhã — novo cliente</div>
+                  <div className="field-group">
+                    <label>Nome do cliente *</label>
+                    <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
+                  </div>
+                  <div className="field-group">
+                    <label>Telefone</label>
+                    <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
+                  </div>
+                  <div className="field-row">
+                    <div className="field-group">
+                      <label>Camas</label>
+                      <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
+                        <option value="TWO_BEDS">2 camas</option>
+                        <option value="ONE_BED">1 cama (chapéu)</option>
+                        <option value="EXTRA_BED">3 camas (extra)</option>
+                      </select>
+                    </div>
+                    <div className="field-group">
+                      <label>Preço (€)</label>
+                      <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="toggle-row">
+                    <span>Pago</span>
+                    <label className="toggle-switch">
+                      <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                  {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                    <button className="action-btn primary" onClick={handleRegister} disabled={busy}>
+                      {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar Manhã
+                    </button>
+                    <button className="action-btn danger" onClick={() => setShowAddForm(false)} disabled={busy}>Cancelar</button>
+                  </div>
+                </>
+              )}
             </>
           )}
 
           {/* ── SPLIT (morning + afternoon) ── */}
           {!isFree && morningEntry && afternoonEntry && !fullDayEntry && (
             <>
-              <div className="info-row"><span className="label">Manhã</span><span className="value">{morningEntry.clientName}</span></div>
-              <div className="info-row"><span className="label">Tarde</span><span className="value">{afternoonEntry.clientName}</span></div>
-              <div className="action-divider" />
+              <div style={{ fontSize: "0.72rem", color: "#fb923c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Manhã</div>
+              <div className="info-row"><span className="label">Cliente</span><span className="value">{morningEntry.clientName}</span></div>
+              {morningEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{morningEntry.clientPhone}</span></div>}
+              <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(morningEntry.bedConfig)}</span></div>
+              <div className="info-row"><span className="label">Preço</span><span className="value">{morningEntry.totalPrice.toFixed(2)}€ {morningEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
               <button className="action-btn danger" onClick={() => handleDelete(morningEntry.id)} disabled={busy}>Libertar Manhã</button>
+              <div className="action-divider" />
+              <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde</div>
+              <div className="info-row"><span className="label">Cliente</span><span className="value">{afternoonEntry.clientName}</span></div>
+              {afternoonEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{afternoonEntry.clientPhone}</span></div>}
+              <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(afternoonEntry.bedConfig)}</span></div>
+              <div className="info-row"><span className="label">Preço</span><span className="value">{afternoonEntry.totalPrice.toFixed(2)}€ {afternoonEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
               <button className="action-btn blue" onClick={() => handleDelete(afternoonEntry.id)} disabled={busy}>Libertar Tarde</button>
             </>
           )}

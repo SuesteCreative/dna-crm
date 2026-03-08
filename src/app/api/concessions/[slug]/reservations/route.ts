@@ -69,18 +69,42 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
   // Check for conflicts across the date range
   const dates = dateRange(startDate, endDate);
-  for (const date of dates) {
-    const existing = await prisma.concessionEntry.findMany({
-      where: { spotId, date, status: { not: "RELEASED" } },
-    });
-    for (const e of existing) {
-      if (e.period === "FULL_DAY" || e.period === period || period === "FULL_DAY") {
-        return NextResponse.json({
-          error: "CONFLICT",
-          message: `Conflito no espaço em ${date} (${e.period})`,
-        }, { status: 409 });
-      }
+
+  // Batch-fetch all relevant entries for the concession across these dates (for conflict + alternatives)
+  const allEntries = await prisma.concessionEntry.findMany({
+    where: { concessionId: concession.id, date: { in: dates }, status: { not: "RELEASED" } },
+  });
+
+  // Build blocked dates per spot for the requested period
+  function isConflict(existingPeriod: string, newPeriod: string) {
+    return existingPeriod === "FULL_DAY" || existingPeriod === newPeriod || newPeriod === "FULL_DAY";
+  }
+  const spotBlockedDates: Record<string, string[]> = {};
+  for (const e of allEntries) {
+    if (isConflict(e.period, period)) {
+      if (!spotBlockedDates[e.spotId]) spotBlockedDates[e.spotId] = [];
+      spotBlockedDates[e.spotId].push(e.date);
     }
+  }
+
+  const conflictDates = spotBlockedDates[spotId] ?? [];
+  if (conflictDates.length > 0) {
+    // Compute alternative spots
+    const allSpots = await prisma.concessionSpot.findMany({
+      where: { concessionId: concession.id, isActive: true, id: { not: spotId } },
+      orderBy: { spotNumber: "asc" },
+    });
+    const alternatives = allSpots
+      .map((s) => ({ spotId: s.id, spotNumber: s.spotNumber, blockedDates: spotBlockedDates[s.id] ?? [] }))
+      .filter((a) => a.blockedDates.length < dates.length)
+      .sort((a, b) => a.blockedDates.length - b.blockedDates.length)
+      .slice(0, 6);
+    return NextResponse.json({
+      error: "CONFLICT",
+      message: `Lugar ocupado nos dias: ${conflictDates.join(", ")}`,
+      conflictDates,
+      alternatives,
+    }, { status: 409 });
   }
 
   // Create reservation

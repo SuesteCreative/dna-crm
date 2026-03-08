@@ -152,6 +152,8 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const [form, setForm] = useState(emptyForm);
   const [formBusy, setFormBusy] = useState(false);
   const [formError, setFormError] = useState("");
+  const [conflictDates, setConflictDates] = useState<string[]>([]);
+  const [conflictAlts, setConflictAlts] = useState<{ spotId: string; spotNumber: number; blockedDates: string[] }[] | null>(null);
 
   const fetchReservations = useCallback(async () => {
     setLoading(true);
@@ -194,7 +196,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const openNew = () => {
     setEditing(null);
     setForm(emptyForm());
-    setFormError("");
+    setFormError(""); setConflictAlts(null); setConflictDates([]);
     setShowDrawer(true);
   };
 
@@ -206,7 +208,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
       period: r.period, bedConfig: r.bedConfig,
       totalPrice: String(r.totalPrice), isPaid: r.isPaid, notes: r.notes ?? "",
     });
-    setFormError("");
+    setFormError(""); setConflictAlts(null); setConflictDates([]);
     setShowDrawer(true);
   };
 
@@ -224,7 +226,19 @@ export default function Reservations({ concession, initialReservation, onInitHan
     });
     const data = await res.json();
     setFormBusy(false);
-    if (!res.ok) { setFormError(data.error || "Erro ao guardar"); return; }
+    if (!res.ok) {
+      if (res.status === 409 && data.alternatives) {
+        setConflictDates(data.conflictDates ?? []);
+        setConflictAlts(data.alternatives);
+        setFormError(data.message || "Conflito de disponibilidade");
+      } else {
+        setFormError(data.error || "Erro ao guardar");
+        setConflictAlts(null);
+      }
+      return;
+    }
+    setConflictAlts(null);
+    setConflictDates([]);
     setShowDrawer(false);
     fetchReservations();
   };
@@ -390,7 +404,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
               </div>
               <div className="field-group">
                 <label>Lugar *</label>
-                <select value={form.spotId} onChange={(e) => setForm((p) => ({ ...p, spotId: e.target.value }))}>
+                <select value={form.spotId} onChange={(e) => { setForm((p) => ({ ...p, spotId: e.target.value })); setConflictAlts(null); setConflictDates([]); setFormError(""); }}>
                   <option value="">— selecionar —</option>
                   {concession.spots.map((s) => (
                     <option key={s.id} value={s.id}>Lugar {s.spotNumber}</option>
@@ -448,6 +462,34 @@ export default function Reservations({ concession, initialReservation, onInitHan
                 </div>
               )}
               {formError && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{formError}</p>}
+              {conflictAlts && conflictAlts.length > 0 && (
+                <div style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 9, padding: "0.8rem" }}>
+                  <div style={{ fontSize: "0.78rem", color: "#f97316", fontWeight: 700, marginBottom: "0.5rem" }}>Alternativas disponíveis:</div>
+                  {conflictAlts.map((alt) => (
+                    <div key={alt.spotId} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.3rem 0", borderBottom: "1px solid rgba(255,255,255,0.06)", fontSize: "0.82rem" }}>
+                      <span style={{ fontWeight: 700, minWidth: 56, color: alt.blockedDates.length === 0 ? "#22c55e" : "#fb923c" }}>
+                        Lugar {alt.spotNumber}
+                      </span>
+                      <span style={{ flex: 1, color: "#888", fontSize: "0.74rem" }}>
+                        {alt.blockedDates.length === 0
+                          ? "✓ disponível para todo o período"
+                          : `⚠ ocupado em: ${alt.blockedDates.slice(0, 3).join(", ")}${alt.blockedDates.length > 3 ? ` +${alt.blockedDates.length - 3}` : ""}`}
+                      </span>
+                      <button
+                        onClick={() => { setForm((p) => ({ ...p, spotId: alt.spotId })); setConflictAlts(null); setConflictDates([]); setFormError(""); }}
+                        style={{ padding: "0.2rem 0.55rem", background: alt.blockedDates.length === 0 ? "#16a34a" : "rgba(249,115,22,0.2)", border: "none", borderRadius: 5, color: "#fff", fontSize: "0.74rem", cursor: "pointer", whiteSpace: "nowrap" }}
+                      >
+                        {alt.blockedDates.length === 0 ? "Usar este" : "Selecionar"}
+                      </button>
+                    </div>
+                  ))}
+                  {conflictAlts.every((a) => a.blockedDates.length > 0) && (
+                    <div style={{ fontSize: "0.74rem", color: "#888", marginTop: "0.5rem", lineHeight: 1.4 }}>
+                      Nenhum lugar disponível para o período completo. Considere dividir a reserva em datas separadas.
+                    </div>
+                  )}
+                </div>
+              )}
               <button className="action-btn primary" onClick={handleSubmit} disabled={formBusy}>
                 {formBusy ? <Loader2 size={14} className="conc-spin" /> : null}
                 {editing ? "Guardar alterações" : "Criar Reserva"}
