@@ -45,19 +45,24 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   }
 
   // Conflict check
+  // Rules:
+  //   FULL_DAY new    → blocked by anything existing
+  //   MORNING new     → blocked by existing MORNING or FULL_DAY
+  //   AFTERNOON new   → blocked only by existing AFTERNOON
+  //                     (FULL_DAY client may leave early → allow afternoon double-booking)
   const existing = await prisma.concessionEntry.findMany({
     where: { spotId, date, status: { not: "RELEASED" } },
   });
 
   for (const e of existing) {
-    if (e.period === "FULL_DAY") {
-      return NextResponse.json({ error: "CONFLICT", message: "Espaço bloqueado dia inteiro" }, { status: 409 });
-    }
     if (period === "FULL_DAY") {
       return NextResponse.json({ error: "CONFLICT", message: "Já existe uma entrada neste espaço" }, { status: 409 });
     }
-    if (e.period === period) {
-      return NextResponse.json({ error: "CONFLICT", message: `Período ${period} já ocupado` }, { status: 409 });
+    if (period === "MORNING" && (e.period === "MORNING" || e.period === "FULL_DAY")) {
+      return NextResponse.json({ error: "CONFLICT", message: "Período de Manhã já ocupado" }, { status: 409 });
+    }
+    if (period === "AFTERNOON" && e.period === "AFTERNOON") {
+      return NextResponse.json({ error: "CONFLICT", message: "Período de Tarde já ocupado" }, { status: 409 });
     }
   }
 

@@ -90,13 +90,18 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
   // Form state for new entry
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  // Default period = the first free period for this spot
   const [period, setPeriod] = useState<string>(
-    !morningEntry ? "MORNING" : !afternoonEntry ? "AFTERNOON" : "FULL_DAY"
+    fullDayEntry ? "AFTERNOON"
+    : !morningEntry ? "MORNING"
+    : !afternoonEntry ? "AFTERNOON"
+    : "FULL_DAY"
   );
   const [bedConfig, setBedConfig] = useState("TWO_BEDS");
-  const [price, setPrice] = useState(() =>
-    String(calcPrice(!morningEntry ? "MORNING" : "AFTERNOON", "TWO_BEDS", concession))
-  );
+  const [price, setPrice] = useState(() => {
+    const defaultPeriod = fullDayEntry ? "AFTERNOON" : (!morningEntry ? "MORNING" : "AFTERNOON");
+    return String(calcPrice(defaultPeriod, "TWO_BEDS", concession));
+  });
   const [isPaid, setIsPaid] = useState(true);
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
@@ -403,10 +408,10 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
           {/* ── FULL DAY ── */}
           {!isFree && fullDayEntry && !showCarryOver && (
             <>
+              <div style={{ fontSize: "0.72rem", color: "#a855f7", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dia Inteiro</div>
               <div className="info-row"><span className="label">Cliente</span><span className="value">{fullDayEntry.clientName}</span></div>
               {fullDayEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{fullDayEntry.clientPhone}</span></div>}
-              <div className="info-row"><span className="label">Modalidade</span><span className="value">Dia Inteiro {fullDayEntry.isCarryOver ? "(carry-over)" : ""}</span></div>
-              <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(fullDayEntry.bedConfig)}</span></div>
+              <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(fullDayEntry.bedConfig)}{fullDayEntry.isCarryOver ? " (carry-over)" : ""}</span></div>
               <div className="info-row"><span className="label">Preço</span><span className="value">{fullDayEntry.totalPrice.toFixed(2)}€ {fullDayEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
               {fullDayEntry.notes && <div className="info-row"><span className="label">Notas</span><span className="value">{fullDayEntry.notes}</span></div>}
               <div className="action-divider" />
@@ -416,6 +421,63 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
               <button className="action-btn danger" onClick={() => handleDelete(fullDayEntry.id)} disabled={busy}>
                 Libertar Tudo
               </button>
+
+              {/* Afternoon section — client left early or second client */}
+              <div className="action-divider" />
+              {afternoonEntry ? (
+                <>
+                  <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — outro cliente</div>
+                  <div className="info-row"><span className="label">Cliente</span><span className="value">{afternoonEntry.clientName}</span></div>
+                  {afternoonEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{afternoonEntry.clientPhone}</span></div>}
+                  <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(afternoonEntry.bedConfig)}</span></div>
+                  <div className="info-row"><span className="label">Preço</span><span className="value">{afternoonEntry.totalPrice.toFixed(2)}€ {afternoonEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
+                  <button className="action-btn blue" onClick={() => handleDelete(afternoonEntry.id)} disabled={busy}>Libertar Tarde</button>
+                </>
+              ) : !showAddForm ? (
+                <button className="action-btn blue" onClick={() => setShowAddForm(true)} disabled={busy}>
+                  + Tarde livre — Registar cliente
+                </button>
+              ) : (
+                <>
+                  <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — novo cliente</div>
+                  <div className="field-group">
+                    <label>Nome do cliente *</label>
+                    <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
+                  </div>
+                  <div className="field-group">
+                    <label>Telefone</label>
+                    <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
+                  </div>
+                  <div className="field-row">
+                    <div className="field-group">
+                      <label>Camas</label>
+                      <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
+                        <option value="TWO_BEDS">2 camas</option>
+                        <option value="ONE_BED">1 cama (chapéu)</option>
+                        <option value="EXTRA_BED">3 camas (extra)</option>
+                      </select>
+                    </div>
+                    <div className="field-group">
+                      <label>Preço (€)</label>
+                      <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="toggle-row">
+                    <span>Pago</span>
+                    <label className="toggle-switch">
+                      <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                  {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                    <button className="action-btn primary" onClick={handleRegister} disabled={busy}>
+                      {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar Tarde
+                    </button>
+                    <button className="action-btn danger" onClick={() => setShowAddForm(false)} disabled={busy}>Cancelar</button>
+                  </div>
+                </>
+              )}
             </>
           )}
 

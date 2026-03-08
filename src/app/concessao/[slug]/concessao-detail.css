@@ -119,19 +119,19 @@
   gap: 6px;
 }
 
+/* Each spot card — no background here, halves carry their own colour */
 .spot-cell {
   border-radius: 8px;
-  padding: 6px 5px 5px;
+  padding: 4px;
   cursor: pointer;
-  min-height: 64px;
+  min-height: 76px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  border: 1.5px solid transparent;
+  gap: 3px;
+  border: 1.5px solid rgba(255,255,255,0.07);
   transition: border-color 0.12s, transform 0.1s;
   position: relative;
-  overflow: hidden;
+  background: rgba(255,255,255,0.02);
 }
 
 .spot-cell:hover {
@@ -140,39 +140,70 @@
   z-index: 2;
 }
 
-.spot-cell.free    { background: rgba(255,255,255,0.06); }
-.spot-cell.morning { background: rgba(251,146,60,0.28); }
-.spot-cell.afternoon { background: rgba(59,130,246,0.28); }
-.spot-cell.full    { background: rgba(168,85,247,0.28); }
-.spot-cell.reserved { background: rgba(239,68,68,0.28); }
-.spot-cell.split {
-  background: linear-gradient(
-    to bottom,
-    rgba(251,146,60,0.28) 50%,
-    rgba(59,130,246,0.28) 50%
-  );
-  min-height: 88px;
-  justify-content: flex-start;
-  padding: 4px 4px 4px;
+/* Border accent per primary status */
+.spot-cell.morning  { border-color: rgba(251,146,60,0.45); }
+.spot-cell.afternoon{ border-color: rgba(59,130,246,0.45); }
+.spot-cell.full     { border-color: rgba(168,85,247,0.45); }
+.spot-cell.reserved { border-color: rgba(239,68,68,0.45); }
+.spot-cell.split    { border-color: rgba(255,255,255,0.18); }
+
+/* Spot number pill */
+.spot-num-bar {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.38);
+  text-align: center;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
-.spot-split-top,
-.spot-split-bot {
-  width: 100%;
+/* Two-half container */
+.spot-halves {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+}
+
+/* Full-day merge: remove gap, seamless corners */
+.spot-halves.merged {
+  gap: 0;
+}
+.spot-halves.merged .spot-half:first-child { border-radius: 4px 4px 0 0; }
+.spot-halves.merged .spot-half:last-child  { border-radius: 0 0 4px 4px; }
+
+/* Individual half */
+.spot-half {
+  flex: 1;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  min-height: 30px;
-  padding: 2px 0;
+  min-height: 24px;
+  padding: 2px 3px;
+  position: relative;
+  overflow: hidden;
 }
 
-.spot-split-divider {
-  width: 85%;
-  height: 1px;
-  background: rgba(255,255,255,0.2);
-  flex-shrink: 0;
+.spot-half.free     { background: rgba(255,255,255,0.05); }
+.spot-half.morning  { background: rgba(251,146,60,0.32); }
+.spot-half.afternoon{ background: rgba(59,130,246,0.32); }
+.spot-half.full     { background: rgba(168,85,247,0.32); }
+.spot-half.reserved { background: rgba(239,68,68,0.32); }
+
+/* "R" badge inside a half */
+.spot-r-badge {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 0.5rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.9);
+  background: rgba(0,0,0,0.28);
+  border-radius: 2px;
+  padding: 0 2px;
+  line-height: 1.4;
 }
 
 .spot-client-sm {
@@ -191,33 +222,6 @@
 .spot-bed-sm {
   font-size: 0.5rem;
   color: rgba(255,255,255,0.5);
-}
-
-.spot-num {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: rgba(255,255,255,0.5);
-  line-height: 1;
-  margin-bottom: 3px;
-}
-
-.spot-client {
-  font-size: 0.68rem;
-  color: #fff;
-  text-align: center;
-  word-break: break-word;
-  line-height: 1.2;
-  max-width: 100%;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.spot-bed {
-  font-size: 0.6rem;
-  color: rgba(255,255,255,0.5);
-  margin-top: 2px;
 }
 
 /* Status badge */
@@ -525,21 +529,6 @@
 .field-group select option {
   background: #1a1a2e;
   color: #f1f1f1;
-}
-
-/* "R" reservation badge on spot cell */
-.spot-res-badge {
-  position: absolute;
-  top: 3px;
-  right: 4px;
-  font-size: 0.58rem;
-  font-weight: 800;
-  color: rgba(255,255,255,0.85);
-  background: rgba(239,68,68,0.55);
-  border-radius: 3px;
-  padding: 0 3px;
-  line-height: 1.4;
-  letter-spacing: 0.02em;
 }
 
 /* Calendar view */

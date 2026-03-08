@@ -150,9 +150,26 @@ export default function DailyControl({ concession }: { concession: Concession })
         {spotStates.map(({ spot, entries: spotEntries }) => {
           const status = spotStatus(spotEntries);
           const active = spotEntries.filter(e => e.status === "ACTIVE" || e.status === "CARRIED_OVER");
+          const fullEnt = active.find(e => e.period === "FULL_DAY");
           const morningEnt = active.find(e => e.period === "MORNING");
           const afternoonEnt = active.find(e => e.period === "AFTERNOON");
-          const primaryEntry = active.find(e => e.period === "FULL_DAY") || morningEnt || afternoonEnt;
+          const primaryEntry = fullEnt || morningEnt || afternoonEnt;
+
+          // Top half: full-day (priority) or morning
+          const topEnt = fullEnt || morningEnt;
+          const topColor = !topEnt ? "free"
+            : topEnt.reservationId ? "reserved"
+            : topEnt.period === "FULL_DAY" ? "full" : "morning";
+
+          // Bottom half: afternoon, or mirrors full-day if no afternoon
+          const botColor = afternoonEnt
+            ? (afternoonEnt.reservationId ? "reserved" : "afternoon")
+            : fullEnt ? (fullEnt.reservationId ? "reserved" : "full")
+            : "free";
+
+          // Merged = full day with no separate afternoon booking
+          const isFullMerged = !!fullEnt && !afternoonEnt;
+
           return (
             <div
               key={spot.id}
@@ -160,28 +177,19 @@ export default function DailyControl({ concession }: { concession: Concession })
               onClick={() => setSelectedSpot({ spot, entries: spotEntries })}
               title={`Lugar ${spot.spotNumber}${primaryEntry ? " — " + primaryEntry.clientName : ""}`}
             >
-              <span className="spot-num">{spot.spotNumber}</span>
-              {status === "reserved" && <span className="spot-res-badge">R</span>}
-              {status === "split" ? (
-                <>
-                  <div className="spot-split-top">
-                    <span className="spot-client-sm">{morningEnt?.clientName ?? ""}</span>
-                    <span className="spot-bed-sm">{morningEnt ? bedIcon(morningEnt.bedConfig) : ""}</span>
-                  </div>
-                  <div className="spot-split-divider" />
-                  <div className="spot-split-bot">
-                    <span className="spot-client-sm">{afternoonEnt?.clientName ?? ""}</span>
-                    <span className="spot-bed-sm">{afternoonEnt ? bedIcon(afternoonEnt.bedConfig) : ""}</span>
-                  </div>
-                </>
-              ) : (
-                primaryEntry && (
-                  <>
-                    <span className="spot-client">{primaryEntry.clientName}</span>
-                    <span className="spot-bed">{bedIcon(primaryEntry.bedConfig)}</span>
-                  </>
-                )
-              )}
+              <div className="spot-num-bar">{spot.spotNumber}</div>
+              <div className={`spot-halves${isFullMerged ? " merged" : ""}`}>
+                <div className={`spot-half ${topColor}`}>
+                  {topEnt?.reservationId && <span className="spot-r-badge">R</span>}
+                  {topEnt && <span className="spot-client-sm">{topEnt.clientName}</span>}
+                  {topEnt && <span className="spot-bed-sm">{bedIcon(topEnt.bedConfig)}</span>}
+                </div>
+                <div className={`spot-half ${botColor}`}>
+                  {afternoonEnt?.reservationId && <span className="spot-r-badge">R</span>}
+                  {afternoonEnt && <span className="spot-client-sm">{afternoonEnt.clientName}</span>}
+                  {afternoonEnt && <span className="spot-bed-sm">{bedIcon(afternoonEnt.bedConfig)}</span>}
+                </div>
+              </div>
             </div>
           );
         })}
