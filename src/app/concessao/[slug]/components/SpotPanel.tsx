@@ -265,7 +265,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
               </div>
               {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
-              <button className="action-btn primary" onClick={handleRegister} disabled={busy}>
+              <button className="action-btn primary" onClick={() => handleRegister()} disabled={busy}>
                 {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar
               </button>
             </>
@@ -326,7 +326,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
                   </div>
                   {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                    <button className="action-btn primary" onClick={handleRegister} disabled={busy}>
+                    <button className="action-btn primary" onClick={() => handleRegister()} disabled={busy}>
                       {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar Tarde
                     </button>
                     <button className="action-btn danger" onClick={() => setShowAddForm(false)} disabled={busy}>Cancelar</button>
@@ -387,7 +387,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
                   </div>
                   {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                    <button className="action-btn primary" onClick={handleRegister} disabled={busy}>
+                    <button className="action-btn primary" onClick={() => handleRegister()} disabled={busy}>
                       {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar Manhã
                     </button>
                     <button className="action-btn danger" onClick={() => setShowAddForm(false)} disabled={busy}>Cancelar</button>
@@ -582,7 +582,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
                   </div>
                   {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                    <button className="action-btn primary" onClick={handleRegister} disabled={busy}>
+                    <button className="action-btn primary" onClick={() => handleRegister()} disabled={busy}>
                       {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar Tarde
                     </button>
                     <button className="action-btn danger" onClick={() => setShowAddForm(false)} disabled={busy}>Cancelar</button>
