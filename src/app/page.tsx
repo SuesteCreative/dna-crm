@@ -442,12 +442,17 @@ export default function Dashboard() {
   }
 
   const confirmed = bookings.filter(b => b.status === "CONFIRMED").length;
-  const revenue = bookings.reduce((s, b) => s + (b.totalPrice || 0), 0);
-  const noShows = bookings.filter(b =>
-    new Date(b.activityDate) < todayStart &&
-    b.status !== "CANCELLED" &&
-    !b.showedUp
-  );
+  const isNoShow = (b: Booking) =>
+    new Date(b.activityDate) < todayStart && b.status !== "CANCELLED" && !b.showedUp;
+  const noShows = bookings.filter(isNoShow);
+  // Revenue excludes no-shows (their effective price is 0)
+  const revenue = bookings
+    .filter(b => b.status !== "CANCELLED" && !isNoShow(b))
+    .reduce((s, b) => s + (b.totalPrice || 0), 0);
+  // Projected = future/today confirmed bookings not yet counted in revenue
+  const projectedRevenue = bookings
+    .filter(b => b.status !== "CANCELLED" && (isFuture(b) || isToday(b)))
+    .reduce((s, b) => s + (b.totalPrice || 0), 0);
   const noShowByPartner = partners
     .map(p => ({ name: p.name, id: p.id, count: noShows.filter(b => b.partnerId === p.id).length }))
     .filter(p => p.count > 0)
@@ -545,7 +550,19 @@ export default function Dashboard() {
         </div>
         <div className="stat-tile teal">
           <div className="tile-ico"><Activity size={22} /></div>
-          <div className="tile-info"><span className="tile-val">{revenue.toFixed(0)}€</span><span className="tile-lbl">Receita Total</span></div>
+          <div className="tile-info">
+            <span className="tile-val">{revenue.toFixed(0)}€</span>
+            <span className="tile-lbl">Receita Total</span>
+          </div>
+          <TrendingUp size={40} className="tile-bg-ico" />
+        </div>
+        <div className="stat-tile teal">
+          <div className="tile-ico"><TrendingUp size={22} /></div>
+          <div className="tile-info">
+            <span className="tile-val">{(revenue + projectedRevenue).toFixed(0)}€</span>
+            <span className="tile-lbl">Receita Projetada</span>
+            <span className="tile-note">+{projectedRevenue.toFixed(0)}€ futuro</span>
+          </div>
           <TrendingUp size={40} className="tile-bg-ico" />
         </div>
       </section>
@@ -639,16 +656,16 @@ export default function Dashboard() {
                           <table className="crm-table">
                             <thead>
                               <tr>
-                                <th style={{ width: "17%" }}>Cliente</th>
-                                <th style={{ width: "54px", textAlign: "center" }}>Qtd</th>
-                                <th>Atividade</th>
-                                <th style={{ width: "118px" }}>Data / Hora</th>
-                                <th style={{ width: "66px", textAlign: "center" }}>Pax</th>
-                                <th style={{ width: "128px" }}>Fonte</th>
-                                <th style={{ width: "116px" }}>Status</th>
-                                <th style={{ width: "80px", textAlign: "right" }}>Preço</th>
-                                <th style={{ width: "46px", textAlign: "center" }}>Pres.</th>
-                                <th style={{ width: "44px" }}></th>
+                                <th style={{ width: "15%" }}>Cliente</th>
+                                <th style={{ width: "4%", textAlign: "center" }}>Qtd</th>
+                                <th style={{ width: "20%" }}>Atividade</th>
+                                <th style={{ width: "9%" }}>Data / Hora</th>
+                                <th style={{ width: "5%", textAlign: "center" }}>Pax</th>
+                                <th style={{ width: "11%" }}>Fonte</th>
+                                <th style={{ width: "10%" }}>Status</th>
+                                <th style={{ width: "7%", textAlign: "right" }}>Preço</th>
+                                <th style={{ width: "4%", textAlign: "center" }}>Pres.</th>
+                                <th style={{ width: "4%" }}></th>
                               </tr>
                             </thead>
                             <tbody>
@@ -690,7 +707,9 @@ export default function Dashboard() {
                                   <td><span className="pax-pill">{b.pax} pax</span></td>
                                   <td>{sourceBadge(b.source, b.orderNumber, b.partnerId)}</td>
                                   <td>{statusBadge(b.status)}</td>
-                                  <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
+                                  <td className={`price-cell${isNoShow(b) ? " price-noshow" : ""}`}>
+                                    {isNoShow(b) ? "0.00€" : b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}
+                                  </td>
                                   <td>
                                     {b.status !== "CANCELLED" ? (
                                       <button
