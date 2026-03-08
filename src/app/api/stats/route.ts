@@ -171,13 +171,16 @@ export async function GET(req: NextRequest) {
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10);
 
-    // Top customers
+    // Top customers — group by email when available, else by name to avoid
+    // lumping all anonymous bookings under a single "desconhecido" bucket.
     const custMap: Record<string, { name: string; email: string; count: number; revenue: number }> = {};
     for (const b of bookings) {
-        const email = b.customerEmail || "desconhecido";
-        if (!custMap[email]) custMap[email] = { name: fixMojibake(b.customerName || email), email, count: 0, revenue: 0 };
-        custMap[email].count++;
-        custMap[email].revenue += b.totalPrice ?? 0;
+        const key = b.customerEmail || `__name__${b.customerName || "unknown"}`;
+        const displayEmail = b.customerEmail || "";
+        const displayName = fixMojibake(b.customerName || b.customerEmail || "—");
+        if (!custMap[key]) custMap[key] = { name: displayName, email: displayEmail, count: 0, revenue: 0 };
+        custMap[key].count++;
+        custMap[key].revenue += b.totalPrice ?? 0;
     }
     const topCustomers = Object.values(custMap)
         .sort((a, b) => b.revenue - a.revenue)
