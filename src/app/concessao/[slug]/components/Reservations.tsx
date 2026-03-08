@@ -156,6 +156,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const [formError, setFormError] = useState("");
   const [conflictDates, setConflictDates] = useState<string[]>([]);
   const [conflictAlts, setConflictAlts] = useState<{ spotId: string; spotNumber: number; blockedDates: string[] }[] | null>(null);
+  const [blockedSpotIds, setBlockedSpotIds] = useState<Set<string>>(new Set());
 
   const fetchReservations = useCallback(async () => {
     setLoading(true);
@@ -198,11 +199,22 @@ export default function Reservations({ concession, initialReservation, onInitHan
     setForm((prev) => ({ ...prev, totalPrice: String(price.toFixed(2)) }));
   }, [form.startDate, form.endDate, form.period, form.bedConfig, concession]);
 
+  // Fetch blocked spots whenever date range or period changes (for the drawer form)
+  useEffect(() => {
+    if (!showDrawer || !form.startDate || !form.endDate || !form.period) return;
+    const params = new URLSearchParams({ start: form.startDate, end: form.endDate, period: form.period });
+    if (editing) params.set("excludeReservationId", editing.id);
+    fetch(`/api/concessions/${concession.slug}/availability?${params}`)
+      .then((r) => r.json())
+      .then((data) => setBlockedSpotIds(new Set(data.blockedSpotIds ?? [])))
+      .catch(() => setBlockedSpotIds(new Set()));
+  }, [showDrawer, form.startDate, form.endDate, form.period, editing, concession.slug]);
+
   const openNew = () => {
     setEditing(null);
     setForm(emptyForm());
     setExtraSpotIds([]);
-    setFormError(""); setConflictAlts(null); setConflictDates([]);
+    setFormError(""); setConflictAlts(null); setConflictDates([]); setBlockedSpotIds(new Set());
     setShowDrawer(true);
   };
 
@@ -214,7 +226,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
       period: r.period, bedConfig: r.bedConfig,
       totalPrice: String(r.totalPrice), isPaid: r.isPaid, notes: r.notes ?? "",
     });
-    setFormError(""); setConflictAlts(null); setConflictDates([]);
+    setFormError(""); setConflictAlts(null); setConflictDates([]); setBlockedSpotIds(new Set());
     setShowDrawer(true);
   };
 
@@ -424,7 +436,9 @@ export default function Reservations({ concession, initialReservation, onInitHan
                 <select value={form.spotId} onChange={(e) => { setForm((p) => ({ ...p, spotId: e.target.value })); setConflictAlts(null); setConflictDates([]); setFormError(""); }}>
                   <option value="">— selecionar —</option>
                   {concession.spots.map((s) => (
-                    <option key={s.id} value={s.id}>Lugar {s.spotNumber}</option>
+                    <option key={s.id} value={s.id} disabled={blockedSpotIds.has(s.id)}>
+                      Lugar {s.spotNumber}{blockedSpotIds.has(s.id) ? " (ocupado)" : ""}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -438,7 +452,9 @@ export default function Reservations({ concession, initialReservation, onInitHan
                   }}>
                     <option value="">— selecionar —</option>
                     {concession.spots.map((s) => (
-                      <option key={s.id} value={s.id}>Lugar {s.spotNumber}</option>
+                      <option key={s.id} value={s.id} disabled={blockedSpotIds.has(s.id)}>
+                        Lugar {s.spotNumber}{blockedSpotIds.has(s.id) ? " (ocupado)" : ""}
+                      </option>
                     ))}
                   </select>
                 </div>

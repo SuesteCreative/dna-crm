@@ -77,6 +77,7 @@ export default function DailyControl({ concession }: { concession: Concession })
   const [loading, setLoading] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<SpotState | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [dailyNote, setDailyNote] = useState("");
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -109,7 +110,7 @@ export default function DailyControl({ concession }: { concession: Concession })
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await fetch(`/api/concessions/${concession.slug}/export?date=${date}`);
+      const res = await fetch(`/api/concessions/${concession.slug}/export?date=${date}&note=${encodeURIComponent(dailyNote)}`);
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -147,6 +148,53 @@ export default function DailyControl({ concession }: { concession: Concession })
             <Download size={14} /> {exporting ? "A exportar..." : "Exportar Dia"}
           </button>
         </div>
+      </div>
+
+      {/* Daily note */}
+      <div className="daily-note-area">
+        <div className="field-group" style={{ marginBottom: 0 }}>
+          <label>Nota do dia</label>
+          <textarea
+            placeholder="Observações, incidentes ou notas para este dia..."
+            value={dailyNote}
+            onChange={(e) => setDailyNote(e.target.value)}
+            rows={2}
+          />
+        </div>
+        <details className="daily-legend">
+          <summary>Legenda &amp; ajuda</summary>
+          <div className="daily-legend-body">
+            <div className="legend-section">
+              <strong>Cores dos lugares</strong>
+              <ul>
+                <li><span className="leg-dot free" /> Livre — sem nenhuma entrada</li>
+                <li><span className="leg-dot morning" /> Manhã — ocupado 09h–14h</li>
+                <li><span className="leg-dot afternoon" /> Tarde — ocupado 14h–19h</li>
+                <li><span className="leg-dot full" /> Dia Inteiro — ocupado todo o dia</li>
+                <li><span className="leg-dot reserved" /> Reserva — vem de uma reserva prévia</li>
+                <li><span className="leg-dot split" /> Split — manhã e tarde com clientes diferentes</li>
+              </ul>
+            </div>
+            <div className="legend-section">
+              <strong>Ações no painel de lugar</strong>
+              <ul>
+                <li><em>Registar</em> — cria uma nova entrada (walk-in) para o período selecionado.</li>
+                <li><em>Estender para Dia Inteiro</em> — converte uma entrada de Manhã em Dia Inteiro, cobrando apenas a diferença de preço (Dia Inteiro − Manhã).</li>
+                <li><em>Libertar</em> — cancela/remove a entrada do período. O lugar fica livre para novo aluguer.</li>
+                <li><em>Re-alugar</em> — permite registar um novo cliente no mesmo período do mesmo dia (override). Útil quando o cliente original saiu e outro ocupou o lugar.</li>
+                <li><em>Carry-over de Tarde</em> — cliente pagou Dia Inteiro mas saiu ao meio-dia. A tarde não utilizada é transferida para amanhã como crédito pré-pago (isCarryOver = true).</li>
+              </ul>
+            </div>
+            <div className="legend-section">
+              <strong>Carry-over</strong>
+              <p>Quando um cliente paga Dia Inteiro mas sai cedo, pode transferir o período de tarde para o dia seguinte. A entrada criada amanhã aparece marcada como <em>pré-pago</em> e não gera nova cobrança.</p>
+            </div>
+            <div className="legend-section">
+              <strong>Badge R</strong>
+              <p>O <strong>R</strong> vermelho nos cartões indica que a entrada vem de uma reserva (pré-reserva com datas definidas). Pode verificar os detalhes na aba <em>Reservas</em>.</p>
+            </div>
+          </div>
+        </details>
       </div>
 
       {/* Spot grid */}

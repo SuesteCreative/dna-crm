@@ -748,3 +748,59 @@
 
 /* Spinner used in panels */
 .conc-spin { animation: cd-spin 0.8s linear infinite; }
+
+/* ── Daily note + legend ───────────────────────────────────── */
+.daily-note-area {
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.daily-legend {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.daily-legend summary {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.82rem;
+  color: #888;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.daily-legend summary::-webkit-details-marker { display: none; }
+.daily-legend summary::before { content: "▶ "; font-size: 0.7rem; }
+details[open].daily-legend summary::before { content: "▼ "; }
+
+.daily-legend-body {
+  padding: 0.8rem 1rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+@media (max-width: 700px) { .daily-legend-body { grid-template-columns: 1fr; } }
+
+.legend-section { font-size: 0.82rem; color: #ccc; }
+.legend-section strong { display: block; color: #f1f1f1; margin-bottom: 0.35rem; }
+.legend-section ul { margin: 0; padding-left: 1rem; }
+.legend-section li { margin-bottom: 0.25rem; line-height: 1.5; }
+.legend-section p { margin: 0; line-height: 1.55; }
+
+.leg-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.leg-dot.free     { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+.leg-dot.morning  { background: #f97316; }
+.leg-dot.afternoon { background: #3b82f6; }
+.leg-dot.full     { background: #a855f7; }
+.leg-dot.reserved { background: #ef4444; }
+.leg-dot.split    { background: linear-gradient(180deg, #f97316 50%, #3b82f6 50%); }

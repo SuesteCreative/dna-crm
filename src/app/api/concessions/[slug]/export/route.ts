@@ -15,6 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date");
   const format = searchParams.get("format") ?? "xlsx"; // "xlsx" | "json"
+  const note = searchParams.get("note") ?? "";
 
   if (!date) return NextResponse.json({ error: "date required" }, { status: 400 });
 
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const periodLabel = (p: string) =>
     p === "MORNING" ? "Manhã" : p === "AFTERNOON" ? "Tarde" : "Dia Inteiro";
   const bedLabel = (b: string) =>
-    b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "3 camas" : "2 camas";
+    b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "2 camas + extra" : "2 camas";
 
   // Build full spot list — one row per entry (free spots get one row with "Livre")
   const spotRows: Record<string, any>[] = [];
@@ -83,6 +84,9 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const reservationRevenue = activeEntries.filter((e) => e.reservationId).reduce((s, e) => s + e.totalPrice, 0);
   const walkInRevenue = activeEntries.filter((e) => !e.reservationId).reduce((s, e) => s + e.totalPrice, 0);
   const carryOvers = activeEntries.filter((e) => e.isCarryOver);
+  const reservationEntryCount = activeEntries.filter((e) => e.reservationId).length;
+  const uniqueReservationIds = new Set(activeEntries.filter((e) => e.reservationId).map((e) => e.reservationId));
+  const reservationCount = uniqueReservationIds.size;
 
   if (format === "json") {
     return NextResponse.json({
@@ -133,7 +137,9 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     [""],
     ["Data", date],
     ["Concessão", concession.name],
+    ...(note ? [["Nota do dia", note]] : []),
     [""],
+    ["─── OCUPAÇÃO ───────────────────", ""],
     ["Total de lugares", totalSpots],
     ["Lugares ocupados", occupiedCount],
     ["Lugares livres", totalSpots - occupiedCount],
@@ -141,14 +147,19 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     ["Entradas Manhã", morningCount],
     ["Entradas Tarde", afternoonCount],
     ["Entradas Dia Inteiro", fullDayCount],
+    ["Total de entradas", morningCount + afternoonCount + fullDayCount],
     [""],
-    ["Receita paga", `${paidRevenue.toFixed(2)}€`],
-    ["Receita não paga", `${unpaidRevenue.toFixed(2)}€`],
+    ["─── RECEITA ─────────────────────", ""],
     ["Receita total", `${(paidRevenue + unpaidRevenue).toFixed(2)}€`],
+    ["  → Paga", `${paidRevenue.toFixed(2)}€`],
+    ["  → Não paga", `${unpaidRevenue.toFixed(2)}€`],
     [""],
     ["Receita de reservas", `${reservationRevenue.toFixed(2)}€`],
     ["Receita walk-in", `${walkInRevenue.toFixed(2)}€`],
     [""],
+    ["─── RESERVAS & OUTROS ──────────", ""],
+    ["Reservas activas no dia", reservationCount],
+    ["Entradas via reserva", reservationEntryCount],
     ["Carry-overs (pré-pago)", carryOvers.length],
   ];
   const ws2 = XLSX.utils.aoa_to_sheet(summaryRows);
