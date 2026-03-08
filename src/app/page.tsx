@@ -39,6 +39,7 @@ interface Booking {
   originalTotalPrice?: number | null;
   originalActivityDate?: string | null;
   originalActivityTime?: string | null;
+  partnerId?: string | null;
 }
 
 interface Service {
@@ -81,6 +82,17 @@ function recalcPrice(unitPrice: number | null, qty: number, discAmt: string, dis
   const final = discType === "%" ? base * (1 - d / 100) : base - d;
   return Math.max(0, final).toFixed(2);
 }
+
+const PARTNER_PALETTE: { bg: string; text: string }[] = [
+  { bg: "rgba(59,130,246,.18)",  text: "#3b82f6" }, // blue
+  { bg: "rgba(20,184,166,.18)",  text: "#14b8a6" }, // teal
+  { bg: "rgba(168,85,247,.18)",  text: "#a855f7" }, // purple
+  { bg: "rgba(245,158,11,.18)",  text: "#f59e0b" }, // amber
+  { bg: "rgba(236,72,153,.18)",  text: "#ec4899" }, // pink
+  { bg: "rgba(34,197,94,.18)",   text: "#22c55e" }, // green
+  { bg: "rgba(249,115,22,.18)",  text: "#f97316" }, // orange
+  { bg: "rgba(99,102,241,.18)",  text: "#6366f1" }, // indigo
+];
 
 export default function Dashboard() {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -439,7 +451,23 @@ export default function Dashboard() {
     return <span className={`badge ${cls[s] || "badge-pending"}`}>{lbl[s] || s}</span>;
   };
 
-  const sourceBadge = (s: string, orderNumber?: string | null) => {
+  const partnerColorMap = new Map(
+    partners.map((p, i) => [p.id, PARTNER_PALETTE[i % PARTNER_PALETTE.length]])
+  );
+
+  const sourceBadge = (s: string, orderNumber?: string | null, partnerId?: string | null) => {
+    if (s === "PARTNER" && partnerId) {
+      const partner = partners.find(p => p.id === partnerId);
+      const color = partnerColorMap.get(partnerId) ?? PARTNER_PALETTE[0];
+      return (
+        <div className="source-stack">
+          <span className="src-badge" style={{ background: color.bg, color: color.text }}>
+            {partner?.name ?? "Parceiro"}
+          </span>
+          {orderNumber && <span className="order-no-sub">{orderNumber}</span>}
+        </div>
+      );
+    }
     const cls: Record<string, string> = { SHOPIFY: "src-shopify", MANUAL: "src-manual", PARTNER: "src-partner" };
     return (
       <div className="source-stack">
@@ -613,7 +641,7 @@ export default function Dashboard() {
                                     <div className="cell-sub">{b.activityTime || "—"}</div>
                                   </td>
                                   <td><span className="pax-pill">{b.pax} pax</span></td>
-                                  <td>{sourceBadge(b.source, b.orderNumber)}</td>
+                                  <td>{sourceBadge(b.source, b.orderNumber, b.partnerId)}</td>
                                   <td>{statusBadge(b.status)}</td>
                                   <td className="price-cell">{b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}</td>
                                   <td>
