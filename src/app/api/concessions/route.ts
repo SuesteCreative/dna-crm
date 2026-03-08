@@ -13,7 +13,7 @@ export async function GET() {
   const prisma = await getPrisma();
   const concessions = await prisma.concession.findMany({
     include: { _count: { select: { spots: true } } },
-    orderBy: { name: "asc" },
+    orderBy: { slug: "desc" }, // "tropico" > "subnauta" alphabetically
   });
   return NextResponse.json(concessions);
 }

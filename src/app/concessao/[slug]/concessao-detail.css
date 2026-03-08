@@ -1,5 +1,10 @@
 /* ── Concessão Detail Page ───────────────────────────────── */
 
+.cd-loading,
+.cd-page {
+  margin-left: 240px;
+}
+
 .cd-loading {
   display: flex;
   align-items: center;

@@ -1,5 +1,10 @@
 /* ── Concessão Selector Page ─────────────────────────────── */
 
+.conc-loading,
+.conc-page {
+  margin-left: 240px;
+}
+
 .conc-loading {
   display: flex;
   align-items: center;
