@@ -49,20 +49,18 @@ interface Props {
   onRefresh: () => void;
 }
 
-function calcPrice(
-  period: string,
-  bedConfig: string,
-  concession: Concession
-): number {
-  const base =
-    period === "MORNING"
-      ? concession.priceMorning
-      : period === "AFTERNOON"
-      ? concession.priceAfternoon
-      : concession.priceFull;
-  if (bedConfig === "ONE_BED") return concession.priceOneBed;
-  if (bedConfig === "EXTRA_BED") return base + concession.priceExtraBed;
-  return base;
+type FormMode =
+  | null
+  | "add-morning"
+  | "add-afternoon"
+  | "add-fullday"
+  | "rerent-morning"
+  | "rerent-afternoon";
+
+function calcPrice(period: string, bedConfig: string, c: Concession): number {
+  if (bedConfig === "ONE_BED") return c.priceOneBed;
+  const base = period === "MORNING" ? c.priceMorning : period === "AFTERNOON" ? c.priceAfternoon : c.priceFull;
+  return bedConfig === "EXTRA_BED" ? base + c.priceExtraBed : base;
 }
 
 function periodLabel(p: string) {
@@ -79,529 +77,219 @@ function nextDay(date: string) {
   return d.toISOString().slice(0, 10);
 }
 
+function modeToPeriod(mode: FormMode): string {
+  if (mode === "add-morning" || mode === "rerent-morning") return "MORNING";
+  if (mode === "add-afternoon" || mode === "rerent-afternoon") return "AFTERNOON";
+  return "FULL_DAY";
+}
+
 export default function SpotPanel({ concession, spotState, date, onClose, onRefresh }: Props) {
   const { spot, entries } = spotState;
-  const activeEntries = entries.filter((e) => e.status === "ACTIVE" || e.status === "CARRIED_OVER");
-  const fullDayEntry = activeEntries.find((e) => e.period === "FULL_DAY");
-  const morningEntry = activeEntries.find((e) => e.period === "MORNING");
-  const afternoonEntry = activeEntries.find((e) => e.period === "AFTERNOON");
-  const isFree = activeEntries.length === 0;
+  const active = entries.filter((e) => e.status === "ACTIVE" || e.status === "CARRIED_OVER");
+  const fullDayEntries = active.filter((e) => e.period === "FULL_DAY");
+  const morningEntries = active.filter((e) => e.period === "MORNING");
+  const afternoonEntries = active.filter((e) => e.period === "AFTERNOON");
 
-  // Form state for new entry
-  const [clientName, setClientName] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
-  // Default period = the first free period for this spot
-  const [period, setPeriod] = useState<string>(
-    fullDayEntry ? "AFTERNOON"
-    : !morningEntry ? "MORNING"
-    : !afternoonEntry ? "AFTERNOON"
-    : "FULL_DAY"
-  );
-  const [bedConfig, setBedConfig] = useState("TWO_BEDS");
-  const [price, setPrice] = useState(() => {
-    const defaultPeriod = fullDayEntry ? "AFTERNOON" : (!morningEntry ? "MORNING" : "AFTERNOON");
-    return String(calcPrice(defaultPeriod, "TWO_BEDS", concession));
-  });
-  const [isPaid, setIsPaid] = useState(true);
-  const [notes, setNotes] = useState("");
+  const morningOccupied = morningEntries.length > 0 || fullDayEntries.length > 0;
+  const afternoonOccupied = afternoonEntries.length > 0 || fullDayEntries.length > 0;
+  const bothFree = !morningOccupied && !afternoonOccupied;
+
+  // Single shared form state
+  const [formMode, setFormMode] = useState<FormMode>(null);
+  const [fClient, setFClient] = useState("");
+  const [fPhone, setFPhone] = useState("");
+  const [fBeds, setFBeds] = useState("TWO_BEDS");
+  const [fPrice, setFPrice] = useState("0");
+  const [fPaid, setFPaid] = useState(true);
+  const [fNotes, setFNotes] = useState("");
+  const [fError, setFError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-
-  // Add-second-period form toggle
-  const [showAddForm, setShowAddForm] = useState(false);
-  // Override form (re-rent same period — rare case)
-  const [showOverrideForm, setShowOverrideForm] = useState(false);
-
-  const startOverride = () => {
-    setPeriod("AFTERNOON");
-    setPrice(String(calcPrice("AFTERNOON", "TWO_BEDS", concession)));
-    setBedConfig("TWO_BEDS");
-    setClientName(""); setClientPhone("");
-    setShowOverrideForm(true);
-  };
 
   // Carry-over state
   const [showCarryOver, setShowCarryOver] = useState(false);
-  const [coTargetSpot, setCoTargetSpot] = useState("");
-  const [coBedConfig, setCoBedConfig] = useState("");
+  const [coSpot, setCoSpot] = useState("");
+  const [coBeds, setCoBeds] = useState("");
   const [coError, setCoError] = useState("");
 
   const tomorrow = nextDay(date);
 
-  const updatePrice = (p: string, b: string) => {
-    setPrice(String(calcPrice(p, b, concession)));
-  };
+  function openForm(mode: FormMode) {
+    const period = modeToPeriod(mode);
+    setFormMode(mode);
+    setFClient(""); setFPhone(""); setFBeds("TWO_BEDS");
+    setFPrice(String(calcPrice(period, "TWO_BEDS", concession)));
+    setFPaid(true); setFNotes(""); setFError("");
+  }
 
-  const handleRegister = async (overrideConflict = false) => {
-    if (!clientName.trim()) { setError("Nome do cliente obrigatório"); return; }
-    setBusy(true); setError("");
+  async function handleSubmit() {
+    if (!fClient.trim()) { setFError("Nome do cliente obrigatório"); return; }
+    const period = modeToPeriod(formMode);
+    const override = formMode === "rerent-morning" || formMode === "rerent-afternoon";
+    setBusy(true); setFError("");
     const res = await fetch(`/api/concessions/${concession.slug}/entries`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        spotId: spot.id,
-        date,
-        period,
-        clientName: clientName.trim(),
-        clientPhone: clientPhone.trim() || null,
-        bedConfig,
-        totalPrice: parseFloat(price),
-        isPaid,
-        notes: notes.trim() || null,
-        override: overrideConflict,
+        spotId: spot.id, date, period,
+        clientName: fClient.trim(), clientPhone: fPhone.trim() || null,
+        bedConfig: fBeds, totalPrice: parseFloat(fPrice), isPaid: fPaid,
+        notes: fNotes.trim() || null, override,
       }),
     });
     const data = await res.json();
     setBusy(false);
-    if (!res.ok) { setError(data.error || "Erro ao registar"); return; }
-    onRefresh(); onClose();
-  };
+    if (!res.ok) { setFError(data.message || data.error || "Erro ao registar"); return; }
+    setFormMode(null);
+    onRefresh();
+  }
 
-  const handleDelete = async (entryId: string) => {
-    if (!confirm("Confirmar libertação deste lugar?")) return;
+  async function handleDelete(entryId: string) {
+    if (!confirm("Confirmar libertação deste registo?")) return;
     setBusy(true);
     await fetch(`/api/concessions/${concession.slug}/entries/${entryId}`, { method: "DELETE" });
     setBusy(false);
-    onRefresh(); onClose();
-  };
+    onRefresh();
+  }
 
-  const handleExtendToFull = async () => {
-    if (!morningEntry) return;
-    const diff = concession.priceFull - morningEntry.totalPrice;
-    const newPrice = concession.priceFull;
+  async function handleExtendToFull(morningEntry: Entry) {
     setBusy(true);
-    // Delete morning + create full day
     await fetch(`/api/concessions/${concession.slug}/entries/${morningEntry.id}`, { method: "DELETE" });
     await fetch(`/api/concessions/${concession.slug}/entries`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        spotId: spot.id,
-        date,
-        period: "FULL_DAY",
-        clientName: morningEntry.clientName,
-        clientPhone: morningEntry.clientPhone,
-        bedConfig: morningEntry.bedConfig,
-        totalPrice: newPrice,
-        isPaid: morningEntry.isPaid,
-        notes: morningEntry.notes,
+        spotId: spot.id, date, period: "FULL_DAY",
+        clientName: morningEntry.clientName, clientPhone: morningEntry.clientPhone,
+        bedConfig: morningEntry.bedConfig, totalPrice: concession.priceFull,
+        isPaid: morningEntry.isPaid, notes: morningEntry.notes,
       }),
     });
     setBusy(false);
-    onRefresh(); onClose();
-  };
+    onRefresh();
+  }
 
-  const handleCarryOver = async () => {
-    if (!coTargetSpot) { setCoError("Selecionar lugar para amanhã"); return; }
+  async function handleCarryOver() {
+    if (!coSpot) { setCoError("Selecionar lugar para amanhã"); return; }
+    const fd = fullDayEntries[0];
+    if (!fd) return;
     setBusy(true); setCoError("");
-    const res = await fetch(
-      `/api/concessions/${concession.slug}/entries/${fullDayEntry!.id}/carry-over`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetSpotId: coTargetSpot, targetDate: tomorrow, bedConfig: coBedConfig || fullDayEntry!.bedConfig }),
-      }
-    );
+    const res = await fetch(`/api/concessions/${concession.slug}/entries/${fd.id}/carry-over`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetSpotId: coSpot, targetDate: tomorrow, bedConfig: coBeds || fd.bedConfig }),
+    });
     const data = await res.json();
     setBusy(false);
     if (!res.ok) { setCoError(data.error || "Erro no carry-over"); return; }
     setShowCarryOver(false);
-    onRefresh(); onClose();
-  };
+    onRefresh();
+  }
+
+  // ── Render helpers (plain functions, not components) ──────────────────────
+
+  function renderEntryCard(entry: Entry, accentColor: string, deleteLabel = "Libertar") {
+    return (
+      <div key={entry.id} className="entry-card" style={{ borderLeftColor: accentColor }}>
+        <div className="info-row">
+          <span className="label">Cliente</span>
+          <span className="value">
+            {entry.clientName}
+            {entry.isCarryOver && <span style={{ color: "#eab308", fontSize: "0.75rem" }}> ★ carry-over</span>}
+            {entry.reservationId && <span style={{ color: "#ef4444", fontSize: "0.75rem" }}> 🔖</span>}
+          </span>
+        </div>
+        {entry.clientPhone && (
+          <div className="info-row"><span className="label">Telefone</span><span className="value">{entry.clientPhone}</span></div>
+        )}
+        <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(entry.bedConfig)}</span></div>
+        <div className="info-row">
+          <span className="label">Preço</span>
+          <span className="value">{entry.totalPrice.toFixed(2)}€ {entry.isPaid ? "✓ pago" : "✗ não pago"}</span>
+        </div>
+        {entry.notes && <div className="info-row"><span className="label">Notas</span><span className="value">{entry.notes}</span></div>}
+        <button className="action-btn danger sm" onClick={() => handleDelete(entry.id)} disabled={busy}>
+          {deleteLabel}
+        </button>
+      </div>
+    );
+  }
+
+  function renderInlineForm() {
+    if (!formMode) return null;
+    const period = modeToPeriod(formMode);
+    const isRerent = formMode.startsWith("rerent");
+    const label = isRerent
+      ? (formMode === "rerent-morning" ? "Re-alugar · Manhã" : "Re-alugar · Tarde")
+      : (formMode === "add-morning" ? "Novo cliente · Manhã" : formMode === "add-afternoon" ? "Novo cliente · Tarde" : "Novo cliente · Dia Inteiro");
+    return (
+      <div className="slot-form">
+        <div className="slot-form-label">{label}</div>
+        <div className="field-group">
+          <label>Nome *</label>
+          <input value={fClient} onChange={(e) => setFClient(e.target.value)} placeholder="Nome completo" />
+        </div>
+        <div className="field-group">
+          <label>Telefone</label>
+          <input value={fPhone} onChange={(e) => setFPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
+        </div>
+        <div className="field-row">
+          <div className="field-group">
+            <label>Camas</label>
+            <select value={fBeds} onChange={(e) => { setFBeds(e.target.value); setFPrice(String(calcPrice(period, e.target.value, concession))); }}>
+              <option value="TWO_BEDS">2 camas</option>
+              <option value="ONE_BED">1 cama (chapéu)</option>
+              <option value="EXTRA_BED">3 camas (extra)</option>
+            </select>
+          </div>
+          <div className="field-group">
+            <label>Preço (€)</label>
+            <input type="number" step="0.5" min="0" value={fPrice} onChange={(e) => setFPrice(e.target.value)} />
+          </div>
+        </div>
+        <div className="toggle-row">
+          <span>Pago</span>
+          <label className="toggle-switch">
+            <input type="checkbox" checked={fPaid} onChange={(e) => setFPaid(e.target.checked)} />
+            <span className="toggle-slider" />
+          </label>
+        </div>
+        <div className="field-group">
+          <label>Notas</label>
+          <textarea value={fNotes} onChange={(e) => setFNotes(e.target.value)} rows={2} />
+        </div>
+        {fError && <p className="form-error">{fError}</p>}
+        <div className="btn-row-2">
+          <button className="action-btn primary" onClick={handleSubmit} disabled={busy}>
+            {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar
+          </button>
+          <button className="action-btn ghost" onClick={() => setFormMode(null)} disabled={busy}>Cancelar</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
 
   return (
     <div className="panel-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="panel-drawer">
         <div className="panel-head">
-          <h3>Lugar {spot.spotNumber}</h3>
+          <h3>Lugar {spot.spotNumber} <span style={{ fontWeight: 400, color: "#888", fontSize: "0.85rem" }}>— {date}</span></h3>
           <button className="panel-close" onClick={onClose}><X size={18} /></button>
         </div>
 
         <div className="panel-body">
-          {/* ── FREE spot ── */}
-          {isFree && (
-            <>
-              <div className="field-group">
-                <label>Nome do cliente *</label>
-                <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
-              </div>
-              <div className="field-group">
-                <label>Telefone</label>
-                <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
-              </div>
-              <div className="field-row">
-                <div className="field-group">
-                  <label>Modalidade</label>
-                  <select value={period} onChange={(e) => { setPeriod(e.target.value); updatePrice(e.target.value, bedConfig); }}>
-                    <option value="MORNING">Manhã (09h–14h)</option>
-                    <option value="AFTERNOON">Tarde (14h–19h)</option>
-                    <option value="FULL_DAY">Dia Inteiro</option>
-                  </select>
-                </div>
-                <div className="field-group">
-                  <label>Camas</label>
-                  <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
-                    <option value="TWO_BEDS">2 camas</option>
-                    <option value="ONE_BED">1 cama (chapéu)</option>
-                    <option value="EXTRA_BED">3 camas (extra)</option>
-                  </select>
-                </div>
-              </div>
-              <div className="field-row">
-                <div className="field-group">
-                  <label>Preço (€)</label>
-                  <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
-                </div>
-                <div className="field-group" style={{ justifyContent: "flex-end" }}>
-                  <label>Pago</label>
-                  <label className="toggle-switch">
-                    <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
-                    <span className="toggle-slider" />
-                  </label>
-                </div>
-              </div>
-              <div className="field-group">
-                <label>Notas</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
-              </div>
-              {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
-              <button className="action-btn primary" onClick={() => handleRegister()} disabled={busy}>
-                {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar
-              </button>
-            </>
-          )}
 
-          {/* ── MORNING only ── */}
-          {!isFree && morningEntry && !afternoonEntry && !fullDayEntry && (
+          {/* ══ CARRY-OVER MODAL ══ */}
+          {showCarryOver && fullDayEntries.length > 0 && (
             <>
-              <div style={{ fontSize: "0.72rem", color: "#fb923c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Manhã</div>
-              <div className="info-row"><span className="label">Cliente</span><span className="value">{morningEntry.clientName}</span></div>
-              {morningEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{morningEntry.clientPhone}</span></div>}
-              <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(morningEntry.bedConfig)}</span></div>
-              <div className="info-row"><span className="label">Preço</span><span className="value">{morningEntry.totalPrice.toFixed(2)}€ {morningEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
-              {morningEntry.notes && <div className="info-row"><span className="label">Notas</span><span className="value">{morningEntry.notes}</span></div>}
-              <div className="action-divider" />
-              <button className="action-btn warning" onClick={handleExtendToFull} disabled={busy}>
-                Estender para Dia Inteiro (+{(concession.priceFull - morningEntry.totalPrice).toFixed(2)}€)
-              </button>
-              <button className="action-btn danger" onClick={() => handleDelete(morningEntry.id)} disabled={busy}>
-                Libertar Manhã
-              </button>
-              <div className="action-divider" />
-              {!showAddForm ? (
-                <button className="action-btn blue" onClick={() => setShowAddForm(true)} disabled={busy}>
-                  + Tarde livre — Registar cliente
-                </button>
-              ) : (
-                <>
-                  <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — novo cliente</div>
-                  <div className="field-group">
-                    <label>Nome do cliente *</label>
-                    <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
-                  </div>
-                  <div className="field-group">
-                    <label>Telefone</label>
-                    <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
-                  </div>
-                  <div className="field-row">
-                    <div className="field-group">
-                      <label>Camas</label>
-                      <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
-                        <option value="TWO_BEDS">2 camas</option>
-                        <option value="ONE_BED">1 cama (chapéu)</option>
-                        <option value="EXTRA_BED">3 camas (extra)</option>
-                      </select>
-                    </div>
-                    <div className="field-group">
-                      <label>Preço (€)</label>
-                      <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="toggle-row">
-                    <span>Pago</span>
-                    <label className="toggle-switch">
-                      <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
-                      <span className="toggle-slider" />
-                    </label>
-                  </div>
-                  {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                    <button className="action-btn primary" onClick={() => handleRegister()} disabled={busy}>
-                      {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar Tarde
-                    </button>
-                    <button className="action-btn danger" onClick={() => setShowAddForm(false)} disabled={busy}>Cancelar</button>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-
-          {/* ── AFTERNOON only ── */}
-          {!isFree && afternoonEntry && !morningEntry && !fullDayEntry && (
-            <>
-              <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde</div>
-              <div className="info-row"><span className="label">Cliente</span><span className="value">{afternoonEntry.clientName}</span></div>
-              {afternoonEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{afternoonEntry.clientPhone}</span></div>}
-              <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(afternoonEntry.bedConfig)}</span></div>
-              <div className="info-row"><span className="label">Preço</span><span className="value">{afternoonEntry.totalPrice.toFixed(2)}€ {afternoonEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
-              <div className="action-divider" />
-              <button className="action-btn danger" onClick={() => handleDelete(afternoonEntry.id)} disabled={busy}>
-                Libertar Tarde
-              </button>
-              <div className="action-divider" />
-              {!showAddForm ? (
-                <button className="action-btn warning" onClick={() => setShowAddForm(true)} disabled={busy}>
-                  + Manhã livre — Registar cliente
-                </button>
-              ) : (
-                <>
-                  <div style={{ fontSize: "0.72rem", color: "#fb923c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Manhã — novo cliente</div>
-                  <div className="field-group">
-                    <label>Nome do cliente *</label>
-                    <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
-                  </div>
-                  <div className="field-group">
-                    <label>Telefone</label>
-                    <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
-                  </div>
-                  <div className="field-row">
-                    <div className="field-group">
-                      <label>Camas</label>
-                      <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
-                        <option value="TWO_BEDS">2 camas</option>
-                        <option value="ONE_BED">1 cama (chapéu)</option>
-                        <option value="EXTRA_BED">3 camas (extra)</option>
-                      </select>
-                    </div>
-                    <div className="field-group">
-                      <label>Preço (€)</label>
-                      <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="toggle-row">
-                    <span>Pago</span>
-                    <label className="toggle-switch">
-                      <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
-                      <span className="toggle-slider" />
-                    </label>
-                  </div>
-                  {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                    <button className="action-btn primary" onClick={() => handleRegister()} disabled={busy}>
-                      {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar Manhã
-                    </button>
-                    <button className="action-btn danger" onClick={() => setShowAddForm(false)} disabled={busy}>Cancelar</button>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-
-          {/* ── SPLIT (morning + afternoon) ── */}
-          {!isFree && morningEntry && afternoonEntry && !fullDayEntry && (
-            <>
-              <div style={{ fontSize: "0.72rem", color: "#fb923c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Manhã</div>
-              <div className="info-row"><span className="label">Cliente</span><span className="value">{morningEntry.clientName}</span></div>
-              {morningEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{morningEntry.clientPhone}</span></div>}
-              <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(morningEntry.bedConfig)}</span></div>
-              <div className="info-row"><span className="label">Preço</span><span className="value">{morningEntry.totalPrice.toFixed(2)}€ {morningEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
-              <button className="action-btn danger" onClick={() => handleDelete(morningEntry.id)} disabled={busy}>Libertar Manhã</button>
-              <div className="action-divider" />
-              <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde</div>
-              <div className="info-row"><span className="label">Cliente</span><span className="value">{afternoonEntry.clientName}</span></div>
-              {afternoonEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{afternoonEntry.clientPhone}</span></div>}
-              <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(afternoonEntry.bedConfig)}</span></div>
-              <div className="info-row"><span className="label">Preço</span><span className="value">{afternoonEntry.totalPrice.toFixed(2)}€ {afternoonEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
-              <button className="action-btn blue" onClick={() => handleDelete(afternoonEntry.id)} disabled={busy}>Libertar Tarde</button>
-              <div className="action-divider" />
-              {!showOverrideForm ? (
-                <button className="action-btn" style={{ background: "rgba(148,163,184,0.1)", color: "#94a3b8", border: "1px solid rgba(148,163,184,0.2)", fontSize: "0.8rem" }} onClick={startOverride} disabled={busy}>
-                  ↺ Re-alugar Tarde (override)
-                </button>
-              ) : (
-                <>
-                  <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — novo cliente (override)</div>
-                  <div className="field-group">
-                    <label>Nome do cliente *</label>
-                    <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
-                  </div>
-                  <div className="field-group">
-                    <label>Telefone</label>
-                    <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
-                  </div>
-                  <div className="field-row">
-                    <div className="field-group">
-                      <label>Camas</label>
-                      <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
-                        <option value="TWO_BEDS">2 camas</option>
-                        <option value="ONE_BED">1 cama (chapéu)</option>
-                        <option value="EXTRA_BED">3 camas (extra)</option>
-                      </select>
-                    </div>
-                    <div className="field-group">
-                      <label>Preço (€)</label>
-                      <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="toggle-row">
-                    <span>Pago</span>
-                    <label className="toggle-switch">
-                      <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
-                      <span className="toggle-slider" />
-                    </label>
-                  </div>
-                  <div className="field-group">
-                    <label>Notas</label>
-                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Ex: cliente da tarde saiu cedo, lugar re-alugado" />
-                  </div>
-                  {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                    <button className="action-btn primary" onClick={() => handleRegister(true)} disabled={busy}>
-                      {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar
-                    </button>
-                    <button className="action-btn danger" onClick={() => setShowOverrideForm(false)} disabled={busy}>Cancelar</button>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-
-          {/* ── FULL DAY ── */}
-          {!isFree && fullDayEntry && !showCarryOver && (
-            <>
-              <div style={{ fontSize: "0.72rem", color: "#a855f7", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dia Inteiro</div>
-              <div className="info-row"><span className="label">Cliente</span><span className="value">{fullDayEntry.clientName}</span></div>
-              {fullDayEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{fullDayEntry.clientPhone}</span></div>}
-              <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(fullDayEntry.bedConfig)}{fullDayEntry.isCarryOver ? " (carry-over)" : ""}</span></div>
-              <div className="info-row"><span className="label">Preço</span><span className="value">{fullDayEntry.totalPrice.toFixed(2)}€ {fullDayEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
-              {fullDayEntry.notes && <div className="info-row"><span className="label">Notas</span><span className="value">{fullDayEntry.notes}</span></div>}
-              <div className="action-divider" />
-              <button className="action-btn warning" onClick={() => setShowCarryOver(true)} disabled={busy}>
-                Carry-over da Tarde →
-              </button>
-              <button className="action-btn danger" onClick={() => handleDelete(fullDayEntry.id)} disabled={busy}>
-                Libertar Tudo
-              </button>
-
-              {/* Afternoon section — client left early or second client */}
-              <div className="action-divider" />
-              {afternoonEntry ? (
-                <>
-                  <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — outro cliente</div>
-                  <div className="info-row"><span className="label">Cliente</span><span className="value">{afternoonEntry.clientName}</span></div>
-                  {afternoonEntry.clientPhone && <div className="info-row"><span className="label">Telefone</span><span className="value">{afternoonEntry.clientPhone}</span></div>}
-                  <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(afternoonEntry.bedConfig)}</span></div>
-                  <div className="info-row"><span className="label">Preço</span><span className="value">{afternoonEntry.totalPrice.toFixed(2)}€ {afternoonEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
-                  <button className="action-btn blue" onClick={() => handleDelete(afternoonEntry.id)} disabled={busy}>Libertar Tarde</button>
-                  <div className="action-divider" />
-                  {!showOverrideForm ? (
-                    <button className="action-btn" style={{ background: "rgba(148,163,184,0.1)", color: "#94a3b8", border: "1px solid rgba(148,163,184,0.2)", fontSize: "0.8rem" }} onClick={startOverride} disabled={busy}>
-                      ↺ Re-alugar Tarde (override)
-                    </button>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — novo cliente (override)</div>
-                      <div className="field-group">
-                        <label>Nome do cliente *</label>
-                        <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
-                      </div>
-                      <div className="field-group">
-                        <label>Telefone</label>
-                        <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
-                      </div>
-                      <div className="field-row">
-                        <div className="field-group">
-                          <label>Camas</label>
-                          <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
-                            <option value="TWO_BEDS">2 camas</option>
-                            <option value="ONE_BED">1 cama (chapéu)</option>
-                            <option value="EXTRA_BED">3 camas (extra)</option>
-                          </select>
-                        </div>
-                        <div className="field-group">
-                          <label>Preço (€)</label>
-                          <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
-                        </div>
-                      </div>
-                      <div className="toggle-row">
-                        <span>Pago</span>
-                        <label className="toggle-switch">
-                          <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
-                          <span className="toggle-slider" />
-                        </label>
-                      </div>
-                      <div className="field-group">
-                        <label>Notas</label>
-                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Ex: cliente da tarde saiu cedo, lugar re-alugado" />
-                      </div>
-                      {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                        <button className="action-btn primary" onClick={() => handleRegister(true)} disabled={busy}>
-                          {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar
-                        </button>
-                        <button className="action-btn danger" onClick={() => setShowOverrideForm(false)} disabled={busy}>Cancelar</button>
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : !showAddForm ? (
-                <button className="action-btn blue" onClick={() => setShowAddForm(true)} disabled={busy}>
-                  + Tarde livre — Registar cliente
-                </button>
-              ) : (
-                <>
-                  <div style={{ fontSize: "0.72rem", color: "#3b82f6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — novo cliente</div>
-                  <div className="field-group">
-                    <label>Nome do cliente *</label>
-                    <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
-                  </div>
-                  <div className="field-group">
-                    <label>Telefone</label>
-                    <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
-                  </div>
-                  <div className="field-row">
-                    <div className="field-group">
-                      <label>Camas</label>
-                      <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
-                        <option value="TWO_BEDS">2 camas</option>
-                        <option value="ONE_BED">1 cama (chapéu)</option>
-                        <option value="EXTRA_BED">3 camas (extra)</option>
-                      </select>
-                    </div>
-                    <div className="field-group">
-                      <label>Preço (€)</label>
-                      <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="toggle-row">
-                    <span>Pago</span>
-                    <label className="toggle-switch">
-                      <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
-                      <span className="toggle-slider" />
-                    </label>
-                  </div>
-                  {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                    <button className="action-btn primary" onClick={() => handleRegister()} disabled={busy}>
-                      {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar Tarde
-                    </button>
-                    <button className="action-btn danger" onClick={() => setShowAddForm(false)} disabled={busy}>Cancelar</button>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-
-          {/* ── CARRY-OVER modal ── */}
-          {showCarryOver && fullDayEntry && (
-            <>
-              <div style={{ background: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 8, padding: "0.8rem", fontSize: "0.84rem" }}>
-                Cliente <strong>{fullDayEntry.clientName}</strong> pagou Dia Inteiro mas saiu cedo.<br />
+              <div className="carryover-box">
+                Cliente <strong>{fullDayEntries[0].clientName}</strong> pagou Dia Inteiro mas saiu cedo.<br />
                 Transferir tarde para <strong>{tomorrow}</strong>?
               </div>
               <div className="field-group">
                 <label>Lugar para amanhã ({tomorrow})</label>
-                <select value={coTargetSpot} onChange={(e) => setCoTargetSpot(e.target.value)}>
+                <select value={coSpot} onChange={(e) => setCoSpot(e.target.value)}>
                   <option value="">— selecionar —</option>
                   {concession.spots.map((s) => (
                     <option key={s.id} value={s.id}>Lugar {s.spotNumber}</option>
@@ -609,23 +297,124 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
                 </select>
               </div>
               <div className="field-group">
-                <label>Configuração de camas (amanhã)</label>
-                <select value={coBedConfig || fullDayEntry.bedConfig} onChange={(e) => setCoBedConfig(e.target.value)}>
+                <label>Camas (amanhã)</label>
+                <select value={coBeds || fullDayEntries[0].bedConfig} onChange={(e) => setCoBeds(e.target.value)}>
                   <option value="TWO_BEDS">2 camas</option>
                   <option value="ONE_BED">1 cama (chapéu)</option>
                   <option value="EXTRA_BED">3 camas (extra)</option>
                 </select>
               </div>
-              <div style={{ fontSize: "0.8rem", color: "#888" }}>
-                Amanhã: Lugar {coTargetSpot ? concession.spots.find(s => s.id === coTargetSpot)?.spotNumber : "?"}, modalidade Manhã — considerado pré-pago.
+              {coError && <p className="form-error">{coError}</p>}
+              <div className="btn-row-2">
+                <button className="action-btn success" onClick={handleCarryOver} disabled={busy}>
+                  {busy ? <Loader2 size={14} className="conc-spin" /> : null} Confirmar
+                </button>
+                <button className="action-btn ghost" onClick={() => setShowCarryOver(false)} disabled={busy}>Cancelar</button>
               </div>
-              {coError && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{coError}</p>}
-              <button className="action-btn success" onClick={handleCarryOver} disabled={busy}>
-                {busy ? <Loader2 size={14} className="conc-spin" /> : null} Confirmar Carry-over
-              </button>
-              <button className="action-btn danger" onClick={() => setShowCarryOver(false)} disabled={busy}>Cancelar</button>
             </>
           )}
+
+          {/* ══ MAIN PANEL (hidden during carry-over) ══ */}
+          {!showCarryOver && (
+            <>
+
+              {/* ── BOTH FREE ── */}
+              {bothFree && (
+                formMode ? renderInlineForm() : (
+                  <div className="slot-free-all">
+                    <p className="slot-free-hint">Lugar livre — escolher modalidade</p>
+                    <div className="slot-free-btns">
+                      <button className="action-btn morning-btn" onClick={() => openForm("add-morning")}>+ Manhã</button>
+                      <button className="action-btn afternoon-btn" onClick={() => openForm("add-afternoon")}>+ Tarde</button>
+                      <button className="action-btn full-btn" onClick={() => openForm("add-fullday")}>+ Dia Inteiro</button>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* ── SLOT SECTIONS ── */}
+              {!bothFree && (
+                <>
+
+                  {/* ─ MANHÃ ─ */}
+                  <div className="slot-section">
+                    <div className="slot-section-header morning">
+                      <span>Manhã · 09h–14h</span>
+                      {morningOccupied && formMode !== "rerent-morning" && (
+                        <button className="rerent-btn" onClick={() => openForm("rerent-morning")} disabled={busy}>
+                          ↺ Re-alugar
+                        </button>
+                      )}
+                    </div>
+                    <div className="slot-section-body">
+                      {/* Morning-specific entries */}
+                      {morningEntries.map((e) => renderEntryCard(e, "#fb923c"))}
+
+                      {/* Extend to Full Day (only when one morning entry, nothing else) */}
+                      {morningEntries.length === 1 && afternoonEntries.length === 0 && fullDayEntries.length === 0 && (
+                        <button className="action-btn warning sm" onClick={() => handleExtendToFull(morningEntries[0])} disabled={busy}>
+                          → Dia Inteiro (+{(concession.priceFull - morningEntries[0].totalPrice).toFixed(2)}€)
+                        </button>
+                      )}
+
+                      {/* Add morning when slot is free */}
+                      {!morningOccupied && (
+                        formMode === "add-morning"
+                          ? renderInlineForm()
+                          : <button className="action-btn morning-btn sm" onClick={() => openForm("add-morning")} disabled={busy}>+ Registar Manhã</button>
+                      )}
+
+                      {/* Re-rent form */}
+                      {formMode === "rerent-morning" && renderInlineForm()}
+                    </div>
+                  </div>
+
+                  {/* ─ DIA INTEIRO ─ */}
+                  {fullDayEntries.length > 0 && (
+                    <div className="slot-section">
+                      <div className="slot-section-header full">
+                        <span>Dia Inteiro</span>
+                      </div>
+                      <div className="slot-section-body">
+                        {fullDayEntries.map((e) => renderEntryCard(e, "#a855f7", "Libertar Dia Inteiro"))}
+                        <button className="action-btn warning sm" onClick={() => setShowCarryOver(true)} disabled={busy}>
+                          Carry-over da Tarde →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─ TARDE ─ */}
+                  <div className="slot-section">
+                    <div className="slot-section-header afternoon">
+                      <span>Tarde · 14h–19h</span>
+                      {afternoonOccupied && formMode !== "rerent-afternoon" && (
+                        <button className="rerent-btn" onClick={() => openForm("rerent-afternoon")} disabled={busy}>
+                          ↺ Re-alugar
+                        </button>
+                      )}
+                    </div>
+                    <div className="slot-section-body">
+                      {/* Afternoon-specific entries */}
+                      {afternoonEntries.map((e) => renderEntryCard(e, "#3b82f6"))}
+
+                      {/* Add afternoon when slot is free */}
+                      {!afternoonOccupied && (
+                        formMode === "add-afternoon"
+                          ? renderInlineForm()
+                          : <button className="action-btn afternoon-btn sm" onClick={() => openForm("add-afternoon")} disabled={busy}>+ Registar Tarde</button>
+                      )}
+
+                      {/* Re-rent form */}
+                      {formMode === "rerent-afternoon" && renderInlineForm()}
+                    </div>
+                  </div>
+
+                </>
+              )}
+            </>
+          )}
+
         </div>
       </div>
     </div>

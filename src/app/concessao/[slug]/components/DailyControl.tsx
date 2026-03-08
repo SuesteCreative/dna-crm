@@ -82,7 +82,12 @@ export default function DailyControl({ concession }: { concession: Concession })
     setLoading(true);
     const res = await fetch(`/api/concessions/${concession.slug}/entries?date=${date}`);
     const data = await res.json();
-    setEntries(Array.isArray(data) ? data : []);
+    const newEntries: Entry[] = Array.isArray(data) ? data : [];
+    setEntries(newEntries);
+    // Keep panel open with refreshed entries after any action
+    setSelectedSpot((prev) =>
+      prev ? { spot: prev.spot, entries: newEntries.filter((e) => e.spotId === prev.spot.id) } : null
+    );
     setLoading(false);
   }, [concession.slug, date]);
 
@@ -94,10 +99,12 @@ export default function DailyControl({ concession }: { concession: Concession })
     entries: entries.filter((e) => e.spotId === spot.id),
   }));
 
-  // Summary
+  // Summary — count entries by period (not spots by status)
   const freeCount = spotStates.filter((s) => spotStatus(s.entries) === "free").length;
-  const takenCount = spotStates.length - freeCount;
   const reservedCount = spotStates.filter((s) => spotStatus(s.entries) === "reserved").length;
+  const morningCount = entries.filter((e) => e.period === "MORNING").length;
+  const afternoonCount = entries.filter((e) => e.period === "AFTERNOON").length;
+  const fullDayCount = entries.filter((e) => e.period === "FULL_DAY").length;
 
   const handleExport = async () => {
     setExporting(true);
@@ -127,9 +134,9 @@ export default function DailyControl({ concession }: { concession: Concession })
         />
         <div className="summary-chips">
           <span className="summary-chip free">{freeCount} livres</span>
-          <span className="summary-chip morning">{spotStates.filter(s => spotStatus(s.entries) === "morning").length} Manhã</span>
-          <span className="summary-chip afternoon">{spotStates.filter(s => spotStatus(s.entries) === "afternoon").length} Tarde</span>
-          <span className="summary-chip full">{spotStates.filter(s => ["full","split"].includes(spotStatus(s.entries))).length} Dia Inteiro</span>
+          <span className="summary-chip morning">{morningCount} Manhã</span>
+          <span className="summary-chip afternoon">{afternoonCount} Tarde</span>
+          <span className="summary-chip full">{fullDayCount} Dia Inteiro</span>
           <span className="summary-chip reserved">{reservedCount} Reservas</span>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
@@ -155,20 +162,20 @@ export default function DailyControl({ concession }: { concession: Concession })
           const afternoonEnt = active.find(e => e.period === "AFTERNOON");
           const primaryEntry = fullEnt || morningEnt || afternoonEnt;
 
-          // Top half: full-day (priority) or morning
-          const topEnt = fullEnt || morningEnt;
+          // Top half: prefer morning override over full-day
+          const topEnt = morningEnt || fullEnt;
           const topColor = !topEnt ? "free"
             : topEnt.reservationId ? "reserved"
             : topEnt.period === "FULL_DAY" ? "full" : "morning";
 
-          // Bottom half: afternoon, or mirrors full-day if no afternoon
+          // Bottom half: prefer afternoon override over full-day
           const botColor = afternoonEnt
             ? (afternoonEnt.reservationId ? "reserved" : "afternoon")
             : fullEnt ? (fullEnt.reservationId ? "reserved" : "full")
             : "free";
 
-          // Merged = full day with no separate afternoon booking
-          const isFullMerged = !!fullEnt && !afternoonEnt;
+          // Merged = pure full-day with no overrides (seamless halves)
+          const isFullMerged = !!fullEnt && !morningEnt && !afternoonEnt;
 
           return (
             <div
