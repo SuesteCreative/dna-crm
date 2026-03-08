@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       if (period === "MORNING" && (e.period === "MORNING" || e.period === "FULL_DAY")) {
         return NextResponse.json({ error: "CONFLICT", message: "Período de Manhã já ocupado" }, { status: 409 });
       }
-      if (period === "AFTERNOON" && e.period === "AFTERNOON") {
+      if (period === "AFTERNOON" && (e.period === "AFTERNOON" || (e.period === "FULL_DAY" && e.status !== "CARRIED_OVER"))) {
         return NextResponse.json({ error: "CONFLICT", message: "Período de Tarde já ocupado" }, { status: 409 });
       }
     }

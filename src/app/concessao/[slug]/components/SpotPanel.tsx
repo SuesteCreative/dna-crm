@@ -399,9 +399,11 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
                       </div>
                       <div className="slot-section-body">
                         {fullDayEntries.map((e) => renderEntryCard(e, "#a855f7", "Libertar Dia Inteiro"))}
-                        <button className="action-btn warning sm" onClick={() => setShowCarryOver(true)} disabled={busy}>
-                          Carry-over da Tarde →
-                        </button>
+                        {!fullDayEntries[0]?.isCarryOver && (
+                          <button className="action-btn warning sm" onClick={() => setShowCarryOver(true)} disabled={busy}>
+                            Carry-over da Tarde →
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

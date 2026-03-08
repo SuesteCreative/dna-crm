@@ -10,7 +10,7 @@ interface Concession {
 
 type Discount = "none" | "free_day" | "ten_percent";
 
-function today() { return new Date().toISOString().slice(0, 10); }
+function today() { return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" }); }
 
 function calcDays(start: string, end: string) {
   if (!start || !end) return 1;

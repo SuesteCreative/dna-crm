@@ -35,7 +35,7 @@ function calcPrice(period: string, bedConfig: string, days: number, c: Concessio
   const daily = bedConfig === "ONE_BED" ? c.priceOneBed : bedConfig === "EXTRA_BED" ? base + c.priceExtraBed : base;
   return daily * days;
 }
-function today() { return new Date().toISOString().slice(0, 10); }
+function today() { return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" }); }
 
 // ── Calendar helpers ────────────────────────────────────────
 function getDaysInMonth(year: number, month: number) {
@@ -462,13 +462,18 @@ export default function Reservations({ concession, initialReservation, onInitHan
               <div className="field-row">
                 <div className="field-group">
                   <label>Data início *</label>
-                  <input type="date" value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
+                  <input type="date" value={form.startDate} disabled={!!editing} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
                 </div>
                 <div className="field-group">
                   <label>Data fim *</label>
-                  <input type="date" value={form.endDate} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
+                  <input type="date" value={form.endDate} disabled={!!editing} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
                 </div>
               </div>
+              {editing && (
+                <p style={{ fontSize: "0.78rem", color: "#888", margin: "-0.3rem 0 0" }}>
+                  Para alterar datas: cancele esta reserva e crie uma nova.
+                </p>
+              )}
               <div className="field-row">
                 <div className="field-group">
                   <label>Modalidade</label>

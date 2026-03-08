@@ -47,7 +47,7 @@ interface SpotState {
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" });
 }
 
 function spotStatus(entries: Entry[]): "free" | "morning" | "afternoon" | "full" | "split" | "reserved" {
@@ -77,7 +77,11 @@ export default function DailyControl({ concession }: { concession: Concession })
   const [loading, setLoading] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<SpotState | null>(null);
   const [exporting, setExporting] = useState(false);
-  const [dailyNote, setDailyNote] = useState("");
+  const noteKey = `daily-note:${concession.slug}:${date}`;
+  const [dailyNote, setDailyNote] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(`daily-note:${concession.slug}:${new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" })}`) ?? "";
+  });
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -93,6 +97,13 @@ export default function DailyControl({ concession }: { concession: Concession })
   }, [concession.slug, date]);
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
+
+  // Load note from localStorage when date changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setDailyNote(localStorage.getItem(noteKey) ?? "");
+    }
+  }, [noteKey]);
 
   // Build spot states
   const spotStates: SpotState[] = concession.spots.map((spot) => ({
@@ -157,7 +168,10 @@ export default function DailyControl({ concession }: { concession: Concession })
           <textarea
             placeholder="Observações, incidentes ou notas para este dia..."
             value={dailyNote}
-            onChange={(e) => setDailyNote(e.target.value)}
+            onChange={(e) => {
+              setDailyNote(e.target.value);
+              if (typeof window !== "undefined") localStorage.setItem(noteKey, e.target.value);
+            }}
             rows={2}
           />
         </div>

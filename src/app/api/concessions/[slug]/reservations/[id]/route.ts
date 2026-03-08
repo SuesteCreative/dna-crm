@@ -37,11 +37,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: { slug: st
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const prisma = await getPrisma();
-  const today = new Date().toISOString().slice(0, 10);
 
-  // Cancel future entries linked to this reservation
+  // Release ALL entries linked to this reservation (past and future)
   await prisma.concessionEntry.updateMany({
-    where: { reservationId: params.id, date: { gte: today } },
+    where: { reservationId: params.id },
     data: { status: "RELEASED" },
   });
 
