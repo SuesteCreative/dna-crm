@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Plus, X, Download, Loader2, Edit2, Trash2, List, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -157,6 +157,8 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const [conflictDates, setConflictDates] = useState<string[]>([]);
   const [conflictAlts, setConflictAlts] = useState<{ spotId: string; spotNumber: number; blockedDates: string[] }[] | null>(null);
   const [blockedSpotIds, setBlockedSpotIds] = useState<Set<string>>(new Set());
+  // Prevent auto-calc from overriding a price explicitly set by Calculator
+  const skipAutoCalcRef = useRef(false);
 
   const fetchReservations = useCallback(async () => {
     setLoading(true);
@@ -174,6 +176,8 @@ export default function Reservations({ concession, initialReservation, onInitHan
   // Handle pre-fill from Calculator "Proceed" button
   useEffect(() => {
     if (!initialReservation) return;
+    // If Calculator provides a price, skip the next auto-calc so it isn't overridden
+    if (initialReservation.totalPrice != null) skipAutoCalcRef.current = true;
     setForm((prev) => ({
       ...emptyForm(),
       startDate: initialReservation.startDate ?? prev.startDate,
@@ -191,8 +195,9 @@ export default function Reservations({ concession, initialReservation, onInitHan
     onInitHandled?.();
   }, [initialReservation]);
 
-  // Auto-calc price when form fields change (only when not editing a specific price)
+  // Auto-calc price when form fields change, unless price was set by Calculator
   useEffect(() => {
+    if (skipAutoCalcRef.current) { skipAutoCalcRef.current = false; return; }
     if (!form.startDate || !form.endDate || !form.period || !form.bedConfig) return;
     const days = calcDays(form.startDate, form.endDate);
     const price = calcPrice(form.period, form.bedConfig, days, concession);
@@ -443,37 +448,49 @@ export default function Reservations({ concession, initialReservation, onInitHan
                 </select>
               </div>
               {extraSpotIds.map((sid, idx) => (
-                <div key={idx} className="field-group">
-                  <label>Lugar {idx + 2} *</label>
-                  <select value={sid} onChange={(e) => {
-                    const updated = [...extraSpotIds];
-                    updated[idx] = e.target.value;
-                    setExtraSpotIds(updated);
-                  }}>
-                    <option value="">— selecionar —</option>
-                    {concession.spots.map((s) => (
-                      <option key={s.id} value={s.id} disabled={blockedSpotIds.has(s.id)}>
-                        Lugar {s.spotNumber}{blockedSpotIds.has(s.id) ? " (ocupado)" : ""}
-                      </option>
-                    ))}
-                  </select>
+                <div key={idx} style={{ display: "flex", gap: "0.5rem", alignItems: "flex-end" }}>
+                  <div className="field-group" style={{ flex: 1, marginBottom: 0 }}>
+                    <label>Lugar {idx + 2} *</label>
+                    <select value={sid} onChange={(e) => {
+                      const updated = [...extraSpotIds];
+                      updated[idx] = e.target.value;
+                      setExtraSpotIds(updated);
+                    }}>
+                      <option value="">— selecionar —</option>
+                      {concession.spots.map((s) => (
+                        <option key={s.id} value={s.id} disabled={blockedSpotIds.has(s.id)}>
+                          Lugar {s.spotNumber}{blockedSpotIds.has(s.id) ? " (ocupado)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setExtraSpotIds((prev) => prev.filter((_, i) => i !== idx))}
+                    style={{ padding: "0.45rem 0.6rem", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 7, color: "#ef4444", cursor: "pointer", marginBottom: 0 }}
+                    title="Remover chapéu"
+                  ><X size={14} /></button>
                 </div>
               ))}
+              {!editing && (
+                <button
+                  type="button"
+                  onClick={() => setExtraSpotIds((prev) => [...prev, ""])}
+                  style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.35rem 0.8rem", background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 7, color: "#f97316", cursor: "pointer", fontSize: "0.82rem", width: "auto" }}
+                >
+                  <Plus size={13} /> Adicionar Chapéu
+                </button>
+              )}
               <div className="field-row">
                 <div className="field-group">
                   <label>Data início *</label>
-                  <input type="date" value={form.startDate} disabled={!!editing} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
+                  <input type="date" value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
                 </div>
                 <div className="field-group">
                   <label>Data fim *</label>
-                  <input type="date" value={form.endDate} disabled={!!editing} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
+                  <input type="date" value={form.endDate} min={form.startDate} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
                 </div>
               </div>
-              {editing && (
-                <p style={{ fontSize: "0.78rem", color: "#888", margin: "-0.3rem 0 0" }}>
-                  Para alterar datas: cancele esta reserva e crie uma nova.
-                </p>
-              )}
               <div className="field-row">
                 <div className="field-group">
                   <label>Modalidade</label>
