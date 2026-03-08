@@ -150,6 +150,8 @@ export default function Reservations({ concession, initialReservation, onInitHan
   });
 
   const [form, setForm] = useState(emptyForm);
+  // Extra spot IDs when booking multiple spots at once (from Calculator)
+  const [extraSpotIds, setExtraSpotIds] = useState<string[]>([]);
   const [formBusy, setFormBusy] = useState(false);
   const [formError, setFormError] = useState("");
   const [conflictDates, setConflictDates] = useState<string[]>([]);
@@ -179,6 +181,9 @@ export default function Reservations({ concession, initialReservation, onInitHan
       bedConfig: initialReservation.bedConfig ?? prev.bedConfig,
       totalPrice: initialReservation.totalPrice ?? prev.totalPrice,
     }));
+    // Pre-create extra spot selectors for multi-spot bookings
+    const extraCount = Math.max(0, (initialReservation.spots ?? 1) - 1);
+    setExtraSpotIds(Array(extraCount).fill(""));
     setEditing(null);
     setFormError("");
     setShowDrawer(true);
@@ -196,6 +201,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const openNew = () => {
     setEditing(null);
     setForm(emptyForm());
+    setExtraSpotIds([]);
     setFormError(""); setConflictAlts(null); setConflictDates([]);
     setShowDrawer(true);
   };
@@ -225,8 +231,8 @@ export default function Reservations({ concession, initialReservation, onInitHan
       body: JSON.stringify({ ...form, totalPrice: parseFloat(form.totalPrice) }),
     });
     const data = await res.json();
-    setFormBusy(false);
     if (!res.ok) {
+      setFormBusy(false);
       if (res.status === 409 && data.alternatives) {
         setConflictDates(data.conflictDates ?? []);
         setConflictAlts(data.alternatives);
@@ -237,8 +243,19 @@ export default function Reservations({ concession, initialReservation, onInitHan
       }
       return;
     }
+    // Create additional reservations for extra spots (multi-spot from Calculator)
+    const filledExtras = extraSpotIds.filter(Boolean);
+    for (const spotId of filledExtras) {
+      await fetch(`/api/concessions/${concession.slug}/reservations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, spotId, totalPrice: parseFloat(form.totalPrice) }),
+      });
+    }
+    setFormBusy(false);
     setConflictAlts(null);
     setConflictDates([]);
+    setExtraSpotIds([]);
     setShowDrawer(false);
     fetchReservations();
   };
@@ -403,7 +420,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
                 </div>
               </div>
               <div className="field-group">
-                <label>Lugar *</label>
+                <label>Lugar {extraSpotIds.length > 0 ? "1" : ""} *</label>
                 <select value={form.spotId} onChange={(e) => { setForm((p) => ({ ...p, spotId: e.target.value })); setConflictAlts(null); setConflictDates([]); setFormError(""); }}>
                   <option value="">— selecionar —</option>
                   {concession.spots.map((s) => (
@@ -411,6 +428,21 @@ export default function Reservations({ concession, initialReservation, onInitHan
                   ))}
                 </select>
               </div>
+              {extraSpotIds.map((sid, idx) => (
+                <div key={idx} className="field-group">
+                  <label>Lugar {idx + 2} *</label>
+                  <select value={sid} onChange={(e) => {
+                    const updated = [...extraSpotIds];
+                    updated[idx] = e.target.value;
+                    setExtraSpotIds(updated);
+                  }}>
+                    <option value="">— selecionar —</option>
+                    {concession.spots.map((s) => (
+                      <option key={s.id} value={s.id}>Lugar {s.spotNumber}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
               <div className="field-row">
                 <div className="field-group">
                   <label>Data início *</label>

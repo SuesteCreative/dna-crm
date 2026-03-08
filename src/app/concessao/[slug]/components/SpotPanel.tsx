@@ -152,6 +152,9 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
   }
 
   async function handleExtendToFull(morningEntry: Entry) {
+    // Extension cost = standard delta (priceFull - priceMorning), regardless of any discount on morning
+    const extensionCost = concession.priceFull - concession.priceMorning;
+    const newTotal = morningEntry.totalPrice + extensionCost;
     setBusy(true);
     await fetch(`/api/concessions/${concession.slug}/entries/${morningEntry.id}`, { method: "DELETE" });
     await fetch(`/api/concessions/${concession.slug}/entries`, {
@@ -160,7 +163,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
       body: JSON.stringify({
         spotId: spot.id, date, period: "FULL_DAY",
         clientName: morningEntry.clientName, clientPhone: morningEntry.clientPhone,
-        bedConfig: morningEntry.bedConfig, totalPrice: concession.priceFull,
+        bedConfig: morningEntry.bedConfig, totalPrice: newTotal,
         isPaid: morningEntry.isPaid, notes: morningEntry.notes,
       }),
     });
@@ -353,7 +356,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
                       {/* Extend to Full Day (only when one morning entry, nothing else) */}
                       {morningEntries.length === 1 && afternoonEntries.length === 0 && fullDayEntries.length === 0 && (
                         <button className="action-btn warning sm" onClick={() => handleExtendToFull(morningEntries[0])} disabled={busy}>
-                          → Dia Inteiro (+{(concession.priceFull - morningEntries[0].totalPrice).toFixed(2)}€)
+                          → Dia Inteiro (+{(concession.priceFull - concession.priceMorning).toFixed(2)}€)
                         </button>
                       )}
 
