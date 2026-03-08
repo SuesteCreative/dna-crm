@@ -1,88 +1,155 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { Plus, X, Download, Loader2, Edit2, Trash2 } from "lucide-react";
+import { Plus, X, Download, Loader2, Edit2, Trash2, List, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import * as XLSX from "xlsx";
 
-interface Spot {
-  id: string;
-  spotNumber: number;
-}
+interface Spot { id: string; spotNumber: number; }
 
 interface Concession {
-  id: string;
-  slug: string;
-  priceFull: number;
-  priceMorning: number;
-  priceAfternoon: number;
-  priceExtraBed: number;
-  priceOneBed: number;
+  id: string; slug: string;
+  priceFull: number; priceMorning: number; priceAfternoon: number;
+  priceExtraBed: number; priceOneBed: number;
   spots: Spot[];
 }
 
 interface Reservation {
-  id: string;
-  clientName: string;
-  clientPhone?: string;
-  clientEmail?: string;
-  startDate: string;
-  endDate: string;
-  period: string;
-  bedConfig: string;
-  totalPrice: number;
-  isPaid: boolean;
-  notes?: string;
-  status: string;
-  spot: Spot;
-  createdAt: string;
+  id: string; clientName: string; clientPhone?: string; clientEmail?: string;
+  startDate: string; endDate: string; period: string; bedConfig: string;
+  totalPrice: number; isPaid: boolean; notes?: string; status: string;
+  spot: Spot; createdAt: string;
+}
+
+export interface ReservationInitData {
+  startDate?: string; endDate?: string; period?: string; bedConfig?: string;
+  totalPrice?: string; spots?: number;
 }
 
 function calcDays(start: string, end: string) {
-  const s = new Date(start + "T12:00:00Z");
-  const e = new Date(end + "T12:00:00Z");
+  const s = new Date(start + "T12:00:00Z"), e = new Date(end + "T12:00:00Z");
   return Math.max(1, Math.round((e.getTime() - s.getTime()) / 86400000) + 1);
 }
-
-function periodLabel(p: string) {
-  return p === "MORNING" ? "Manhã" : p === "AFTERNOON" ? "Tarde" : "Dia Inteiro";
-}
-
-function bedLabel(b: string) {
-  return b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "3 camas" : "2 camas";
-}
-
-function calcPrice(period: string, bedConfig: string, days: number, concession: Concession) {
-  const base =
-    period === "MORNING" ? concession.priceMorning :
-    period === "AFTERNOON" ? concession.priceAfternoon :
-    concession.priceFull;
-  const daily =
-    bedConfig === "ONE_BED" ? concession.priceOneBed :
-    bedConfig === "EXTRA_BED" ? base + concession.priceExtraBed :
-    base;
+function periodLabel(p: string) { return p === "MORNING" ? "Manhã" : p === "AFTERNOON" ? "Tarde" : "Dia Inteiro"; }
+function bedLabel(b: string) { return b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "3 camas" : "2 camas"; }
+function calcPrice(period: string, bedConfig: string, days: number, c: Concession) {
+  const base = period === "MORNING" ? c.priceMorning : period === "AFTERNOON" ? c.priceAfternoon : c.priceFull;
+  const daily = bedConfig === "ONE_BED" ? c.priceOneBed : bedConfig === "EXTRA_BED" ? base + c.priceExtraBed : base;
   return daily * days;
 }
+function today() { return new Date().toISOString().slice(0, 10); }
 
-function today() {
-  return new Date().toISOString().slice(0, 10);
+// ── Calendar helpers ────────────────────────────────────────
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+function getFirstDow(year: number, month: number) {
+  return new Date(year, month, 1).getDay(); // 0=Sun
+}
+function isoDate(year: number, month: number, day: number) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+function reservationsOnDay(reservations: Reservation[], dateStr: string) {
+  return reservations.filter(
+    (r) => r.status === "ACTIVE" && r.startDate <= dateStr && r.endDate >= dateStr
+  );
 }
 
-export default function Reservations({ concession }: { concession: Concession }) {
+const MONTH_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const DOW_PT = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
+// ── Calendar sub-component ──────────────────────────────────
+function CalendarView({ reservations }: { reservations: Reservation[] }) {
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+  const [selected, setSelected] = useState<string | null>(null);
+  const todayStr = today();
+
+  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
+  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
+
+  const daysInMonth = getDaysInMonth(year, month);
+  const firstDow = getFirstDow(year, month); // 0=Sun; shift so Mon=0
+  const offset = (firstDow + 6) % 7; // Mon-first offset
+
+  const selectedRes = selected ? reservationsOnDay(reservations, selected) : [];
+
+  return (
+    <div className="res-cal">
+      <div className="res-cal-nav">
+        <button onClick={prevMonth}><ChevronLeft size={14} /></button>
+        <h3>{MONTH_PT[month]} {year}</h3>
+        <button onClick={nextMonth}><ChevronRight size={14} /></button>
+      </div>
+      <div className="res-cal-grid">
+        {DOW_PT.map((d) => <div key={d} className="res-cal-dow">{d}</div>)}
+        {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} className="res-cal-day empty" />)}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const dateStr = isoDate(year, month, day);
+          const dayRes = reservationsOnDay(reservations, dateStr);
+          const isToday = dateStr === todayStr;
+          const isSel = dateStr === selected;
+          return (
+            <div
+              key={day}
+              className={`res-cal-day${isToday ? " today" : ""}${isSel ? " selected" : ""}`}
+              onClick={() => setSelected(isSel ? null : dateStr)}
+            >
+              <div className="res-cal-dn">{day}</div>
+              <div className="res-cal-dots">
+                {dayRes.slice(0, 6).map((r) => (
+                  <div key={r.id} className="res-cal-dot" title={`L${r.spot.spotNumber} — ${r.clientName}`} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {selected && (
+        <div className="res-cal-detail">
+          <div style={{ fontSize: "0.82rem", color: "#888", marginBottom: "0.6rem" }}>
+            {selected} — {selectedRes.length === 0 ? "Sem reservas activas" : `${selectedRes.length} reserva(s)`}
+          </div>
+          {selectedRes.map((r) => (
+            <div key={r.id} style={{ display: "flex", gap: "0.8rem", alignItems: "center", padding: "0.4rem 0", borderBottom: "1px solid rgba(255,255,255,0.06)", fontSize: "0.84rem" }}>
+              <span style={{ fontWeight: 700, color: "#ef4444", minWidth: 28 }}>L{r.spot.spotNumber}</span>
+              <span style={{ flex: 1, color: "#f1f1f1" }}>{r.clientName}</span>
+              <span style={{ color: "#888" }}>{periodLabel(r.period)}</span>
+              <span style={{ color: r.isPaid ? "#22c55e" : "#ef4444" }}>{r.isPaid ? "✓ pago" : "✗ não pago"}</span>
+              <span style={{ color: "#888" }}>{r.startDate} → {r.endDate}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ──────────────────────────────────────────
+interface Props {
+  concession: Concession;
+  initialReservation?: ReservationInitData | null;
+  onInitHandled?: () => void;
+}
+
+export default function Reservations({ concession, initialReservation, onInitHandled }: Props) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDrawer, setShowDrawer] = useState(false);
   const [editing, setEditing] = useState<Reservation | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
-  // Filters
   const [filterStatus, setFilterStatus] = useState("ACTIVE");
   const [filterSearch, setFilterSearch] = useState("");
 
-  // Form
-  const [form, setForm] = useState({
+  const emptyForm = () => ({
     clientName: "", clientPhone: "", clientEmail: "",
-    spotId: "", startDate: today(), endDate: today(),
+    spotId: concession.spots[0]?.id ?? "", startDate: today(), endDate: today(),
     period: "FULL_DAY", bedConfig: "TWO_BEDS",
-    totalPrice: "", isPaid: false, notes: "",
+    totalPrice: String(concession.priceFull), isPaid: false, notes: "",
   });
+
+  const [form, setForm] = useState(emptyForm);
   const [formBusy, setFormBusy] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -99,7 +166,24 @@ export default function Reservations({ concession }: { concession: Concession })
 
   useEffect(() => { fetchReservations(); }, [fetchReservations]);
 
-  // Auto-calc price when form fields change
+  // Handle pre-fill from Calculator "Proceed" button
+  useEffect(() => {
+    if (!initialReservation) return;
+    setForm((prev) => ({
+      ...emptyForm(),
+      startDate: initialReservation.startDate ?? prev.startDate,
+      endDate: initialReservation.endDate ?? prev.endDate,
+      period: initialReservation.period ?? prev.period,
+      bedConfig: initialReservation.bedConfig ?? prev.bedConfig,
+      totalPrice: initialReservation.totalPrice ?? prev.totalPrice,
+    }));
+    setEditing(null);
+    setFormError("");
+    setShowDrawer(true);
+    onInitHandled?.();
+  }, [initialReservation]);
+
+  // Auto-calc price when form fields change (only when not editing a specific price)
   useEffect(() => {
     if (!form.startDate || !form.endDate || !form.period || !form.bedConfig) return;
     const days = calcDays(form.startDate, form.endDate);
@@ -109,12 +193,7 @@ export default function Reservations({ concession }: { concession: Concession })
 
   const openNew = () => {
     setEditing(null);
-    setForm({
-      clientName: "", clientPhone: "", clientEmail: "",
-      spotId: concession.spots[0]?.id ?? "", startDate: today(), endDate: today(),
-      period: "FULL_DAY", bedConfig: "TWO_BEDS",
-      totalPrice: String(concession.priceFull), isPaid: false, notes: "",
-    });
+    setForm(emptyForm());
     setFormError("");
     setShowDrawer(true);
   };
@@ -138,9 +217,8 @@ export default function Reservations({ concession }: { concession: Concession })
     const url = editing
       ? `/api/concessions/${concession.slug}/reservations/${editing.id}`
       : `/api/concessions/${concession.slug}/reservations`;
-    const method = editing ? "PUT" : "POST";
     const res = await fetch(url, {
-      method,
+      method: editing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, totalPrice: parseFloat(form.totalPrice) }),
     });
@@ -159,57 +237,36 @@ export default function Reservations({ concession }: { concession: Concession })
 
   const handleExportExcel = () => {
     const rows = reservations.map((r) => ({
-      Cliente: r.clientName,
-      Telefone: r.clientPhone ?? "",
-      Email: r.clientEmail ?? "",
-      Lugar: r.spot.spotNumber,
-      "Data Início": r.startDate,
-      "Data Fim": r.endDate,
-      Dias: calcDays(r.startDate, r.endDate),
-      Modalidade: periodLabel(r.period),
-      Camas: bedLabel(r.bedConfig),
-      "Total (€)": r.totalPrice.toFixed(2),
-      Pago: r.isPaid ? "Sim" : "Não",
-      Estado: r.status,
-      Notas: r.notes ?? "",
+      Cliente: r.clientName, Telefone: r.clientPhone ?? "", Email: r.clientEmail ?? "",
+      Lugar: r.spot.spotNumber, "Data Início": r.startDate, "Data Fim": r.endDate,
+      Dias: calcDays(r.startDate, r.endDate), Modalidade: periodLabel(r.period),
+      Camas: bedLabel(r.bedConfig), "Total (€)": r.totalPrice.toFixed(2),
+      Pago: r.isPaid ? "Sim" : "Não", Estado: r.status, Notas: r.notes ?? "",
     }));
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [
-      { wch: 22 }, { wch: 14 }, { wch: 24 }, { wch: 7 },
-      { wch: 12 }, { wch: 12 }, { wch: 6 }, { wch: 14 },
-      { wch: 12 }, { wch: 10 }, { wch: 6 }, { wch: 12 }, { wch: 30 },
-    ];
     XLSX.utils.book_append_sheet(wb, ws, "Reservas");
     XLSX.writeFile(wb, `reservas-${concession.slug}.xlsx`);
   };
 
-  // Stats
   const active = reservations.filter((r) => r.status === "ACTIVE");
   const unpaid = active.filter((r) => !r.isPaid);
   const revenue = active.reduce((s, r) => s + r.totalPrice, 0);
-  const tomorrowStr = (() => {
-    const d = new Date(); d.setDate(d.getDate() + 7);
-    return d.toISOString().slice(0, 10);
-  })();
+  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().slice(0, 10); })();
   const upcoming = active.filter((r) => r.startDate >= today() && r.startDate <= tomorrowStr);
 
   const filtered = reservations.filter((r) => {
     if (filterStatus && r.status !== filterStatus) return false;
     if (filterSearch) {
       const q = filterSearch.toLowerCase();
-      return (
-        r.clientName.toLowerCase().includes(q) ||
-        r.spot.spotNumber.toString().includes(q) ||
-        (r.clientPhone ?? "").includes(q)
-      );
+      return r.clientName.toLowerCase().includes(q) || r.spot.spotNumber.toString().includes(q) || (r.clientPhone ?? "").includes(q);
     }
     return true;
   });
 
   return (
     <div>
-      {/* Stats bar */}
+      {/* Stats */}
       <div className="summary-chips" style={{ marginBottom: "1rem" }}>
         <span className="summary-chip" style={{ color: "#a855f7" }}>{active.length} reservas ativas</span>
         <span className="summary-chip" style={{ color: "#fb923c" }}>{upcoming.length} esta semana</span>
@@ -219,35 +276,44 @@ export default function Reservations({ concession }: { concession: Concession })
 
       {/* Toolbar */}
       <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", marginBottom: "1rem", alignItems: "center" }}>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          style={{ padding: "0.4rem 0.6rem", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, color: "#f1f1f1", fontSize: "0.85rem" }}
-        >
-          <option value="">Todos os estados</option>
-          <option value="ACTIVE">Ativas</option>
-          <option value="COMPLETED">Concluídas</option>
-          <option value="CANCELLED">Canceladas</option>
-        </select>
-        <input
-          placeholder="Pesquisar cliente, lugar..."
-          value={filterSearch}
-          onChange={(e) => setFilterSearch(e.target.value)}
-          style={{ padding: "0.4rem 0.7rem", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, color: "#f1f1f1", fontSize: "0.85rem", flex: 1, minWidth: 160 }}
-        />
-        <button className="export-btn" onClick={handleExportExcel}>
-          <Download size={14} /> Exportar Excel
-        </button>
+        {/* View toggle */}
+        <div style={{ display: "flex", background: "rgba(255,255,255,0.05)", borderRadius: 7, padding: "0.2rem" }}>
+          <button
+            onClick={() => setViewMode("list")}
+            style={{ display: "flex", alignItems: "center", gap: 4, padding: "0.3rem 0.7rem", borderRadius: 5, border: "none", cursor: "pointer", fontSize: "0.82rem", background: viewMode === "list" ? "#f97316" : "transparent", color: viewMode === "list" ? "#fff" : "#888", transition: "all 0.15s" }}
+          ><List size={13} /> Lista</button>
+          <button
+            onClick={() => setViewMode("calendar")}
+            style={{ display: "flex", alignItems: "center", gap: 4, padding: "0.3rem 0.7rem", borderRadius: 5, border: "none", cursor: "pointer", fontSize: "0.82rem", background: viewMode === "calendar" ? "#f97316" : "transparent", color: viewMode === "calendar" ? "#fff" : "#888", transition: "all 0.15s" }}
+          ><CalendarDays size={13} /> Calendário</button>
+        </div>
+
+        {viewMode === "list" && (
+          <>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+              style={{ padding: "0.4rem 0.6rem", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, color: "#f1f1f1", fontSize: "0.85rem" }}>
+              <option value="">Todos os estados</option>
+              <option value="ACTIVE">Ativas</option>
+              <option value="COMPLETED">Concluídas</option>
+              <option value="CANCELLED">Canceladas</option>
+            </select>
+            <input placeholder="Pesquisar cliente, lugar..." value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)}
+              style={{ padding: "0.4rem 0.7rem", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, color: "#f1f1f1", fontSize: "0.85rem", flex: 1, minWidth: 160 }} />
+          </>
+        )}
+
+        <button className="export-btn" onClick={handleExportExcel}><Download size={14} /> Exportar Excel</button>
         <button className="action-btn primary" style={{ width: "auto", padding: "0.4rem 0.9rem" }} onClick={openNew}>
           <Plus size={15} /> Nova Reserva
         </button>
       </div>
 
-      {/* Table */}
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}>
-          <Loader2 size={24} className="conc-spin" />
-        </div>
+      {/* Calendar view */}
+      {viewMode === "calendar" && <CalendarView reservations={reservations} />}
+
+      {/* List view */}
+      {viewMode === "list" && (loading ? (
+        <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}><Loader2 size={24} className="conc-spin" /></div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Sem reservas.</div>
       ) : (
@@ -274,42 +340,30 @@ export default function Reservations({ concession }: { concession: Concession })
                     {r.clientPhone && <div style={{ fontSize: "0.75rem", color: "#888" }}>{r.clientPhone}</div>}
                   </td>
                   <td style={{ padding: "0.5rem 0.8rem", fontWeight: 700 }}>{r.spot.spotNumber}</td>
-                  <td style={{ padding: "0.5rem 0.8rem", whiteSpace: "nowrap" }}>
-                    {r.startDate} → {r.endDate}
-                  </td>
+                  <td style={{ padding: "0.5rem 0.8rem", whiteSpace: "nowrap" }}>{r.startDate} → {r.endDate}</td>
                   <td style={{ padding: "0.5rem 0.8rem" }}>{calcDays(r.startDate, r.endDate)}</td>
                   <td style={{ padding: "0.5rem 0.8rem" }}>
-                    <span className={`status-badge ${r.period.toLowerCase().replace("_day", "").replace("full", "full")}`}>
+                    <span className={`status-badge ${r.period === "MORNING" ? "morning" : r.period === "AFTERNOON" ? "afternoon" : "full"}`}>
                       {periodLabel(r.period)}
                     </span>
                   </td>
                   <td style={{ padding: "0.5rem 0.8rem", fontWeight: 600 }}>{r.totalPrice.toFixed(2)}€</td>
-                  <td style={{ padding: "0.5rem 0.8rem" }}>
-                    <span style={{ color: r.isPaid ? "#22c55e" : "#ef4444" }}>{r.isPaid ? "✓" : "✗"}</span>
-                  </td>
-                  <td style={{ padding: "0.5rem 0.8rem" }}>
-                    <span className={`status-badge ${r.status.toLowerCase()}`}>{r.status}</span>
-                  </td>
+                  <td style={{ padding: "0.5rem 0.8rem" }}><span style={{ color: r.isPaid ? "#22c55e" : "#ef4444" }}>{r.isPaid ? "✓" : "✗"}</span></td>
+                  <td style={{ padding: "0.5rem 0.8rem" }}><span className={`status-badge ${r.status.toLowerCase()}`}>{r.status}</span></td>
                   <td style={{ padding: "0.5rem 0.6rem" }}>
-                    <div style={{ display: "flex", gap: "0.4rem" }}>
-                      {r.status === "ACTIVE" && (
-                        <>
-                          <button onClick={() => openEdit(r)} style={{ background: "none", border: "none", color: "#888", cursor: "pointer", padding: 4 }} title="Editar">
-                            <Edit2 size={14} />
-                          </button>
-                          <button onClick={() => handleCancel(r.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 4 }} title="Cancelar">
-                            <Trash2 size={14} />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    {r.status === "ACTIVE" && (
+                      <div style={{ display: "flex", gap: "0.4rem" }}>
+                        <button onClick={() => openEdit(r)} style={{ background: "none", border: "none", color: "#888", cursor: "pointer", padding: 4 }} title="Editar"><Edit2 size={14} /></button>
+                        <button onClick={() => handleCancel(r.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 4 }} title="Cancelar"><Trash2 size={14} /></button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
+      ))}
 
       {/* Drawer */}
       {showDrawer && (

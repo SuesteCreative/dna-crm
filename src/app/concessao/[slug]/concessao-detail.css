@@ -143,8 +143,8 @@
 .spot-cell.free    { background: rgba(255,255,255,0.06); }
 .spot-cell.morning { background: rgba(251,146,60,0.28); }
 .spot-cell.afternoon { background: rgba(59,130,246,0.28); }
-.spot-cell.full    { background: rgba(239,68,68,0.28); }
-.spot-cell.reserved { background: rgba(168,85,247,0.28); }
+.spot-cell.full    { background: rgba(168,85,247,0.28); }
+.spot-cell.reserved { background: rgba(239,68,68,0.28); }
 .spot-cell.split {
   background: linear-gradient(
     to bottom,
@@ -196,8 +196,8 @@
 .status-badge.completed { background: rgba(148,163,184,0.12); color: #94a3b8; }
 .status-badge.morning   { background: rgba(251,146,60,0.15); color: #fb923c; }
 .status-badge.afternoon { background: rgba(59,130,246,0.15); color: #3b82f6; }
-.status-badge.full      { background: rgba(239,68,68,0.15); color: #ef4444; }
-.status-badge.reserved  { background: rgba(168,85,247,0.15); color: #a855f7; }
+.status-badge.full      { background: rgba(168,85,247,0.15); color: #a855f7; }
+.status-badge.reserved  { background: rgba(239,68,68,0.15); color: #ef4444; }
 
 /* Panel overlay */
 .panel-overlay {
@@ -433,8 +433,8 @@
 .summary-chip.free     { color: var(--color-text, #e0e0e0); }
 .summary-chip.morning  { background: rgba(251,146,60,0.15); color: #fb923c; }
 .summary-chip.afternoon { background: rgba(59,130,246,0.15); color: #3b82f6; }
-.summary-chip.full     { background: rgba(239,68,68,0.15); color: #ef4444; }
-.summary-chip.reserved { background: rgba(168,85,247,0.15); color: #a855f7; }
+.summary-chip.full     { background: rgba(168,85,247,0.15); color: #a855f7; }
+.summary-chip.reserved { background: rgba(239,68,68,0.15); color: #ef4444; }
 
 /* Date bar */
 .date-bar {
@@ -479,4 +479,117 @@
   background: rgba(249,115,22,0.12);
   border-color: #f97316;
   color: #f97316;
+}
+
+/* Dropdown option fix (dark background) */
+.field-group select option {
+  background: #1a1a2e;
+  color: #f1f1f1;
+}
+
+/* "R" reservation badge on spot cell */
+.spot-res-badge {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.85);
+  background: rgba(239,68,68,0.55);
+  border-radius: 3px;
+  padding: 0 3px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+/* Calendar view */
+.res-cal {
+  user-select: none;
+}
+
+.res-cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.res-cal-nav button {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: #f1f1f1;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.res-cal-nav button:hover { background: rgba(249,115,22,0.12); border-color: #f97316; color: #f97316; }
+
+.res-cal-nav h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f1f1f1;
+  min-width: 140px;
+  text-align: center;
+}
+
+.res-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.res-cal-dow {
+  text-align: center;
+  font-size: 0.72rem;
+  color: #888;
+  font-weight: 600;
+  padding: 0.25rem 0;
+}
+
+.res-cal-day {
+  border-radius: 7px;
+  padding: 0.35rem 0.4rem;
+  min-height: 52px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  position: relative;
+}
+
+.res-cal-day.empty { background: transparent; border-color: transparent; cursor: default; }
+.res-cal-day.today { border-color: #f97316; }
+.res-cal-day:not(.empty):hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.07); }
+.res-cal-day.selected { border-color: #f97316; background: rgba(249,115,22,0.1); }
+
+.res-cal-dn {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 3px;
+}
+
+.res-cal-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.res-cal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+
+.res-cal-detail {
+  margin-top: 1rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
 }

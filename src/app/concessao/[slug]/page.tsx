@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { TreePalm, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator } from "lucide-react";
 import DailyControl from "./components/DailyControl";
 import Reservations from "./components/Reservations";
+import type { ReservationInitData } from "./components/Reservations";
 import PriceList from "./components/PriceList";
 import CalcComponent from "./components/Calculator";
 import "./concessao-detail.css";
@@ -35,6 +36,12 @@ export default function ConcessaoDetailPage() {
 
   const [concession, setConcession] = useState<Concession | null>(null);
   const [tab, setTab] = useState<Tab>("controlo");
+  const [reservationInit, setReservationInit] = useState<ReservationInitData | null>(null);
+
+  const handleCalcProceed = (data: ReservationInitData) => {
+    setReservationInit(data);
+    setTab("reservas");
+  };
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -88,9 +95,9 @@ export default function ConcessaoDetailPage() {
 
       <div className="cd-body">
         {tab === "controlo" && <DailyControl concession={concession} />}
-        {tab === "reservas" && <Reservations concession={concession} />}
+        {tab === "reservas" && <Reservations concession={concession} initialReservation={reservationInit} onInitHandled={() => setReservationInit(null)} />}
         {tab === "precario" && <PriceList concession={concession} />}
-        {tab === "calculadora" && <CalcComponent concession={concession} />}
+        {tab === "calculadora" && <CalcComponent concession={concession} onProceed={handleCalcProceed} />}
       </div>
     </div>
   );

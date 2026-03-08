@@ -160,6 +160,7 @@ export default function DailyControl({ concession }: { concession: Concession })
               title={`Lugar ${spot.spotNumber}${primaryEntry ? " — " + primaryEntry.clientName : ""}`}
             >
               <span className="spot-num">{spot.spotNumber}</span>
+              {status === "reserved" && <span className="spot-res-badge">R</span>}
               {primaryEntry && (
                 <>
                   <span className="spot-client">{primaryEntry.clientName}</span>
