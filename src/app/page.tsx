@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import { useUser, useAuth, RedirectToSignIn } from "@clerk/nextjs";
 import { useEffect, useState, Fragment } from "react";
 import {
-  Calendar, RefreshCcw, Plus, Search,
+  Calendar, CalendarDays, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
   TrendingUp, Activity, UserCheck, UserX,
   AlertCircle, Trash2, ChevronDown, ChevronRight, Pencil
@@ -119,6 +119,8 @@ export default function Dashboard() {
   const [editError, setEditError] = useState<string | null>(null);
   const [expandedGhosts, setExpandedGhosts] = useState<Record<string, boolean>>({});
   const toggleGhost = (id: string) => setExpandedGhosts(prev => ({ ...prev, [id]: !prev[id] }));
+  const [dayViewMonths, setDayViewMonths] = useState<Record<string, boolean>>({});
+  const toggleDayView = (key: string) => setDayViewMonths(prev => ({ ...prev, [key]: !prev[key] }));
   const [createUnitPrice, setCreateUnitPrice] = useState<number | null>(null);
   const [editUnitPrice, setEditUnitPrice] = useState<number | null>(null);
   const [slots, setSlots] = useState<SlotInfo[]>([]);
@@ -220,6 +222,20 @@ export default function Dashboard() {
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Auto-collapse past years on first load
+  useEffect(() => {
+    if (bookings.length === 0) return;
+    const currentYear = new Date().getFullYear().toString();
+    setCollapsed(prev => {
+      const next = { ...prev };
+      bookings.forEach(b => {
+        const y = new Date(b.activityDate).getFullYear().toString();
+        if (y < currentYear && !(y in prev)) next[y] = true;
+      });
+      return next;
+    });
+  }, [bookings]);
+
   const groupBookings = (data: Booking[]) => {
     const groups: Record<string, Record<string, Booking[]>> = {};
 
@@ -258,6 +274,141 @@ export default function Dashboard() {
     Object.values(grouped[year]).some(monthList => anyTodayInGroup(monthList));
   const anyFutureInYear = (year: string) =>
     Object.values(grouped[year]).some(monthList => anyFutureInGroup(monthList));
+
+  const currentYearStr = todayStart.getFullYear().toString();
+  const _cmRaw = format(todayStart, "MMMM", { locale: pt });
+  const currentMonthKey = _cmRaw.charAt(0).toUpperCase() + _cmRaw.slice(1);
+
+  const renderBookingTable = (bkgs: Booking[]) => (
+    <div className="table-wrap">
+      <table className="crm-table">
+        <thead>
+          <tr>
+            <th style={{ width: "15%" }}>Cliente</th>
+            <th style={{ width: "4%", textAlign: "center" }}>Qtd</th>
+            <th style={{ width: "20%" }}>Atividade</th>
+            <th style={{ width: "9%" }}>Data / Hora</th>
+            <th style={{ width: "5%", textAlign: "center" }}>Pax</th>
+            <th style={{ width: "11%" }}>Fonte</th>
+            <th style={{ width: "10%" }}>Status</th>
+            <th style={{ width: "7%", textAlign: "right" }}>Preço</th>
+            <th style={{ width: "4%", textAlign: "center" }}>Pres.</th>
+            <th style={{ width: "4%" }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {bkgs.map(b => (
+            <Fragment key={b.id}>
+            <tr className={isFuture(b) ? "row-future" : isToday(b) ? "row-today" : ""}>
+              <td>
+                <div className="cell-name">{b.customerName}</div>
+                <div className="cell-sub">{b.customerEmail || "—"}</div>
+              </td>
+              <td>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <span className="qty-badge">
+                    {b.quantity || 1}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <div className="cell-name cell-activity-row">
+                  <span>{b.activityType || b.notes || "—"}</span>
+                  {b.isEdited && (
+                    <span className="activity-badges">
+                      <span className="badge-edited">Editada</span>
+                      <button
+                        className="btn-ghost-toggle"
+                        title={expandedGhosts[b.id] ? "Esconder original" : "Ver original"}
+                        onClick={() => toggleGhost(b.id)}
+                      >
+                        <ChevronDown size={11} className={expandedGhosts[b.id] ? "ghost-ico open" : "ghost-ico"} />
+                      </button>
+                    </span>
+                  )}
+                </div>
+              </td>
+              <td>
+                <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
+                <div className="cell-sub">{b.activityTime || "—"}</div>
+              </td>
+              <td><span className="pax-pill">{b.pax} pax</span></td>
+              <td>{sourceBadge(b.source, b.orderNumber, b.partnerId)}</td>
+              <td>{statusBadge(b.status)}</td>
+              <td className={`price-cell${isNoShow(b) ? " price-noshow" : ""}`}>
+                {isNoShow(b) ? "0.00€" : b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}
+              </td>
+              <td>
+                {b.status !== "CANCELLED" ? (
+                  <button
+                    className={b.showedUp ? "attendance-verified" : "btn-attendance"}
+                    title={b.showedUp ? "Clique para desmarcar presença" : "Confirmar presença"}
+                    onClick={() => setAttendanceTarget(b)}
+                  >
+                    <UserCheck size={16} />
+                  </button>
+                ) : null}
+              </td>
+              <td>
+                <button className="btn-edit" onClick={() => openEdit(b)}>
+                  <Pencil size={15} />
+                </button>
+              </td>
+            </tr>
+            {b.isEdited && expandedGhosts[b.id] && (() => {
+              const origQty   = b.originalQuantity ?? b.quantity ?? 1;
+              const origType  = b.originalActivityType ?? b.activityType ?? "—";
+              const origPax   = b.originalPax ?? b.pax;
+              const origPrice = b.originalTotalPrice;
+              const origDate  = b.originalActivityDate ? new Date(b.originalActivityDate).toLocaleDateString("pt-PT") : null;
+              const origTime  = b.originalActivityTime ?? null;
+              const qtyChg    = origQty !== (b.quantity ?? 1);
+              const typeChg   = b.originalActivityType !== null && b.originalActivityType !== b.activityType;
+              const paxChg    = b.originalPax !== null && b.originalPax !== b.pax;
+              const priceChg  = origPrice !== null && origPrice !== b.totalPrice;
+              const curDate   = new Date(b.activityDate).toLocaleDateString("pt-PT");
+              const curTime   = b.activityTime ?? null;
+              const dateChg   = origDate !== null && origDate !== curDate;
+              const timeChg   = origTime !== null && origTime !== curTime;
+              const showDate  = origDate !== null;
+              const showTime  = origTime !== null || timeChg;
+              return (
+                <tr className="row-ghost-original">
+                  <td />
+                  <td>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <span className={`qty-badge qty-badge-ghost${qtyChg ? " ghost-struck" : ""}`}>{origQty}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="cell-activity-row">
+                      <span className={typeChg ? "ghost-text" : "ghost-muted"}>{origType}</span>
+                      <span className="ghost-label">Original</span>
+                    </div>
+                  </td>
+                  <td>
+                    {showDate && (
+                      <div className={dateChg ? "ghost-text" : "ghost-muted"}>{origDate}</div>
+                    )}
+                    {showTime && (
+                      <div className={timeChg ? "ghost-text" : "ghost-muted"}>{origTime || "—"}</div>
+                    )}
+                  </td>
+                  <td><span className={`pax-pill pax-pill-ghost${paxChg ? " ghost-struck" : ""}`}>{origPax} pax</span></td>
+                  <td /><td />
+                  <td className={`price-cell${priceChg ? " ghost-text" : " ghost-muted"}`}>
+                    {origPrice != null ? `${origPrice.toFixed(2)}€` : (b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—")}
+                  </td>
+                  <td /><td />
+                </tr>
+              );
+            })()}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   const handleServiceSelect = (serviceId: string) => {
     const svc = services.find(s => s.id === serviceId);
@@ -640,7 +791,8 @@ export default function Dashboard() {
                   const monthBookings = grouped[year][month];
                   const hasFuture = anyFutureInGroup(monthBookings);
                   const hasToday = !hasFuture && anyTodayInGroup(monthBookings);
-                  const monthClass = hasFuture ? "is-future" : hasToday ? "is-today" : "";
+                  const isCurrentCalMonth = year === currentYearStr && month === currentMonthKey;
+                  const monthClass = hasFuture ? "is-future" : (isCurrentCalMonth || hasToday) ? "is-today" : "";
                   return (
                     <div key={mKey} className={`month-section ${monthClass}`}>
                       <div className={`month-box-hdr ${monthClass}`} onClick={() => toggleGroup(mKey)}>
@@ -648,138 +800,43 @@ export default function Dashboard() {
                           <ChevronDown size={14} className={collapsed[mKey] ? "group-ico collapsed" : "group-ico"} />
                           {month}
                         </div>
-                        <span className="month-badge">{monthBookings.length} {monthBookings.length === 1 ? 'reserva' : 'reservas'}</span>
+                        <div className="month-hdr-right">
+                          <button
+                            className={`btn-dayview${dayViewMonths[mKey] ? " active" : ""}`}
+                            title={dayViewMonths[mKey] ? "Vista de lista" : "Vista por dia"}
+                            onClick={e => { e.stopPropagation(); toggleDayView(mKey); }}
+                          >
+                            <CalendarDays size={13} />
+                          </button>
+                          <span className="month-badge">{monthBookings.length} {monthBookings.length === 1 ? 'reserva' : 'reservas'}</span>
+                        </div>
                       </div>
 
                       {!collapsed[mKey] && (
-                        <div className="table-wrap">
-                          <table className="crm-table">
-                            <thead>
-                              <tr>
-                                <th style={{ width: "15%" }}>Cliente</th>
-                                <th style={{ width: "4%", textAlign: "center" }}>Qtd</th>
-                                <th style={{ width: "20%" }}>Atividade</th>
-                                <th style={{ width: "9%" }}>Data / Hora</th>
-                                <th style={{ width: "5%", textAlign: "center" }}>Pax</th>
-                                <th style={{ width: "11%" }}>Fonte</th>
-                                <th style={{ width: "10%" }}>Status</th>
-                                <th style={{ width: "7%", textAlign: "right" }}>Preço</th>
-                                <th style={{ width: "4%", textAlign: "center" }}>Pres.</th>
-                                <th style={{ width: "4%" }}></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {monthBookings.map(b => (
-                                <Fragment key={b.id}>
-                                <tr className={isFuture(b) ? "row-future" : isToday(b) ? "row-today" : ""}>
-                                  <td>
-                                    <div className="cell-name">{b.customerName}</div>
-                                    <div className="cell-sub">{b.customerEmail || "—"}</div>
-                                  </td>
-                                  <td>
-                                    <div style={{ display: "flex", justifyContent: "center" }}>
-                                      <span className="qty-badge">
-                                        {b.quantity || 1}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <div className="cell-name cell-activity-row">
-                                      <span>{b.activityType || b.notes || "—"}</span>
-                                      {b.isEdited && (
-                                        <span className="activity-badges">
-                                          <span className="badge-edited">Editada</span>
-                                          <button
-                                            className="btn-ghost-toggle"
-                                            title={expandedGhosts[b.id] ? "Esconder original" : "Ver original"}
-                                            onClick={() => toggleGhost(b.id)}
-                                          >
-                                            <ChevronDown size={11} className={expandedGhosts[b.id] ? "ghost-ico open" : "ghost-ico"} />
-                                          </button>
-                                        </span>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
-                                    <div className="cell-sub">{b.activityTime || "—"}</div>
-                                  </td>
-                                  <td><span className="pax-pill">{b.pax} pax</span></td>
-                                  <td>{sourceBadge(b.source, b.orderNumber, b.partnerId)}</td>
-                                  <td>{statusBadge(b.status)}</td>
-                                  <td className={`price-cell${isNoShow(b) ? " price-noshow" : ""}`}>
-                                    {isNoShow(b) ? "0.00€" : b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}
-                                  </td>
-                                  <td>
-                                    {b.status !== "CANCELLED" ? (
-                                      <button
-                                        className={b.showedUp ? "attendance-verified" : "btn-attendance"}
-                                        title={b.showedUp ? "Clique para desmarcar presença" : "Confirmar presença"}
-                                        onClick={() => setAttendanceTarget(b)}
-                                      >
-                                        <UserCheck size={16} />
-                                      </button>
-                                    ) : null}
-                                  </td>
-                                  <td>
-                                    <button className="btn-edit" onClick={() => openEdit(b)}>
-                                      <Pencil size={15} />
-                                    </button>
-                                  </td>
-                                </tr>
-                                {b.isEdited && expandedGhosts[b.id] && (() => {
-                                  const origQty   = b.originalQuantity ?? b.quantity ?? 1;
-                                  const origType  = b.originalActivityType ?? b.activityType ?? "—";
-                                  const origPax   = b.originalPax ?? b.pax;
-                                  const origPrice = b.originalTotalPrice;
-                                  const origDate  = b.originalActivityDate ? new Date(b.originalActivityDate).toLocaleDateString("pt-PT") : null;
-                                  const origTime  = b.originalActivityTime ?? null;
-                                  const qtyChg    = origQty !== (b.quantity ?? 1);
-                                  const typeChg   = b.originalActivityType !== null && b.originalActivityType !== b.activityType;
-                                  const paxChg    = b.originalPax !== null && b.originalPax !== b.pax;
-                                  const priceChg  = origPrice !== null && origPrice !== b.totalPrice;
-                                  const curDate   = new Date(b.activityDate).toLocaleDateString("pt-PT");
-                                  const curTime   = b.activityTime ?? null;
-                                  const dateChg   = origDate !== null && origDate !== curDate;
-                                  const timeChg   = origTime !== null && origTime !== curTime;
-                                  const showDate  = origDate !== null;
-                                  const showTime  = origTime !== null || timeChg;
-                                  return (
-                                    <tr className="row-ghost-original">
-                                      <td />
-                                      <td>
-                                        <div style={{ display: "flex", justifyContent: "center" }}>
-                                          <span className={`qty-badge qty-badge-ghost${qtyChg ? " ghost-struck" : ""}`}>{origQty}</span>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        <div className="cell-activity-row">
-                                          <span className={typeChg ? "ghost-text" : "ghost-muted"}>{origType}</span>
-                                          <span className="ghost-label">Original</span>
-                                        </div>
-                                      </td>
-                                      <td>
-                                        {showDate && (
-                                          <div className={dateChg ? "ghost-text" : "ghost-muted"}>{origDate}</div>
-                                        )}
-                                        {showTime && (
-                                          <div className={timeChg ? "ghost-text" : "ghost-muted"}>{origTime || "—"}</div>
-                                        )}
-                                      </td>
-                                      <td><span className={`pax-pill pax-pill-ghost${paxChg ? " ghost-struck" : ""}`}>{origPax} pax</span></td>
-                                      <td /><td />
-                                      <td className={`price-cell${priceChg ? " ghost-text" : " ghost-muted"}`}>
-                                        {origPrice != null ? `${origPrice.toFixed(2)}€` : (b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—")}
-                                      </td>
-                                      <td /><td />
-                                    </tr>
-                                  );
-                                })()}
-                                </Fragment>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                        dayViewMonths[mKey] ? (
+                          <div className="day-groups">
+                            {Object.entries(
+                              monthBookings.reduce((acc: Record<string, Booking[]>, b) => {
+                                const d = b.activityDate.slice(0, 10);
+                                if (!acc[d]) acc[d] = [];
+                                acc[d].push(b);
+                                return acc;
+                              }, {})
+                            ).sort(([a], [b]) => a.localeCompare(b)).map(([dayKey, dayBookings]) => {
+                              const dayDate = new Date(dayKey + "T12:00:00");
+                              const dayStr = format(dayDate, "EEEE, d 'de' MMMM", { locale: pt });
+                              return (
+                                <div key={dayKey} className="day-section">
+                                  <div className="day-hdr">
+                                    <span className="day-hdr-title">{dayStr.charAt(0).toUpperCase() + dayStr.slice(1)}</span>
+                                    <span className="day-badge">{dayBookings.length} {dayBookings.length === 1 ? 'reserva' : 'reservas'}</span>
+                                  </div>
+                                  {renderBookingTable(dayBookings)}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : renderBookingTable(monthBookings)
                       )}
                     </div>
                   );

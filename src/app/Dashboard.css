@@ -939,12 +939,82 @@ body {
     color: var(--text);
 }
 
+.month-hdr-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .month-badge {
     background: var(--surface2);
     color: var(--muted);
     font-size: 11px;
     padding: 2px 8px;
     border-radius: 12px;
+    font-weight: 500;
+}
+
+.btn-dayview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    padding: 3px 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-dayview:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+    background: var(--orange-dim);
+}
+
+.btn-dayview.active {
+    border-color: var(--orange);
+    color: var(--orange);
+    background: var(--orange-dim);
+}
+
+/* ── DAY ACCORDION VIEW ────────────────────────────────── */
+.day-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.day-section {
+    animation: fadeIn .2s ease;
+}
+
+.day-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 16px;
+    background: rgba(249, 115, 22, 0.04);
+    border-left: 2px solid rgba(249, 115, 22, 0.35);
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 6px;
+}
+
+.day-hdr-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--orange);
+    text-transform: capitalize;
+    letter-spacing: 0.03em;
+}
+
+.day-badge {
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 10px;
     font-weight: 500;
 }
 
