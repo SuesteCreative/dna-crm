@@ -57,6 +57,10 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     select: { spotId: true },
   });
 
-  const blockedSpotIds = [...new Set(blockedEntries.map((e) => e.spotId))];
+  const seen = new Set<string>();
+  const blockedSpotIds: string[] = [];
+  for (const e of blockedEntries) {
+    if (!seen.has(e.spotId)) { seen.add(e.spotId); blockedSpotIds.push(e.spotId); }
+  }
   return NextResponse.json({ blockedSpotIds });
 }
