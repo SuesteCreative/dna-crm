@@ -109,6 +109,16 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
 
   // Add-second-period form toggle
   const [showAddForm, setShowAddForm] = useState(false);
+  // Override form (re-rent same period — rare case)
+  const [showOverrideForm, setShowOverrideForm] = useState(false);
+
+  const startOverride = () => {
+    setPeriod("AFTERNOON");
+    setPrice(String(calcPrice("AFTERNOON", "TWO_BEDS", concession)));
+    setBedConfig("TWO_BEDS");
+    setClientName(""); setClientPhone("");
+    setShowOverrideForm(true);
+  };
 
   // Carry-over state
   const [showCarryOver, setShowCarryOver] = useState(false);
@@ -122,7 +132,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
     setPrice(String(calcPrice(p, b, concession)));
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (overrideConflict = false) => {
     if (!clientName.trim()) { setError("Nome do cliente obrigatório"); return; }
     setBusy(true); setError("");
     const res = await fetch(`/api/concessions/${concession.slug}/entries`, {
@@ -138,6 +148,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
         totalPrice: parseFloat(price),
         isPaid,
         notes: notes.trim() || null,
+        override: overrideConflict,
       }),
     });
     const data = await res.json();
@@ -402,6 +413,56 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
               <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(afternoonEntry.bedConfig)}</span></div>
               <div className="info-row"><span className="label">Preço</span><span className="value">{afternoonEntry.totalPrice.toFixed(2)}€ {afternoonEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
               <button className="action-btn blue" onClick={() => handleDelete(afternoonEntry.id)} disabled={busy}>Libertar Tarde</button>
+              <div className="action-divider" />
+              {!showOverrideForm ? (
+                <button className="action-btn" style={{ background: "rgba(148,163,184,0.1)", color: "#94a3b8", border: "1px solid rgba(148,163,184,0.2)", fontSize: "0.8rem" }} onClick={startOverride} disabled={busy}>
+                  ↺ Re-alugar Tarde (override)
+                </button>
+              ) : (
+                <>
+                  <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — novo cliente (override)</div>
+                  <div className="field-group">
+                    <label>Nome do cliente *</label>
+                    <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
+                  </div>
+                  <div className="field-group">
+                    <label>Telefone</label>
+                    <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
+                  </div>
+                  <div className="field-row">
+                    <div className="field-group">
+                      <label>Camas</label>
+                      <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
+                        <option value="TWO_BEDS">2 camas</option>
+                        <option value="ONE_BED">1 cama (chapéu)</option>
+                        <option value="EXTRA_BED">3 camas (extra)</option>
+                      </select>
+                    </div>
+                    <div className="field-group">
+                      <label>Preço (€)</label>
+                      <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="toggle-row">
+                    <span>Pago</span>
+                    <label className="toggle-switch">
+                      <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                  <div className="field-group">
+                    <label>Notas</label>
+                    <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Ex: cliente da tarde saiu cedo, lugar re-alugado" />
+                  </div>
+                  {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                    <button className="action-btn primary" onClick={() => handleRegister(true)} disabled={busy}>
+                      {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar
+                    </button>
+                    <button className="action-btn danger" onClick={() => setShowOverrideForm(false)} disabled={busy}>Cancelar</button>
+                  </div>
+                </>
+              )}
             </>
           )}
 
@@ -432,6 +493,56 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
                   <div className="info-row"><span className="label">Camas</span><span className="value">{bedLabel(afternoonEntry.bedConfig)}</span></div>
                   <div className="info-row"><span className="label">Preço</span><span className="value">{afternoonEntry.totalPrice.toFixed(2)}€ {afternoonEntry.isPaid ? "✓ pago" : "— não pago"}</span></div>
                   <button className="action-btn blue" onClick={() => handleDelete(afternoonEntry.id)} disabled={busy}>Libertar Tarde</button>
+                  <div className="action-divider" />
+                  {!showOverrideForm ? (
+                    <button className="action-btn" style={{ background: "rgba(148,163,184,0.1)", color: "#94a3b8", border: "1px solid rgba(148,163,184,0.2)", fontSize: "0.8rem" }} onClick={startOverride} disabled={busy}>
+                      ↺ Re-alugar Tarde (override)
+                    </button>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Tarde — novo cliente (override)</div>
+                      <div className="field-group">
+                        <label>Nome do cliente *</label>
+                        <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nome completo" />
+                      </div>
+                      <div className="field-group">
+                        <label>Telefone</label>
+                        <input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
+                      </div>
+                      <div className="field-row">
+                        <div className="field-group">
+                          <label>Camas</label>
+                          <select value={bedConfig} onChange={(e) => { setBedConfig(e.target.value); updatePrice(period, e.target.value); }}>
+                            <option value="TWO_BEDS">2 camas</option>
+                            <option value="ONE_BED">1 cama (chapéu)</option>
+                            <option value="EXTRA_BED">3 camas (extra)</option>
+                          </select>
+                        </div>
+                        <div className="field-group">
+                          <label>Preço (€)</label>
+                          <input type="number" step="0.5" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="toggle-row">
+                        <span>Pago</span>
+                        <label className="toggle-switch">
+                          <input type="checkbox" checked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
+                          <span className="toggle-slider" />
+                        </label>
+                      </div>
+                      <div className="field-group">
+                        <label>Notas</label>
+                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Ex: cliente da tarde saiu cedo, lugar re-alugado" />
+                      </div>
+                      {error && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{error}</p>}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                        <button className="action-btn primary" onClick={() => handleRegister(true)} disabled={busy}>
+                          {busy ? <Loader2 size={14} className="conc-spin" /> : null} Registar
+                        </button>
+                        <button className="action-btn danger" onClick={() => setShowOverrideForm(false)} disabled={busy}>Cancelar</button>
+                      </div>
+                    </>
+                  )}
                 </>
               ) : !showAddForm ? (
                 <button className="action-btn blue" onClick={() => setShowAddForm(true)} disabled={busy}>

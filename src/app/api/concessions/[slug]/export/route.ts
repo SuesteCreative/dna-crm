@@ -30,45 +30,45 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     include: { spot: true, reservation: true },
   });
 
-  // Build full spot list (one row per spot — may have up to 2 entries per spot)
-  const spotRows: Record<string, any>[] = concession.spots.map((spot) => {
+  const periodLabel = (p: string) =>
+    p === "MORNING" ? "Manhã" : p === "AFTERNOON" ? "Tarde" : "Dia Inteiro";
+  const bedLabel = (b: string) =>
+    b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "3 camas" : "2 camas";
+
+  // Build full spot list — one row per entry (free spots get one row with "Livre")
+  const spotRows: Record<string, any>[] = [];
+  for (const spot of concession.spots) {
     const spotEntries = entries.filter((e) => e.spotId === spot.id);
     if (spotEntries.length === 0) {
-      return {
+      spotRows.push({
         Lugar: spot.spotNumber,
+        Modalidade: "Livre",
         Cliente: "—",
         Telefone: "—",
-        Modalidade: "Livre",
         Camas: "—",
         Pago: "—",
         "Preço (€)": "—",
         Reserva: "Não",
         "Carry-over": "—",
         Notas: "—",
-      };
+      });
+    } else {
+      spotEntries.forEach((entry, idx) => {
+        spotRows.push({
+          Lugar: idx === 0 ? spot.spotNumber : "",
+          Modalidade: periodLabel(entry.period),
+          Cliente: entry.clientName,
+          Telefone: entry.clientPhone ?? "—",
+          Camas: bedLabel(entry.bedConfig),
+          Pago: entry.isPaid ? "✓" : "✗",
+          "Preço (€)": entry.totalPrice.toFixed(2),
+          Reserva: entry.reservationId ? "Sim" : "Não",
+          "Carry-over": entry.isCarryOver ? "Sim (pré-pago)" : "Não",
+          Notas: entry.notes ?? "—",
+        });
+      });
     }
-    // Merge multiple entries (e.g. MORNING + AFTERNOON) into one display row
-    const periodLabel = (p: string) =>
-      p === "MORNING" ? "Manhã" : p === "AFTERNOON" ? "Tarde" : "Dia Inteiro";
-    const bedLabel = (b: string) =>
-      b === "ONE_BED" ? "1 cama" : b === "EXTRA_BED" ? "3 camas" : "2 camas";
-    const primary = spotEntries[0];
-    const periods = spotEntries.map((e) => periodLabel(e.period)).join(" + ");
-    const totalPrice = spotEntries.reduce((sum, e) => sum + e.totalPrice, 0);
-    const allPaid = spotEntries.every((e) => e.isPaid);
-    return {
-      Lugar: spot.spotNumber,
-      Cliente: primary.clientName,
-      Telefone: primary.clientPhone ?? "—",
-      Modalidade: periods,
-      Camas: bedLabel(primary.bedConfig),
-      Pago: allPaid ? "✓" : "✗",
-      "Preço (€)": totalPrice.toFixed(2),
-      Reserva: primary.reservationId ? "Sim" : "Não",
-      "Carry-over": primary.isCarryOver ? "Sim (pré-pago)" : "Não",
-      Notas: primary.notes ?? "—",
-    };
-  });
+  }
 
   // Build summary
   const activeEntries = entries.filter((e) => e.status !== "RELEASED");
@@ -112,8 +112,16 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   // Sheet 1 — Controlo do Dia
   const ws1 = XLSX.utils.json_to_sheet(spotRows);
   const colWidths = [
-    { wch: 6 }, { wch: 22 }, { wch: 14 }, { wch: 16 }, { wch: 10 },
-    { wch: 6 }, { wch: 10 }, { wch: 8 }, { wch: 18 }, { wch: 30 },
+    { wch: 6 },  // Lugar
+    { wch: 12 }, // Modalidade
+    { wch: 22 }, // Cliente
+    { wch: 14 }, // Telefone
+    { wch: 10 }, // Camas
+    { wch: 6 },  // Pago
+    { wch: 10 }, // Preço (€)
+    { wch: 8 },  // Reserva
+    { wch: 18 }, // Carry-over
+    { wch: 30 }, // Notas
   ];
   ws1["!cols"] = colWidths;
   XLSX.utils.book_append_sheet(wb, ws1, "Controlo do Dia");

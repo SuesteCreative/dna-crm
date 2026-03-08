@@ -38,31 +38,27 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   }
   const prisma = await getPrisma();
   const body = await req.json();
-  const { spotId, date, period, clientName, clientPhone, bedConfig, totalPrice, isPaid, notes } = body;
+  const { spotId, date, period, clientName, clientPhone, bedConfig, totalPrice, isPaid, notes, override } = body;
 
   if (!spotId || !date || !period || !clientName) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // Conflict check
-  // Rules:
-  //   FULL_DAY new    → blocked by anything existing
-  //   MORNING new     → blocked by existing MORNING or FULL_DAY
-  //   AFTERNOON new   → blocked only by existing AFTERNOON
-  //                     (FULL_DAY client may leave early → allow afternoon double-booking)
-  const existing = await prisma.concessionEntry.findMany({
-    where: { spotId, date, status: { not: "RELEASED" } },
-  });
-
-  for (const e of existing) {
-    if (period === "FULL_DAY") {
-      return NextResponse.json({ error: "CONFLICT", message: "Já existe uma entrada neste espaço" }, { status: 409 });
-    }
-    if (period === "MORNING" && (e.period === "MORNING" || e.period === "FULL_DAY")) {
-      return NextResponse.json({ error: "CONFLICT", message: "Período de Manhã já ocupado" }, { status: 409 });
-    }
-    if (period === "AFTERNOON" && e.period === "AFTERNOON") {
-      return NextResponse.json({ error: "CONFLICT", message: "Período de Tarde já ocupado" }, { status: 409 });
+  // Conflict check (skipped when override=true — rare case of re-renting same period)
+  if (!override) {
+    const existing = await prisma.concessionEntry.findMany({
+      where: { spotId, date, status: { not: "RELEASED" } },
+    });
+    for (const e of existing) {
+      if (period === "FULL_DAY") {
+        return NextResponse.json({ error: "CONFLICT", message: "Já existe uma entrada neste espaço" }, { status: 409 });
+      }
+      if (period === "MORNING" && (e.period === "MORNING" || e.period === "FULL_DAY")) {
+        return NextResponse.json({ error: "CONFLICT", message: "Período de Manhã já ocupado" }, { status: 409 });
+      }
+      if (period === "AFTERNOON" && e.period === "AFTERNOON") {
+        return NextResponse.json({ error: "CONFLICT", message: "Período de Tarde já ocupado" }, { status: 409 });
+      }
     }
   }
 
