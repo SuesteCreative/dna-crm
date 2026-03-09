@@ -7,6 +7,7 @@
     background: var(--bg, #0b0f1a);
     font-family: 'Inter', sans-serif;
     color: var(--text, #f1f5f9);
+    transition: margin-left 0.3s ease;
 }
 
 .svc-header {
@@ -192,4 +193,37 @@
 
 .spin {
     animation: spin .8s linear infinite;
+}
+
+@media (max-width: 1024px) {
+    .svc-root {
+        margin-left: 0;
+        padding: 24px 16px;
+    }
+}
+
+@media (max-width: 600px) {
+    .svc-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 20px;
+    }
+
+    .svc-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .svc-card {
+        border-radius: 16px;
+    }
+
+    .svc-title {
+        font-size: 20px;
+    }
+
+    .btn-seed {
+        width: 100%;
+        justify-content: center;
+        padding: 12px;
+    }
 }

@@ -1,4 +1,5 @@
-.logs-loading, .logs-empty {
+.logs-loading,
+.logs-empty {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -17,6 +18,14 @@
     margin-left: 240px;
     padding: 32px 40px;
     max-width: 1440px;
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+    .logs-main {
+        margin-left: 0;
+        padding: 24px 16px;
+    }
 }
 
 .logs-header {
@@ -24,6 +33,24 @@
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 28px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+    .logs-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .logs-refresh {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .logs-title {
+        font-size: 20px;
+    }
 }
 
 .logs-title {
@@ -55,19 +82,28 @@
     font-family: inherit;
     transition: background .15s;
 }
-.logs-refresh:hover { background: var(--surface2); }
-.logs-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.logs-refresh:hover {
+    background: var(--surface2);
+}
+
+.logs-refresh:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 
 .logs-table-wrap {
     overflow-x: auto;
     border-radius: 10px;
     border: 1px solid var(--border);
+    -webkit-overflow-scrolling: touch;
 }
 
 .logs-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
+    min-width: 700px;
 }
 
 .logs-table th {
@@ -89,8 +125,13 @@
     vertical-align: top;
 }
 
-.logs-table tr:last-child td { border-bottom: none; }
-.logs-table tr:hover td { background: var(--surface2); }
+.logs-table tr:last-child td {
+    border-bottom: none;
+}
+
+.logs-table tr:hover td {
+    background: var(--surface2);
+}
 
 .log-time {
     font-weight: 600;
@@ -103,6 +144,12 @@
     font-size: 12px;
     color: var(--muted);
     line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+    .log-reason {
+        max-width: 200px;
+    }
 }
 
 .log-booking-id {

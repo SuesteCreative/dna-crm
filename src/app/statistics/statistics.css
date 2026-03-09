@@ -1,16 +1,31 @@
 /* ── STATS PAGE ───────────────────────────────────────── */
+.stats-root {
+    margin-left: 240px;
+    padding: 32px;
+    min-height: 100vh;
+    background: var(--bg);
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+    .stats-root {
+        margin-left: 0;
+        padding: 24px 16px;
+    }
+}
+
 .stats-header {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
-    margin-bottom: 8px;
+    margin-bottom: 24px;
 }
 
 @media (max-width: 768px) {
     .stats-header {
-        align-items: flex-start;
+        align-items: stretch;
         flex-direction: column;
     }
 }
@@ -43,6 +58,25 @@
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+    .period-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .date-range {
+        justify-content: space-between;
+    }
+
+    .date-input {
+        flex: 1;
+    }
+
+    .period-select {
+        width: 100%;
+    }
 }
 
 .date-range {
@@ -91,6 +125,12 @@
 @media (max-width: 768px) {
     .kpi-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -162,6 +202,13 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 20px 24px;
+    overflow-x: auto;
+}
+
+@media (max-width: 600px) {
+    .chart-card {
+        padding: 16px;
+    }
 }
 
 .chart-card-title {
@@ -287,7 +334,7 @@
     gap: 16px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
     .status-cards {
         grid-template-columns: 1fr;
     }
@@ -348,6 +395,12 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .nvr-cards {
+        grid-template-columns: 1fr;
+    }
 }
 
 .nvr-card {

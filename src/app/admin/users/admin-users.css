@@ -3,6 +3,14 @@
     padding: 32px;
     min-height: 100vh;
     background: var(--bg);
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+    .au-root {
+        margin-left: 0;
+        padding: 24px 16px;
+    }
 }
 
 .au-header {
@@ -10,6 +18,23 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 28px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+    .au-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .au-refresh {
+        width: 100%;
+    }
+
+    .au-title {
+        font-size: 20px;
+    }
 }
 
 .au-title {
@@ -37,7 +62,9 @@
     transition: color .15s;
 }
 
-.au-refresh:hover { color: var(--text); }
+.au-refresh:hover {
+    color: var(--text);
+}
 
 .au-loading {
     display: flex;
@@ -49,12 +76,14 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    overflow: hidden;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .au-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 600px;
 }
 
 .au-table th {
@@ -75,8 +104,13 @@
     border-bottom: 1px solid var(--border);
 }
 
-.au-table tbody tr:last-child td { border-bottom: none; }
-.au-table tbody tr:hover td { background: var(--surface2); }
+.au-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.au-table tbody tr:hover td {
+    background: var(--surface2);
+}
 
 .au-user {
     display: flex;
@@ -115,16 +149,39 @@
     letter-spacing: .06em;
 }
 
-.role-user      { background: var(--surface2); color: var(--muted); }
-.role-partner   { background: var(--teal-dim); color: var(--teal); }
-.role-admin     { background: var(--blue-dim); color: var(--blue); }
-.role-superadmin { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+.role-user {
+    background: var(--surface2);
+    color: var(--muted);
+}
+
+.role-partner {
+    background: var(--teal-dim);
+    color: var(--teal);
+}
+
+.role-admin {
+    background: var(--blue-dim);
+    color: var(--blue);
+}
+
+.role-superadmin {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+}
 
 /* Selects */
 .au-select-wrap {
     position: relative;
     display: inline-flex;
     align-items: center;
+}
+
+@media (max-width: 600px) {
+
+    .au-select-wrap,
+    .au-select {
+        width: 100%;
+    }
 }
 
 .au-select {
@@ -142,7 +199,9 @@
     min-width: 150px;
 }
 
-.au-select:focus { border-color: var(--blue); }
+.au-select:focus {
+    border-color: var(--blue);
+}
 
 .au-select-ico {
     position: absolute;
@@ -151,7 +210,9 @@
     pointer-events: none;
 }
 
-.au-select option { background: #1a2235; }
+.au-select option {
+    background: #1a2235;
+}
 
 /* Save button */
 .au-save-btn {
@@ -166,8 +227,14 @@
     transition: opacity .15s;
 }
 
-.au-save-btn:hover { opacity: .85; }
-.au-save-btn:disabled { opacity: .5; cursor: not-allowed; }
+.au-save-btn:hover {
+    opacity: .85;
+}
+
+.au-save-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
 
 /* Info button */
 .au-info-btn {
@@ -191,7 +258,10 @@
 }
 
 /* Info expanded row */
-.au-info-row td { padding: 0 !important; border-bottom: 1px solid var(--border); }
+.au-info-row td {
+    padding: 0 !important;
+    border-bottom: 1px solid var(--border);
+}
 
 .au-info-panel {
     display: flex;
@@ -246,7 +316,7 @@
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -261,6 +331,12 @@
     width: 100%;
     max-width: 400px;
     overflow: hidden;
+}
+
+@media (max-width: 480px) {
+    .au-pw-modal {
+        margin: 16px;
+    }
 }
 
 .au-pw-modal-hdr {
@@ -310,7 +386,9 @@
     transition: border-color .15s;
 }
 
-.au-pw-input:focus { border-color: var(--blue); }
+.au-pw-input:focus {
+    border-color: var(--blue);
+}
 
 .au-pw-msg {
     font-size: 12px;
@@ -350,7 +428,9 @@
     transition: color .15s;
 }
 
-.modal-close:hover { color: var(--text); }
+.modal-close:hover {
+    color: var(--text);
+}
 
 .btn-ghost {
     background: none;
@@ -364,4 +444,6 @@
     transition: color .15s;
 }
 
-.btn-ghost:hover { color: var(--text); }
+.btn-ghost:hover {
+    color: var(--text);
+}
