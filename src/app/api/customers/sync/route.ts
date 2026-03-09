@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getPrisma } from "@/lib/prisma";
+import { fixMojibake } from "@/lib/encoding";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export async function POST() {
     let skipped = 0;
 
     for (const bk of bookings) {
-        const name = bk.customerName?.trim();
+        const name = fixMojibake(bk.customerName?.trim() ?? "");
         if (!name) { skipped++; continue; }
 
         const email = bk.customerEmail?.trim().toLowerCase() || null;

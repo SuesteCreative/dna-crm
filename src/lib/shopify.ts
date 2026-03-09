@@ -162,6 +162,7 @@ export async function syncShopifyOrders(
                         await prisma.booking.update({
                             where: { shopifyId },
                             data: {
+                                customerName,
                                 status,
                                 totalPrice,
                                 pax,
