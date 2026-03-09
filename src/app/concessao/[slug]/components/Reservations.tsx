@@ -346,48 +346,81 @@ export default function Reservations({ concession, initialReservation, onInitHan
     return true;
   });
 
+  const renderReservationCards = (res: Reservation[]) => (
+    <div className="res-cards-mobile">
+      {res.map(r => (
+        <div key={r.id} className="res-card">
+          <div className="res-card-hdr">
+            <div className="res-card-client">
+              <strong>{r.clientName}</strong>
+              {r.clientPhone && <div className="res-card-sub">{r.clientPhone}</div>}
+            </div>
+            <div className="res-card-spot">L{r.spot.spotNumber}</div>
+          </div>
+          <div className="res-card-details">
+            <div className="res-card-date"><CalendarDays size={14} /> {r.startDate} → {r.endDate} ({calcDays(r.startDate, r.endDate)} dias)</div>
+            <div className="res-card-pills">
+              <span className={`status-badge-sm ${r.period === "MORNING" ? "morning" : r.period === "AFTERNOON" ? "afternoon" : "full"}`}>{periodLabel(r.period)}</span>
+              <span className={`status-badge-sm ${r.status.toLowerCase()}`}>{r.status}</span>
+              <span className={r.isPaid ? "pay-status paid" : "pay-status unpaid"}>{r.isPaid ? "✓ Pago" : "✗ Pendente"}</span>
+            </div>
+          </div>
+          <div className="res-card-footer">
+            <div className="res-card-price">{r.totalPrice.toFixed(2)}€</div>
+            {r.status === "ACTIVE" && (
+              <div className="res-card-actions">
+                <button className="res-action-btn" onClick={() => openEdit(r)} title="Editar"><Edit2 size={15} /></button>
+                <button className="res-action-btn danger" onClick={() => handleCancel(r.id)} title="Cancelar"><Trash2 size={15} /></button>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div>
       {/* Stats */}
       <div className="summary-chips" style={{ marginBottom: "1rem" }}>
-        <span className="summary-chip" style={{ color: "#a855f7" }}>{activeCount} reservas ativas</span>
+        <span className="summary-chip" style={{ color: "#a855f7" }}>{activeCount} reservas</span>
         <span className="summary-chip" style={{ color: "#fb923c" }}>{upcomingCount} esta semana</span>
-        <span className="summary-chip" style={{ color: "#22c55e" }}>{revenueTotal.toFixed(2)}€ receita</span>
+        <span className="summary-chip" style={{ color: "#22c55e" }}>{revenueTotal.toFixed(0)}€</span>
         <span className="summary-chip" style={{ color: "#ef4444" }}>{unpaidCount} por pagar</span>
       </div>
 
       {/* Toolbar */}
-      <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", marginBottom: "1rem", alignItems: "center" }}>
+      <div className="res-toolbar">
         {/* View toggle */}
-        <div style={{ display: "flex", background: "rgba(255,255,255,0.05)", borderRadius: 7, padding: "0.2rem" }}>
+        <div className="res-view-toggle">
           <button
             onClick={() => setViewMode("list")}
-            style={{ display: "flex", alignItems: "center", gap: 4, padding: "0.3rem 0.7rem", borderRadius: 5, border: "none", cursor: "pointer", fontSize: "0.82rem", background: viewMode === "list" ? "#f97316" : "transparent", color: viewMode === "list" ? "#fff" : "#888", transition: "all 0.15s" }}
-          ><List size={13} /> Lista</button>
+            className={viewMode === "list" ? "active" : ""}
+          ><List size={14} /></button>
           <button
             onClick={() => setViewMode("calendar")}
-            style={{ display: "flex", alignItems: "center", gap: 4, padding: "0.3rem 0.7rem", borderRadius: 5, border: "none", cursor: "pointer", fontSize: "0.82rem", background: viewMode === "calendar" ? "#f97316" : "transparent", color: viewMode === "calendar" ? "#fff" : "#888", transition: "all 0.15s" }}
-          ><CalendarDays size={13} /> Calendário</button>
+            className={viewMode === "calendar" ? "active" : ""}
+          ><CalendarDays size={14} /></button>
         </div>
 
         {viewMode === "list" && (
-          <>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-              style={{ padding: "0.4rem 0.6rem", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, color: "#f1f1f1", fontSize: "0.85rem" }}>
-              <option value="">Todos os estados</option>
+          <div className="res-filters">
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="res-filter-select">
+              <option value="">Status</option>
               <option value="ACTIVE">Ativas</option>
-              <option value="COMPLETED">Concluídas</option>
-              <option value="CANCELLED">Canceladas</option>
+              <option value="COMPLETED">Fim</option>
+              <option value="CANCELLED">Canc</option>
             </select>
-            <input placeholder="Pesquisar cliente, lugar..." value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)}
-              style={{ padding: "0.4rem 0.7rem", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, color: "#f1f1f1", fontSize: "0.85rem", flex: 1, minWidth: 160 }} />
-          </>
+            <input placeholder="Procurar..." value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} className="res-filter-search" />
+          </div>
         )}
 
-        <button className="export-btn" onClick={handleExportExcel}><Download size={14} /> Exportar Excel</button>
-        <button className="action-btn primary" style={{ width: "auto", padding: "0.4rem 0.9rem" }} onClick={openNew}>
-          <Plus size={15} /> Nova Reserva
-        </button>
+        <div className="res-actions">
+          <button className="export-btn" onClick={handleExportExcel} title="Exportar"><Download size={14} /></button>
+          <button className="action-btn primary res-btn-new" onClick={openNew}>
+            <Plus size={16} /> <span className="btn-lbl">Nova</span>
+          </button>
+        </div>
       </div>
 
       {/* Calendar view */}
@@ -395,64 +428,67 @@ export default function Reservations({ concession, initialReservation, onInitHan
 
       {/* List view */}
       {viewMode === "list" && (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84rem" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", color: "#888", textAlign: "left" }}>
-                <th style={{ padding: "0.5rem 0.8rem" }}>Cliente</th>
-                <th style={{ padding: "0.5rem 0.8rem" }}>Lugar</th>
-                <th style={{ padding: "0.5rem 0.8rem" }}>Datas</th>
-                <th style={{ padding: "0.5rem 0.8rem" }}>Dias</th>
-                <th style={{ padding: "0.5rem 0.8rem" }}>Modalidade</th>
-                <th style={{ padding: "0.5rem 0.8rem" }}>Total</th>
-                <th style={{ padding: "0.5rem 0.8rem" }}>Pago</th>
-                <th style={{ padding: "0.5rem 0.8rem" }}>Estado</th>
-                <th style={{ padding: "0.5rem 0.8rem" }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    {Array.from({ length: 9 }).map((__, j) => (
-                      <td key={j} style={{ padding: "0.8rem" }}><Skeleton height={20} /></td>
-                    ))}
-                  </tr>
-                ))
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={9} style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Sem reservas.</td></tr>
-              ) : (
-                filtered.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "0.5rem 0.8rem" }}>
-                      <div style={{ fontWeight: 600 }}>{r.clientName}</div>
-                      {r.clientPhone && <div style={{ fontSize: "0.75rem", color: "#888" }}>{r.clientPhone}</div>}
-                    </td>
-                    <td style={{ padding: "0.5rem 0.8rem", fontWeight: 700 }}>{r.spot.spotNumber}</td>
-                    <td style={{ padding: "0.5rem 0.8rem", whiteSpace: "nowrap" }}>{r.startDate} → {r.endDate}</td>
-                    <td style={{ padding: "0.5rem 0.8rem" }}>{calcDays(r.startDate, r.endDate)}</td>
-                    <td style={{ padding: "0.5rem 0.8rem" }}>
-                      <span className={`status-badge ${r.period === "MORNING" ? "morning" : r.period === "AFTERNOON" ? "afternoon" : "full"}`}>
-                        {periodLabel(r.period)}
-                      </span>
-                    </td>
-                    <td style={{ padding: "0.5rem 0.8rem", fontWeight: 600 }}>{r.totalPrice.toFixed(2)}€</td>
-                    <td style={{ padding: "0.5rem 0.8rem" }}><span style={{ color: r.isPaid ? "#22c55e" : "#ef4444" }}>{r.isPaid ? "✓" : "✗"}</span></td>
-                    <td style={{ padding: "0.5rem 0.8rem" }}><span className={`status-badge ${r.status.toLowerCase()}`}>{r.status}</span></td>
-                    <td style={{ padding: "0.5rem 0.6rem" }}>
-                      {r.status === "ACTIVE" && (
-                        <div style={{ display: "flex", gap: "0.4rem" }}>
-                          <button onClick={() => openEdit(r)} style={{ background: "none", border: "none", color: "#888", cursor: "pointer", padding: 4 }} title="Editar"><Edit2 size={14} /></button>
-                          <button onClick={() => handleCancel(r.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 4 }} title="Cancelar"><Trash2 size={14} /></button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="res-table-wrap">
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84rem" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", color: "#888", textAlign: "left" }}>
+                  <th style={{ padding: "0.5rem 0.8rem" }}>Cliente</th>
+                  <th style={{ padding: "0.5rem 0.8rem" }}>Lugar</th>
+                  <th style={{ padding: "0.5rem 0.8rem" }}>Datas</th>
+                  <th style={{ padding: "0.5rem 0.8rem" }}>Dias</th>
+                  <th style={{ padding: "0.5rem 0.8rem" }}>Modalidade</th>
+                  <th style={{ padding: "0.5rem 0.8rem" }}>Total</th>
+                  <th style={{ padding: "0.5rem 0.8rem" }}>Pago</th>
+                  <th style={{ padding: "0.5rem 0.8rem" }}>Estado</th>
+                  <th style={{ padding: "0.5rem 0.8rem" }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                      {Array.from({ length: 9 }).map((__, j) => (
+                        <td key={j} style={{ padding: "0.8rem" }}><Skeleton height={20} /></td>
+                      ))}
+                    </tr>
+                  ))
+                ) : filtered.length === 0 ? (
+                  <tr><td colSpan={9} style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Sem reservas.</td></tr>
+                ) : (
+                  filtered.map((r) => (
+                    <tr key={r.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                      <td style={{ padding: "0.5rem 0.8rem" }}>
+                        <div style={{ fontWeight: 600 }}>{r.clientName}</div>
+                        {r.clientPhone && <div style={{ fontSize: "0.75rem", color: "#888" }}>{r.clientPhone}</div>}
+                      </td>
+                      <td style={{ padding: "0.5rem 0.8rem", fontWeight: 700 }}>{r.spot.spotNumber}</td>
+                      <td style={{ padding: "0.5rem 0.8rem", whiteSpace: "nowrap" }}>{r.startDate} → {r.endDate}</td>
+                      <td style={{ padding: "0.5rem 0.8rem" }}>{calcDays(r.startDate, r.endDate)}</td>
+                      <td style={{ padding: "0.5rem 0.8rem" }}>
+                        <span className={`status-badge ${r.period === "MORNING" ? "morning" : r.period === "AFTERNOON" ? "afternoon" : "full"}`}>
+                          {periodLabel(r.period)}
+                        </span>
+                      </td>
+                      <td style={{ padding: "0.5rem 0.8rem", fontWeight: 600 }}>{r.totalPrice.toFixed(2)}€</td>
+                      <td style={{ padding: "0.5rem 0.8rem" }}><span style={{ color: r.isPaid ? "#22c55e" : "#ef4444" }}>{r.isPaid ? "✓" : "✗"}</span></td>
+                      <td style={{ padding: "0.5rem 0.8rem" }}><span className={`status-badge ${r.status.toLowerCase()}`}>{r.status}</span></td>
+                      <td style={{ padding: "0.5rem 0.6rem" }}>
+                        {r.status === "ACTIVE" && (
+                          <div style={{ display: "flex", gap: "0.4rem" }}>
+                            <button onClick={() => openEdit(r)} style={{ background: "none", border: "none", color: "#888", cursor: "pointer", padding: 4 }} title="Editar"><Edit2 size={14} /></button>
+                            <button onClick={() => handleCancel(r.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 4 }} title="Cancelar"><Trash2 size={14} /></button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {renderReservationCards(filtered)}
+        </>
       )}
 
       {/* Drawer */}

@@ -145,86 +145,89 @@ export default function DailyControl({ concession }: { concession: Concession })
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
-        <div className="summary-chips">
-          {loading ? (
-            Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} width={80} height={24} borderRadius={20} />)
-          ) : (
-            <>
-              <span className="summary-chip free">{freeCount} livres</span>
-              <span className="summary-chip morning">{morningCount} Manhã</span>
-              <span className="summary-chip afternoon">{afternoonCount} Tarde</span>
-              <span className="summary-chip full">{fullDayCount} Dia Inteiro</span>
-              <span className="summary-chip reserved">{reservedCount} Reservas</span>
-            </>
-          )}
-        </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }} className="date-bar-actions">
           <button className="export-btn" onClick={fetchEntries} disabled={loading}>
             <RefreshCw size={14} className={loading ? "conc-spin" : ""} /> Atualizar
           </button>
           <button className="export-btn" onClick={handleExport} disabled={exporting}>
-            <Download size={14} /> {exporting ? "A exportar..." : "Exportar Dia"}
+            <Download size={14} /> {exporting ? "..." : "Exportar"}
           </button>
         </div>
       </div>
 
-      {/* Spot grid */}
-      <div
-        className="spot-grid"
-        style={{ gridTemplateColumns: `repeat(${concession.cols}, minmax(70px, 1fr))` }}
-      >
+      <div className="summary-chips">
         {loading ? (
-          Array.from({ length: concession.spots.length }).map((_, i) => (
-            <Skeleton key={i} height={76} borderRadius={8} style={{ border: "1.5px solid rgba(255,255,255,0.07)" }} />
-          ))
+          Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} width={80} height={24} borderRadius={20} />)
         ) : (
-          spotStates.map(({ spot, entries: spotEntries }) => {
-            const status = spotStatus(spotEntries);
-            const active = spotEntries.filter(e => e.status === "ACTIVE" || e.status === "CARRIED_OVER");
-            const fullEnt = active.find(e => e.period === "FULL_DAY");
-            const morningEnt = active.find(e => e.period === "MORNING");
-            const afternoonEnt = active.find(e => e.period === "AFTERNOON");
-            const primaryEntry = fullEnt || morningEnt || afternoonEnt;
+          <>
+            <span className="summary-chip free">{freeCount} livres</span>
+            <span className="summary-chip morning">{morningCount} Manhã</span>
+            <span className="summary-chip afternoon">{afternoonCount} Tarde</span>
+            <span className="summary-chip full">{fullDayCount} Dia Inteiro</span>
+            <span className="summary-chip reserved">{reservedCount} Reservas</span>
+          </>
+        )}
+      </div>
 
-            // Top half: prefer morning override over full-day
-            const topEnt = morningEnt || fullEnt;
-            const topColor = !topEnt ? "free"
-              : topEnt.reservationId ? "reserved"
-                : topEnt.period === "FULL_DAY" ? "full" : "morning";
+      {/* Spot grid */}
+      <div className="daily-control-scroll-wrap">
+        <div
+          className="spot-grid"
+          style={{ gridTemplateColumns: `repeat(${concession.cols}, minmax(70px, 1fr))` }}
+        >
+          {loading ? (
+            Array.from({ length: concession.spots.length }).map((_, i) => (
+              <Skeleton key={i} height={76} borderRadius={8} style={{ border: "1.5px solid rgba(255,255,255,0.07)" }} />
+            ))
+          ) : (
+            spotStates.map(({ spot, entries: spotEntries }) => {
+              const status = spotStatus(spotEntries);
+              const active = spotEntries.filter(e => e.status === "ACTIVE" || e.status === "CARRIED_OVER");
+              const fullEnt = active.find(e => e.period === "FULL_DAY");
+              const morningEnt = active.find(e => e.period === "MORNING");
+              const afternoonEnt = active.find(e => e.period === "AFTERNOON");
+              const primaryEntry = fullEnt || morningEnt || afternoonEnt;
 
-            // Bottom half: prefer afternoon override over full-day
-            const botColor = afternoonEnt
-              ? (afternoonEnt.reservationId ? "reserved" : "afternoon")
-              : fullEnt ? (fullEnt.reservationId ? "reserved" : "full")
-                : "free";
+              // Top half: prefer morning override over full-day
+              const topEnt = morningEnt || fullEnt;
+              const topColor = !topEnt ? "free"
+                : topEnt.reservationId ? "reserved"
+                  : topEnt.period === "FULL_DAY" ? "full" : "morning";
 
-            // Merged = pure full-day with no overrides (seamless halves)
-            const isFullMerged = !!fullEnt && !morningEnt && !afternoonEnt;
+              // Bottom half: prefer afternoon override over full-day
+              const botColor = afternoonEnt
+                ? (afternoonEnt.reservationId ? "reserved" : "afternoon")
+                : fullEnt ? (fullEnt.reservationId ? "reserved" : "full")
+                  : "free";
 
-            return (
-              <div
-                key={spot.id}
-                className={`spot-cell ${status}`}
-                onClick={() => setSelectedSpot({ spot, entries: spotEntries })}
-                title={`Lugar ${spot.spotNumber}${primaryEntry ? " — " + primaryEntry.clientName : ""}`}
-              >
-                <div className="spot-num-bar">{spot.spotNumber}</div>
-                <div className={`spot-halves${isFullMerged ? " merged" : ""}`}>
-                  <div className={`spot-half ${topColor}`}>
-                    {topEnt?.reservationId && <span className="spot-r-badge">R</span>}
-                    {topEnt && <span className="spot-client-sm">{topEnt.clientName}</span>}
-                    {topEnt && <span className="spot-bed-sm">{bedIcon(topEnt.bedConfig)}</span>}
-                  </div>
-                  <div className={`spot-half ${botColor}`}>
-                    {afternoonEnt?.reservationId && <span className="spot-r-badge">R</span>}
-                    {afternoonEnt && <span className="spot-client-sm">{afternoonEnt.clientName}</span>}
-                    {afternoonEnt && <span className="spot-bed-sm">{bedIcon(afternoonEnt.bedConfig)}</span>}
+              // Merged = pure full-day with no overrides (seamless halves)
+              const isFullMerged = !!fullEnt && !morningEnt && !afternoonEnt;
+
+              return (
+                <div
+                  key={spot.id}
+                  className={`spot-cell ${status}`}
+                  onClick={() => setSelectedSpot({ spot, entries: spotEntries })}
+                  title={`Lugar ${spot.spotNumber}${primaryEntry ? " — " + primaryEntry.clientName : ""}`}
+                >
+                  <div className="spot-num-bar">{spot.spotNumber}</div>
+                  <div className={`spot-halves${isFullMerged ? " merged" : ""}`}>
+                    <div className={`spot-half ${topColor}`}>
+                      {topEnt?.reservationId && <span className="spot-r-badge">R</span>}
+                      {topEnt && <span className="spot-client-sm">{topEnt.clientName}</span>}
+                      {topEnt && <span className="spot-bed-sm">{bedIcon(topEnt.bedConfig)}</span>}
+                    </div>
+                    <div className={`spot-half ${botColor}`}>
+                      {afternoonEnt?.reservationId && <span className="spot-r-badge">R</span>}
+                      {afternoonEnt && <span className="spot-client-sm">{afternoonEnt.clientName}</span>}
+                      {afternoonEnt && <span className="spot-bed-sm">{bedIcon(afternoonEnt.bedConfig)}</span>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Daily note */}

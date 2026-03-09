@@ -65,11 +65,11 @@ export default function Calculator({ concession, onProceed }: Props) {
   };
 
   return (
-    <div style={{ maxWidth: 480 }}>
+    <div className="calculator-container">
       <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "1.4rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
 
         {/* Date range */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem" }}>
+        <div className="field-row">
           <div className="field-group">
             <label>Data de início</label>
             <input type="date" value={startDate} onChange={(e) => {
@@ -90,7 +90,7 @@ export default function Calculator({ concession, onProceed }: Props) {
         </div>
 
         {/* Other inputs */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem" }}>
+        <div className="field-row" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
           <div className="field-group">
             <label>Nº de Chapéus</label>
             <input type="number" min={1} max={50} value={spots}

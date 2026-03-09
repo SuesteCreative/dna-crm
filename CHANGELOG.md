@@ -427,6 +427,7 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `14803f9` | Bug 5: pre-validate all spots before creating any reservation (avoid partial bookings), extra spot creation reports failures explicitly |
 | `d4a0dec` | Visual Improvements: Loading Skeletons (V1), Toast Notifications (V2), Concession Themes (V4: Trópico orange, Subnauta blue), Print-Optimized CSS (V5) |
 | `d261dce` | **Responsiveness & Mobile Optimization**: Mobile-First Sidebar, Adaptive Concessão Grid, Responsive Statistics, Mobile Modals/Forms, Layout adjustments across all modules |
+| `59486ea` | **Security**: Removed `_CRM_V1_SNAPSHOT.zip` from entire git history (filter-branch, force push), rotated exposed GCP service account key, added `*.zip` to `.gitignore` |
 
 ### Feature Details (Recent)
 

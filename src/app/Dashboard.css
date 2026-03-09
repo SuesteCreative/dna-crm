@@ -960,6 +960,183 @@ body {
 }
 
 /* ── NESTED GROUPING BOXES ───────────────────────────── */
+.booking-cards-mobile {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 0;
+}
+
+.booking-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform .2s, border-color .2s;
+}
+
+.booking-card:hover {
+    border-color: var(--blue-dim);
+}
+
+.booking-card.is-today {
+    border-left: 4px solid var(--green);
+}
+
+.booking-card.is-future {
+    border-left: 4px solid var(--blue);
+}
+
+.card-row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.card-client .cell-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.card-client .cell-sub {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-edit-sm {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.btn-edit-sm:hover {
+    color: var(--text);
+    background: var(--surface3);
+}
+
+.card-main-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(255, 255, 255, .02);
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.card-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.info-val {
+    font-size: 13.5px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.card-grid-lite {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+}
+
+.card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.card-price-pres {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.price-val {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--green);
+}
+
+.price-val.price-noshow {
+    color: var(--muted);
+    text-decoration: line-through;
+}
+
+.btn-attendance-sm,
+.attendance-verified-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .2s;
+    border: none;
+}
+
+.btn-attendance-sm {
+    background: var(--surface2);
+    color: var(--muted);
+}
+
+.attendance-verified-sm {
+    background: var(--green-dim);
+    color: var(--green);
+}
+
+@media (max-width: 900px) {
+    .table-wrap {
+        display: none !important;
+    }
+
+    .booking-cards-mobile {
+        display: flex;
+    }
+
+    .month-box-hdr,
+    .day-hdr {
+        padding: 14px 16px;
+    }
+}
+
 .year-section {
     margin-bottom: 30px;
     animation: fadeIn .3s ease;

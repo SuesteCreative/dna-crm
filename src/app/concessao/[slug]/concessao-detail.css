@@ -166,17 +166,69 @@
   gap: 10px;
   width: max-content;
   min-width: 100%;
+  padding-bottom: 15px;
+  /* Space for scrollbar */
+}
+
+@media (max-width: 768px) {
+  .spot-grid {
+    gap: 6px;
+  }
+
+  .spot-cell {
+    min-width: 82px;
+    /* Prevent squashing on mobile */
+  }
+}
+
+.daily-control-scroll-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+  position: relative;
 }
 
 .daily-control {
   padding: 1.5rem 2rem;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+}
+
+.calculator-container,
+.price-list-container {
+  max-width: 100%;
+  width: 480px;
+}
+
+.price-list-container {
+  width: 560px;
+}
+
+@media (max-width: 600px) {
+
+  .calculator-container,
+  .price-list-container {
+    width: 100%;
+  }
 }
 
 @media (max-width: 768px) {
   .daily-control {
-    padding: 1rem;
+    padding: 1rem 0.5rem;
+    position: relative;
+  }
+
+  /* Subtle indicator that more content exists to the right */
+  .daily-control::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to left, var(--surface, #111827), transparent);
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0.5;
   }
 }
 
@@ -647,6 +699,19 @@
   margin-bottom: 1rem;
 }
 
+@media (max-width: 768px) {
+  .summary-chips {
+    justify-content: center;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .summary-chip {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}
+
 .summary-chip {
   padding: 0.3rem 0.7rem;
   border-radius: 20px;
@@ -689,6 +754,27 @@
   flex-wrap: wrap;
 }
 
+@media (max-width: 768px) {
+  .date-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .date-bar>div:last-child {
+    margin-left: 0 !important;
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .date-bar input[type="date"] {
+    width: 100%;
+    text-align: center;
+  }
+}
+
 .date-bar input[type="date"] {
   padding: 0.4rem 0.7rem;
   background: rgba(255, 255, 255, 0.07);
@@ -701,6 +787,23 @@
 .date-bar input[type="date"]:focus {
   outline: none;
   border-color: var(--theme-primary);
+}
+
+.date-bar-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .date-bar-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .date-bar-actions .export-btn {
+    justify-content: center;
+  }
 }
 
 /* Export button */
@@ -1190,6 +1293,282 @@ details[open].daily-legend summary::before {
   color: #f97316;
   font-weight: 700;
   margin-right: 0.25rem;
+}
+
+/* ── RESERVATIONS MOBILE CARDS ─────────────────────── */
+.res-cards-mobile {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.res-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.res-card-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.res-card-client strong {
+  font-size: 0.95rem;
+  color: #fff;
+  display: block;
+}
+
+.res-card-sub {
+  font-size: 0.75rem;
+  color: var(--color-muted, #888);
+}
+
+.res-card-spot {
+  font-weight: 800;
+  color: var(--theme-primary);
+  background: rgba(249, 115, 22, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.theme-subnauta .res-card-spot {
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.res-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.res-card-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #ccc;
+}
+
+.res-card-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.status-badge-sm {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.06);
+  color: #aaa;
+}
+
+.status-badge-sm.morning {
+  background: rgba(251, 146, 60, 0.12);
+  color: #fb923c;
+}
+
+.status-badge-sm.afternoon {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.status-badge-sm.full {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a855f7;
+}
+
+.status-badge-sm.active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.status-badge-sm.cancelled {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.pay-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.pay-status.paid {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.pay-status.unpaid {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.res-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.res-card-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.res-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.res-action-btn {
+  background: var(--surface2, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  color: #888;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.res-action-btn:hover {
+  background: var(--surface3, rgba(255, 255, 255, 0.08));
+  color: #fff;
+}
+
+.res-action-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+@media (max-width: 900px) {
+  .res-table-wrap {
+    display: none !important;
+  }
+
+  .res-cards-mobile {
+    display: flex;
+  }
+}
+
+/* ── TOOLBAR REFINEMENTS ───────────────────────────── */
+.res-toolbar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.res-view-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.res-view-toggle button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.res-view-toggle button.active {
+  background: var(--theme-primary);
+  color: #fff;
+}
+
+.res-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.res-filter-select {
+  padding: 0.45rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ccc;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.res-filter-search {
+  flex: 1;
+  padding: 0.45rem 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.84rem;
+}
+
+.res-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.res-btn-new {
+  width: auto !important;
+  padding: 0.45rem 1rem !important;
+}
+
+@media (max-width: 600px) {
+  .res-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+  }
+
+  .res-filters {
+    order: 3;
+    width: 100%;
+  }
+
+  .res-actions {
+    order: 2;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .res-view-toggle {
+    order: 1;
+    align-self: flex-start;
+  }
+
+  .res-btn-new .btn-lbl {
+    display: none;
+  }
+
+  .res-btn-new {
+    padding: 0.45rem 0.6rem !important;
+  }
 }
 
 /* ── Print Styles (V5) ─────────────────────────────────────── */

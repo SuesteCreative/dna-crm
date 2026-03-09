@@ -86,7 +86,7 @@ export default function PriceList({ concession }: { concession: Concession }) {
   ];
 
   return (
-    <div style={{ maxWidth: 560 }}>
+    <div className="price-list-container">
       {/* Language switcher */}
       <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         {(Object.keys(FLAG_CODES) as Lang[]).map((l) => (
