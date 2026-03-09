@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function PUT(req: NextRequest, { params }: { params: { slug: string; id: string } }) {
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-  if (!userId || (role !== "ADMIN" && role !== "SUPER_ADMIN")) {
+  if (!userId || (role !== "ADMIN" && role !== "SUPER_ADMIN" && role !== "STAFF")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const prisma = await getPrisma();
@@ -45,7 +45,7 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
 export async function DELETE(_req: NextRequest, { params }: { params: { slug: string; id: string } }) {
   const { userId, sessionClaims } = await auth();
   const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-  if (!userId || (role !== "ADMIN" && role !== "SUPER_ADMIN")) {
+  if (!userId || (role !== "ADMIN" && role !== "SUPER_ADMIN" && role !== "STAFF")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const prisma = await getPrisma();

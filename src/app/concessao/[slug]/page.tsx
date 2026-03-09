@@ -32,7 +32,7 @@ export default function ConcessaoDetailPage() {
   const router = useRouter();
   const params = useParams<{ slug: string }>();
   const role = (user?.publicMetadata as any)?.role as string | undefined;
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN" || role === "STAFF";
 
   const [concession, setConcession] = useState<Concession | null>(null);
   const [tab, setTab] = useState<Tab>("controlo");

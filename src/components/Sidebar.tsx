@@ -20,10 +20,20 @@ export function Sidebar() {
     const [bugSending, setBugSending] = useState(false);
     const [bugError, setBugError] = useState<string | null>(null);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [perms, setPerms] = useState<any>(null);
 
     useEffect(() => {
         setIsMobileOpen(false);
     }, [pathname]);
+
+    useEffect(() => {
+        if (userId) {
+            fetch("/api/user/permissions")
+                .then(r => r.json())
+                .then(setPerms)
+                .catch(console.error);
+        }
+    }, [userId]);
 
     // Body scroll lock
     useEffect(() => {
@@ -36,8 +46,13 @@ export function Sidebar() {
     if (pathname.startsWith("/pending") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-    const isAdmin = role === "SUPER_ADMIN" || role === "ADMIN";
-    const isPartner = role === "PARTNER";
+
+    // Safefalls in case perms aren't loaded yet
+    const canSeePartners = perms ? perms.partnersAccess : role === "SUPER_ADMIN" || role === "ADMIN";
+    const canSeeStats = perms ? perms.statisticsAccess : role !== "USER";
+    const canSyncShopify = perms ? perms.shopifySync : role === "SUPER_ADMIN" || role === "ADMIN";
+    const canSeeConcession = perms ? perms.concessionAccess : role === "SUPER_ADMIN" || role === "ADMIN";
+    const canSeeAdmin = perms ? perms.adminAccess : role === "SUPER_ADMIN" || role === "ADMIN";
 
     const handleSync = async () => {
         setSyncing(true);
@@ -130,7 +145,7 @@ export function Sidebar() {
                         {pathname === "/services" && <ChevronRight size={14} className="nav-arrow" />}
                     </button>
 
-                    {!isPartner && (
+                    {canSeePartners && (
                         <button
                             className={`nav-item ${pathname === "/partners" ? "active" : ""}`}
                             onClick={() => router.push("/partners")}
@@ -141,14 +156,16 @@ export function Sidebar() {
                         </button>
                     )}
 
-                    <button
-                        className={`nav-item ${pathname === "/statistics" ? "active" : ""}`}
-                        onClick={() => router.push("/statistics")}
-                    >
-                        <BarChart2 size={18} />
-                        <span>Estatísticas</span>
-                        {pathname === "/statistics" && <ChevronRight size={14} className="nav-arrow" />}
-                    </button>
+                    {canSeeStats && (
+                        <button
+                            className={`nav-item ${pathname === "/statistics" ? "active" : ""}`}
+                            onClick={() => router.push("/statistics")}
+                        >
+                            <BarChart2 size={18} />
+                            <span>Estatísticas</span>
+                            {pathname === "/statistics" && <ChevronRight size={14} className="nav-arrow" />}
+                        </button>
+                    )}
 
                     <button
                         className={`nav-item ${pathname === "/profile" ? "active" : ""}`}
@@ -159,7 +176,7 @@ export function Sidebar() {
                         {pathname === "/profile" && <ChevronRight size={14} className="nav-arrow" />}
                     </button>
 
-                    {!isPartner && (
+                    {canSyncShopify && (
                         <>
                             <p className="nav-label">Integrações</p>
                             <button className="nav-item" onClick={handleSync} disabled={syncing}>
@@ -170,7 +187,7 @@ export function Sidebar() {
                         </>
                     )}
 
-                    {isAdmin && (
+                    {canSeeConcession && (
                         <button
                             className={`nav-item ${pathname.startsWith("/concessao") ? "active" : ""}`}
                             onClick={() => router.push("/concessao")}
@@ -181,7 +198,7 @@ export function Sidebar() {
                         </button>
                     )}
 
-                    {isAdmin && (
+                    {canSeeAdmin && (
                         <>
                             <p className="nav-label">Administração</p>
                             <button

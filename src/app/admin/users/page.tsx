@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useUser, useAuth } from "@clerk/nextjs";
-import { Users, Shield, RefreshCcw, ChevronDown, Info, KeyRound, X } from "lucide-react";
+import { Users, Shield, RefreshCcw, ChevronDown, Info, KeyRound, X, KeySquare } from "lucide-react";
 import "./admin-users.css";
 
 interface ProfileInfo {
@@ -35,12 +35,14 @@ const ROLE_LABELS: Record<string, string> = {
     USER: "Sem acesso",
     PARTNER: "Parceiro",
     ADMIN: "Admin",
+    STAFF: "Staff de Praia",
     SUPER_ADMIN: "Super Admin",
 };
 
 const ROLE_COLORS: Record<string, string> = {
     USER: "role-user",
     PARTNER: "role-partner",
+    STAFF: "role-staff",
     ADMIN: "role-admin",
     SUPER_ADMIN: "role-superadmin",
 };
@@ -74,6 +76,10 @@ export default function AdminUsersPage() {
     const [resetSaving, setResetSaving] = useState(false);
     const [resetMsg, setResetMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+    const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
+    const [rolePerms, setRolePerms] = useState<any[]>([]);
+    const [savingRole, setSavingRole] = useState<string | null>(null);
+
     // Body scroll lock
     useEffect(() => {
         document.body.classList.toggle("modal-open", !!resetTarget);
@@ -84,8 +90,36 @@ export default function AdminUsersPage() {
         if (isSignedIn) {
             fetchUsers();
             fetchPartners();
+            if (isSuperAdmin) fetchRoles();
         }
-    }, [isSignedIn]);
+    }, [isSignedIn, isSuperAdmin]);
+
+    const fetchRoles = async () => {
+        try {
+            const res = await fetch("/api/admin/role-permissions");
+            if (res.ok) setRolePerms(await res.json());
+        } catch { }
+    };
+
+    const handleSaveRole = async (r: any) => {
+        setSavingRole(r.role);
+        try {
+            const res = await fetch("/api/admin/role-permissions", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(r),
+            });
+            if (res.ok) await fetchRoles();
+            else alert("Erro ao guardar permissões");
+        } catch { alert("Erro de rede"); }
+        finally { setSavingRole(null); }
+    };
+
+    const togglePerm = (rIndex: number, field: string) => {
+        const next = [...rolePerms];
+        next[rIndex] = { ...next[rIndex], [field]: !next[rIndex][field] };
+        setRolePerms(next);
+    };
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -165,157 +199,250 @@ export default function AdminUsersPage() {
 
     return (
         <div className="au-root">
-            <header className="au-header">
+            <header className="au-header" style={{ borderBottom: "none", paddingBottom: 0 }}>
                 <div>
                     <h1 className="au-title">Gestão de Utilizadores</h1>
-                    <p className="au-sub">Atribua funções e permissões a cada utilizador.</p>
+                    <p className="au-sub">Atribua funções e configure permissões de acesso.</p>
                 </div>
-                <button className="au-refresh" onClick={fetchUsers} disabled={loading}>
-                    <RefreshCcw size={15} className={loading ? "spin" : ""} />
-                </button>
+                <div style={{ display: "flex", gap: 10 }}>
+                    <button className="au-refresh" onClick={() => { fetchUsers(); if (isSuperAdmin) fetchRoles(); }} disabled={loading}>
+                        <RefreshCcw size={15} className={loading ? "spin" : ""} />
+                    </button>
+                </div>
             </header>
 
-            {loading ? (
-                <div className="au-loading"><div className="loader" /></div>
-            ) : (
-                <div className="au-table-wrap">
-                    <table className="au-table">
-                        <thead>
-                            <tr>
-                                <th>Utilizador</th>
-                                <th>Função Atual</th>
-                                <th>Atribuir Função</th>
-                                <th>Ligar a parceiro existente (opcional)</th>
-                                <th style={{ width: 100 }}></th>
-                                <th style={{ width: 48 }}></th>
-                                {isSuperAdmin && <th style={{ width: 48 }}></th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map(u => {
-                                const changed =
-                                    pendingRoles[u.id] !== u.role ||
-                                    (pendingPartners[u.id] || "") !== (u.partnerId || "");
-                                const isExpanded = expandedInfo === u.id;
-                                return (
-                                    <>
-                                        <tr key={u.id}>
-                                            <td>
-                                                <div className="au-user">
-                                                    <img src={u.imageUrl} alt="" className="au-avatar" />
-                                                    <div>
-                                                        <div className="au-name">{u.name}</div>
-                                                        <div className="au-email">{u.email}</div>
+            {isSuperAdmin && (
+                <div className="au-tabs" style={{ padding: "0 24px", display: "flex", gap: 20, borderBottom: "1px solid var(--border)", marginBottom: 20 }}>
+                    <button
+                        className={`au-tab-btn ${activeTab === "users" ? "active" : ""}`}
+                        onClick={() => setActiveTab("users")}
+                        style={{ padding: "12px 0", background: "none", border: "none", borderBottom: activeTab === "users" ? "2px solid var(--fg)" : "2px solid transparent", color: activeTab === "users" ? "var(--fg)" : "var(--muted)", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                        <Users size={16} /> Lista de Utilizadores
+                    </button>
+                    <button
+                        className={`au-tab-btn ${activeTab === "roles" ? "active" : ""}`}
+                        onClick={() => setActiveTab("roles")}
+                        style={{ padding: "12px 0", background: "none", border: "none", borderBottom: activeTab === "roles" ? "2px solid var(--fg)" : "2px solid transparent", color: activeTab === "roles" ? "var(--fg)" : "var(--muted)", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                        <Shield size={16} /> Permissões de Cargos
+                    </button>
+                </div>
+            )}
+
+            {activeTab === "users" ? (
+                loading ? (
+                    <div className="au-loading"><div className="loader" /></div>
+                ) : (
+                    <div className="au-table-wrap">
+                        <table className="au-table">
+                            <thead>
+                                <tr>
+                                    <th>Utilizador</th>
+                                    <th>Função Atual</th>
+                                    <th>Atribuir Função</th>
+                                    <th>Ligar a parceiro existente (opcional)</th>
+                                    <th style={{ width: 100 }}></th>
+                                    <th style={{ width: 48 }}></th>
+                                    {isSuperAdmin && <th style={{ width: 48 }}></th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {users.map(u => {
+                                    const changed =
+                                        pendingRoles[u.id] !== u.role ||
+                                        (pendingPartners[u.id] || "") !== (u.partnerId || "");
+                                    const isExpanded = expandedInfo === u.id;
+                                    return (
+                                        <>
+                                            <tr key={u.id}>
+                                                <td>
+                                                    <div className="au-user">
+                                                        <img src={u.imageUrl} alt="" className="au-avatar" />
+                                                        <div>
+                                                            <div className="au-name">{u.name}</div>
+                                                            <div className="au-email">{u.email}</div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                {u.role === "PARTNER" && u.partnerId ? (() => {
-                                                    const idx = partners.findIndex(p => p.id === u.partnerId);
-                                                    const color = PARTNER_PALETTE[(idx >= 0 ? idx : 0) % PARTNER_PALETTE.length];
-                                                    const label = partners.find(p => p.id === u.partnerId)?.name ?? "Parceiro";
-                                                    return (
-                                                        <span className="role-badge" style={{ background: color.bg, color: color.text }}>
-                                                            {label}
+                                                </td>
+                                                <td>
+                                                    {u.role === "PARTNER" && u.partnerId ? (() => {
+                                                        const idx = partners.findIndex(p => p.id === u.partnerId);
+                                                        const color = PARTNER_PALETTE[(idx >= 0 ? idx : 0) % PARTNER_PALETTE.length];
+                                                        const label = partners.find(p => p.id === u.partnerId)?.name ?? "Parceiro";
+                                                        return (
+                                                            <span className="role-badge" style={{ background: color.bg, color: color.text }}>
+                                                                {label}
+                                                            </span>
+                                                        );
+                                                    })() : (
+                                                        <span className={`role-badge ${ROLE_COLORS[u.role] || "role-user"}`}>
+                                                            {ROLE_LABELS[u.role] || u.role}
                                                         </span>
-                                                    );
-                                                })() : (
-                                                    <span className={`role-badge ${ROLE_COLORS[u.role] || "role-user"}`}>
-                                                        {ROLE_LABELS[u.role] || u.role}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td>
-                                                <div className="au-select-wrap">
-                                                    <select
-                                                        className="au-select"
-                                                        value={pendingRoles[u.id] || "USER"}
-                                                        onChange={e => setPendingRoles(p => ({ ...p, [u.id]: e.target.value }))}
-                                                    >
-                                                        <option value="USER">Sem acesso</option>
-                                                        <option value="PARTNER">Parceiro</option>
-                                                        <option value="ADMIN">Admin</option>
-                                                        <option value="SUPER_ADMIN">Super Admin</option>
-                                                    </select>
-                                                    <ChevronDown size={14} className="au-select-ico" />
-                                                </div>
-                                            </td>
-                                            <td>
-                                                {(pendingRoles[u.id] === "PARTNER") && (
+                                                    )}
+                                                </td>
+                                                <td>
                                                     <div className="au-select-wrap">
                                                         <select
                                                             className="au-select"
-                                                            value={pendingPartners[u.id] || ""}
-                                                            onChange={e => setPendingPartners(p => ({ ...p, [u.id]: e.target.value }))}
+                                                            value={pendingRoles[u.id] || "USER"}
+                                                            onChange={e => setPendingRoles(p => ({ ...p, [u.id]: e.target.value }))}
                                                         >
-                                                            <option value="">— Selecionar —</option>
-                                                            {partners.map(p => (
-                                                                <option key={p.id} value={p.id}>{p.name}</option>
-                                                            ))}
+                                                            <option value="USER">Sem acesso</option>
+                                                            <option value="PARTNER">Parceiro</option>
+                                                            <option value="STAFF">Staff de Praia</option>
+                                                            <option value="ADMIN">Admin</option>
+                                                            {isSuperAdmin && <option value="SUPER_ADMIN">Super Admin</option>}
                                                         </select>
                                                         <ChevronDown size={14} className="au-select-ico" />
                                                     </div>
-                                                )}
-                                            </td>
-                                            <td>
-                                                {changed && (
-                                                    <button
-                                                        className="au-save-btn"
-                                                        onClick={() => handleSave(u.id)}
-                                                        disabled={saving === u.id}
-                                                    >
-                                                        {saving === u.id ? "..." : "Guardar"}
-                                                    </button>
-                                                )}
-                                            </td>
-                                            <td>
-                                                {u.profileInfo && (
-                                                    <button
-                                                        className={`au-info-btn ${isExpanded ? "active" : ""}`}
-                                                        onClick={() => setExpandedInfo(isExpanded ? null : u.id)}
-                                                        title="Ver informação submetida"
-                                                    >
-                                                        <Info size={15} />
-                                                    </button>
-                                                )}
-                                            </td>
-                                            {isSuperAdmin && (
+                                                </td>
                                                 <td>
-                                                    <button
-                                                        className="au-pw-btn"
-                                                        onClick={() => { setResetTarget(u); setResetPw(""); setResetMsg(null); }}
-                                                        title="Redefinir palavra-passe"
-                                                    >
-                                                        <KeyRound size={15} />
-                                                    </button>
+                                                    {(pendingRoles[u.id] === "PARTNER") && (
+                                                        <div className="au-select-wrap">
+                                                            <select
+                                                                className="au-select"
+                                                                value={pendingPartners[u.id] || ""}
+                                                                onChange={e => setPendingPartners(p => ({ ...p, [u.id]: e.target.value }))}
+                                                            >
+                                                                <option value="">— Selecionar —</option>
+                                                                {partners.map(p => (
+                                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                                ))}
+                                                            </select>
+                                                            <ChevronDown size={14} className="au-select-ico" />
+                                                        </div>
+                                                    )}
                                                 </td>
-                                            )}
-                                        </tr>
-                                        {isExpanded && u.profileInfo && (
-                                            <tr className="au-info-row" key={`${u.id}-info`}>
-                                                <td colSpan={isSuperAdmin ? 7 : 6}>
-                                                    <div className="au-info-panel">
-                                                        {[
-                                                            { label: "Nome", value: u.profileInfo.requestName },
-                                                            { label: "Empresa", value: u.profileInfo.companyName },
-                                                            { label: "NIF", value: u.profileInfo.nif },
-                                                            { label: "Telemóvel", value: u.profileInfo.phone },
-                                                            { label: "Website", value: u.profileInfo.website },
-                                                        ].filter(f => f.value).map(({ label, value }) => (
-                                                            <div key={label} className="au-info-field">
-                                                                <span className="au-info-label">{label}</span>
-                                                                <span className="au-info-value">{value}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                <td>
+                                                    {changed && (
+                                                        <button
+                                                            className="au-save-btn"
+                                                            onClick={() => handleSave(u.id)}
+                                                            disabled={saving === u.id}
+                                                        >
+                                                            {saving === u.id ? "..." : "Guardar"}
+                                                        </button>
+                                                    )}
                                                 </td>
+                                                <td>
+                                                    {u.profileInfo && (
+                                                        <button
+                                                            className={`au-info-btn ${isExpanded ? "active" : ""}`}
+                                                            onClick={() => setExpandedInfo(isExpanded ? null : u.id)}
+                                                            title="Ver informação submetida"
+                                                        >
+                                                            <Info size={15} />
+                                                        </button>
+                                                    )}
+                                                </td>
+                                                {isSuperAdmin && (
+                                                    <td>
+                                                        <button
+                                                            className="au-pw-btn"
+                                                            onClick={() => { setResetTarget(u); setResetPw(""); setResetMsg(null); }}
+                                                            title="Redefinir palavra-passe"
+                                                        >
+                                                            <KeyRound size={15} />
+                                                        </button>
+                                                    </td>
+                                                )}
                                             </tr>
-                                        )}
-                                    </>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                            {isExpanded && u.profileInfo && (
+                                                <tr className="au-info-row" key={`${u.id}-info`}>
+                                                    <td colSpan={isSuperAdmin ? 7 : 6}>
+                                                        <div className="au-info-panel">
+                                                            {[
+                                                                { label: "Nome", value: u.profileInfo.requestName },
+                                                                { label: "Empresa", value: u.profileInfo.companyName },
+                                                                { label: "NIF", value: u.profileInfo.nif },
+                                                                { label: "Telemóvel", value: u.profileInfo.phone },
+                                                                { label: "Website", value: u.profileInfo.website },
+                                                            ].filter(f => f.value).map(({ label, value }) => (
+                                                                <div key={label} className="au-info-field">
+                                                                    <span className="au-info-label">{label}</span>
+                                                                    <span className="au-info-value">{value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )
+            ) : (
+                <div className="au-roles-wrap" style={{ padding: "0 24px 40px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                        {rolePerms.map((r, i) => (
+                            <div key={r.role} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 20 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: 16 }}>{ROLE_LABELS[r.role] || r.role}</h3>
+                                        <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>Configuração de acessos e permissões para este cargo.</p>
+                                    </div>
+                                    <button
+                                        className="au-save-btn"
+                                        onClick={() => handleSaveRole(r)}
+                                        disabled={savingRole === r.role}
+                                    >
+                                        {savingRole === r.role ? "..." : "Guardar Alterações"}
+                                    </button>
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
+
+                                    <div>
+                                        <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 1, color: "var(--muted)", margin: "0 0 12px 0" }}>Dashboard e Reservas</h4>
+                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", fontSize: 14 }}>
+                                            <input type="checkbox" checked={r.dashboardAccess} onChange={() => togglePerm(i, "dashboardAccess")} />
+                                            Acesso à Dashboard
+                                        </label>
+                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", fontSize: 14 }}>
+                                            <input type="checkbox" checked={r.dashboardCreate} onChange={() => togglePerm(i, "dashboardCreate")} />
+                                            Criar Reservas
+                                        </label>
+                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", fontSize: 14 }}>
+                                            <input type="checkbox" checked={r.dashboardOverride} onChange={() => togglePerm(i, "dashboardOverride")} />
+                                            Forçar Overrides
+                                        </label>
+                                    </div>
+
+                                    <div>
+                                        <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 1, color: "var(--muted)", margin: "0 0 12px 0" }}>Concessão e Praia</h4>
+                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", fontSize: 14 }}>
+                                            <input type="checkbox" checked={r.concessionAccess} onChange={() => togglePerm(i, "concessionAccess")} />
+                                            Acesso e Controlo da Concessão
+                                        </label>
+                                    </div>
+
+                                    <div>
+                                        <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 1, color: "var(--muted)", margin: "0 0 12px 0" }}>Gestão e Reportes</h4>
+                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", fontSize: 14 }}>
+                                            <input type="checkbox" checked={r.statisticsAccess} onChange={() => togglePerm(i, "statisticsAccess")} />
+                                            Acesso a Estatísticas
+                                        </label>
+                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", fontSize: 14 }}>
+                                            <input type="checkbox" checked={r.partnersAccess} onChange={() => togglePerm(i, "partnersAccess")} />
+                                            Gestão de Parceiros
+                                        </label>
+                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", fontSize: 14 }}>
+                                            <input type="checkbox" checked={r.adminAccess} onChange={() => togglePerm(i, "adminAccess")} />
+                                            Acesso a Área de Administração (Users, Logs, Horários)
+                                        </label>
+                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer", fontSize: 14 }}>
+                                            <input type="checkbox" checked={r.shopifySync} onChange={() => togglePerm(i, "shopifySync")} />
+                                            Sincronização com Shopify
+                                        </label>
+                                    </div>
+
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 

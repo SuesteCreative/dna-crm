@@ -24,7 +24,7 @@ export default function ConcessaoPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const role = (user?.publicMetadata as any)?.role as string | undefined;
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN" || role === "STAFF";
 
   const [concessions, setConcessions] = useState<Concession[]>([]);
   const [loading, setLoading] = useState(true);

@@ -20,6 +20,27 @@ model User {
   partner   Partner? @relation(fields: [partnerId], references: [id])
 }
 
+model RolePermission {
+  id                 String   @id @default(cuid())
+  role               String   @unique // "ADMIN", "STAFF", "PARTNER"
+  
+  // Dashboard & Books
+  dashboardAccess    Boolean  @default(false)
+  dashboardCreate    Boolean  @default(false)
+  dashboardOverride  Boolean  @default(false)
+  
+  // Concession
+  concessionAccess   Boolean  @default(false)
+  
+  // Management
+  statisticsAccess   Boolean  @default(false)
+  partnersAccess     Boolean  @default(false)
+  adminAccess        Boolean  @default(false) // Users, Schedule, Logs
+  shopifySync        Boolean  @default(false)
+  
+  updatedAt          DateTime @updatedAt
+}
+
 model Partner {
   id         String    @id @default(cuid())
   name       String

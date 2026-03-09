@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   const { sessionClaims } = await auth();
   const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+  if (role !== "ADMIN" && role !== "SUPER_ADMIN" && role !== "STAFF") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
