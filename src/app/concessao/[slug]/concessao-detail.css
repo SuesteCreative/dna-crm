@@ -423,10 +423,19 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 40;
+  z-index: 2000;
   display: flex;
   align-items: stretch;
   justify-content: flex-end;
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  .panel-overlay {
+    align-items: flex-start;
+  }
 }
 
 .panel-drawer {

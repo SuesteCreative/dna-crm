@@ -37,6 +37,12 @@ export default function PartnersPage() {
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+
+    // Body scroll lock
+    useEffect(() => {
+        document.body.classList.toggle("modal-open", showModal);
+        return () => document.body.classList.remove("modal-open");
+    }, [showModal]);
     const [formData, setFormData] = useState(defaultForm);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);

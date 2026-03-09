@@ -84,6 +84,12 @@ export default function DailyControl({ concession }: { concession: Concession })
     return localStorage.getItem(`daily-note:${concession.slug}:${new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" })}`) ?? "";
   });
 
+  // Body scroll lock
+  useEffect(() => {
+    document.body.classList.toggle("modal-open", !!selectedSpot);
+    return () => document.body.classList.remove("modal-open");
+  }, [selectedSpot]);
+
   const fetchEntries = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/concessions/${concession.slug}/entries?date=${date}`);

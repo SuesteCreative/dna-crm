@@ -320,8 +320,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(2px);
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+    overflow-y: auto;
+    padding: 24px 16px;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+    .modal-backdrop {
+        align-items: flex-start;
+    }
 }
 
 .au-pw-modal {
@@ -330,12 +339,14 @@
     border-radius: 14px;
     width: 100%;
     max-width: 400px;
+    margin: auto;
+    position: relative;
     overflow: hidden;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
     .au-pw-modal {
-        margin: 16px;
+        margin-top: 0;
     }
 }
 

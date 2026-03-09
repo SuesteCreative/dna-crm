@@ -46,14 +46,14 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const PARTNER_PALETTE: { bg: string; text: string }[] = [
-    { bg: "rgba(59,130,246,.18)",  text: "#3b82f6" },
-    { bg: "rgba(20,184,166,.18)",  text: "#14b8a6" },
-    { bg: "rgba(168,85,247,.18)",  text: "#a855f7" },
-    { bg: "rgba(245,158,11,.18)",  text: "#f59e0b" },
-    { bg: "rgba(236,72,153,.18)",  text: "#ec4899" },
-    { bg: "rgba(34,197,94,.18)",   text: "#22c55e" },
-    { bg: "rgba(249,115,22,.18)",  text: "#f97316" },
-    { bg: "rgba(99,102,241,.18)",  text: "#6366f1" },
+    { bg: "rgba(59,130,246,.18)", text: "#3b82f6" },
+    { bg: "rgba(20,184,166,.18)", text: "#14b8a6" },
+    { bg: "rgba(168,85,247,.18)", text: "#a855f7" },
+    { bg: "rgba(245,158,11,.18)", text: "#f59e0b" },
+    { bg: "rgba(236,72,153,.18)", text: "#ec4899" },
+    { bg: "rgba(34,197,94,.18)", text: "#22c55e" },
+    { bg: "rgba(249,115,22,.18)", text: "#f97316" },
+    { bg: "rgba(99,102,241,.18)", text: "#6366f1" },
 ];
 
 export default function AdminUsersPage() {
@@ -73,6 +73,12 @@ export default function AdminUsersPage() {
     const [resetPw, setResetPw] = useState("");
     const [resetSaving, setResetSaving] = useState(false);
     const [resetMsg, setResetMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+    // Body scroll lock
+    useEffect(() => {
+        document.body.classList.toggle("modal-open", !!resetTarget);
+        return () => document.body.classList.remove("modal-open");
+    }, [resetTarget]);
 
     useEffect(() => {
         if (isSignedIn) {
@@ -193,118 +199,118 @@ export default function AdminUsersPage() {
                                 const isExpanded = expandedInfo === u.id;
                                 return (
                                     <>
-                                    <tr key={u.id}>
-                                        <td>
-                                            <div className="au-user">
-                                                <img src={u.imageUrl} alt="" className="au-avatar" />
-                                                <div>
-                                                    <div className="au-name">{u.name}</div>
-                                                    <div className="au-email">{u.email}</div>
+                                        <tr key={u.id}>
+                                            <td>
+                                                <div className="au-user">
+                                                    <img src={u.imageUrl} alt="" className="au-avatar" />
+                                                    <div>
+                                                        <div className="au-name">{u.name}</div>
+                                                        <div className="au-email">{u.email}</div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {u.role === "PARTNER" && u.partnerId ? (() => {
-                                                const idx = partners.findIndex(p => p.id === u.partnerId);
-                                                const color = PARTNER_PALETTE[(idx >= 0 ? idx : 0) % PARTNER_PALETTE.length];
-                                                const label = partners.find(p => p.id === u.partnerId)?.name ?? "Parceiro";
-                                                return (
-                                                    <span className="role-badge" style={{ background: color.bg, color: color.text }}>
-                                                        {label}
+                                            </td>
+                                            <td>
+                                                {u.role === "PARTNER" && u.partnerId ? (() => {
+                                                    const idx = partners.findIndex(p => p.id === u.partnerId);
+                                                    const color = PARTNER_PALETTE[(idx >= 0 ? idx : 0) % PARTNER_PALETTE.length];
+                                                    const label = partners.find(p => p.id === u.partnerId)?.name ?? "Parceiro";
+                                                    return (
+                                                        <span className="role-badge" style={{ background: color.bg, color: color.text }}>
+                                                            {label}
+                                                        </span>
+                                                    );
+                                                })() : (
+                                                    <span className={`role-badge ${ROLE_COLORS[u.role] || "role-user"}`}>
+                                                        {ROLE_LABELS[u.role] || u.role}
                                                     </span>
-                                                );
-                                            })() : (
-                                                <span className={`role-badge ${ROLE_COLORS[u.role] || "role-user"}`}>
-                                                    {ROLE_LABELS[u.role] || u.role}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <div className="au-select-wrap">
-                                                <select
-                                                    className="au-select"
-                                                    value={pendingRoles[u.id] || "USER"}
-                                                    onChange={e => setPendingRoles(p => ({ ...p, [u.id]: e.target.value }))}
-                                                >
-                                                    <option value="USER">Sem acesso</option>
-                                                    <option value="PARTNER">Parceiro</option>
-                                                    <option value="ADMIN">Admin</option>
-                                                    <option value="SUPER_ADMIN">Super Admin</option>
-                                                </select>
-                                                <ChevronDown size={14} className="au-select-ico" />
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {(pendingRoles[u.id] === "PARTNER") && (
+                                                )}
+                                            </td>
+                                            <td>
                                                 <div className="au-select-wrap">
                                                     <select
                                                         className="au-select"
-                                                        value={pendingPartners[u.id] || ""}
-                                                        onChange={e => setPendingPartners(p => ({ ...p, [u.id]: e.target.value }))}
+                                                        value={pendingRoles[u.id] || "USER"}
+                                                        onChange={e => setPendingRoles(p => ({ ...p, [u.id]: e.target.value }))}
                                                     >
-                                                        <option value="">— Selecionar —</option>
-                                                        {partners.map(p => (
-                                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                                        ))}
+                                                        <option value="USER">Sem acesso</option>
+                                                        <option value="PARTNER">Parceiro</option>
+                                                        <option value="ADMIN">Admin</option>
+                                                        <option value="SUPER_ADMIN">Super Admin</option>
                                                     </select>
                                                     <ChevronDown size={14} className="au-select-ico" />
                                                 </div>
-                                            )}
-                                        </td>
-                                        <td>
-                                            {changed && (
-                                                <button
-                                                    className="au-save-btn"
-                                                    onClick={() => handleSave(u.id)}
-                                                    disabled={saving === u.id}
-                                                >
-                                                    {saving === u.id ? "..." : "Guardar"}
-                                                </button>
-                                            )}
-                                        </td>
-                                        <td>
-                                            {u.profileInfo && (
-                                                <button
-                                                    className={`au-info-btn ${isExpanded ? "active" : ""}`}
-                                                    onClick={() => setExpandedInfo(isExpanded ? null : u.id)}
-                                                    title="Ver informação submetida"
-                                                >
-                                                    <Info size={15} />
-                                                </button>
-                                            )}
-                                        </td>
-                                        {isSuperAdmin && (
+                                            </td>
                                             <td>
-                                                <button
-                                                    className="au-pw-btn"
-                                                    onClick={() => { setResetTarget(u); setResetPw(""); setResetMsg(null); }}
-                                                    title="Redefinir palavra-passe"
-                                                >
-                                                    <KeyRound size={15} />
-                                                </button>
+                                                {(pendingRoles[u.id] === "PARTNER") && (
+                                                    <div className="au-select-wrap">
+                                                        <select
+                                                            className="au-select"
+                                                            value={pendingPartners[u.id] || ""}
+                                                            onChange={e => setPendingPartners(p => ({ ...p, [u.id]: e.target.value }))}
+                                                        >
+                                                            <option value="">— Selecionar —</option>
+                                                            {partners.map(p => (
+                                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <ChevronDown size={14} className="au-select-ico" />
+                                                    </div>
+                                                )}
                                             </td>
-                                        )}
-                                    </tr>
-                                    {isExpanded && u.profileInfo && (
-                                        <tr className="au-info-row" key={`${u.id}-info`}>
-                                            <td colSpan={isSuperAdmin ? 7 : 6}>
-                                                <div className="au-info-panel">
-                                                    {[
-                                                        { label: "Nome", value: u.profileInfo.requestName },
-                                                        { label: "Empresa", value: u.profileInfo.companyName },
-                                                        { label: "NIF", value: u.profileInfo.nif },
-                                                        { label: "Telemóvel", value: u.profileInfo.phone },
-                                                        { label: "Website", value: u.profileInfo.website },
-                                                    ].filter(f => f.value).map(({ label, value }) => (
-                                                        <div key={label} className="au-info-field">
-                                                            <span className="au-info-label">{label}</span>
-                                                            <span className="au-info-value">{value}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                            <td>
+                                                {changed && (
+                                                    <button
+                                                        className="au-save-btn"
+                                                        onClick={() => handleSave(u.id)}
+                                                        disabled={saving === u.id}
+                                                    >
+                                                        {saving === u.id ? "..." : "Guardar"}
+                                                    </button>
+                                                )}
                                             </td>
+                                            <td>
+                                                {u.profileInfo && (
+                                                    <button
+                                                        className={`au-info-btn ${isExpanded ? "active" : ""}`}
+                                                        onClick={() => setExpandedInfo(isExpanded ? null : u.id)}
+                                                        title="Ver informação submetida"
+                                                    >
+                                                        <Info size={15} />
+                                                    </button>
+                                                )}
+                                            </td>
+                                            {isSuperAdmin && (
+                                                <td>
+                                                    <button
+                                                        className="au-pw-btn"
+                                                        onClick={() => { setResetTarget(u); setResetPw(""); setResetMsg(null); }}
+                                                        title="Redefinir palavra-passe"
+                                                    >
+                                                        <KeyRound size={15} />
+                                                    </button>
+                                                </td>
+                                            )}
                                         </tr>
-                                    )}
+                                        {isExpanded && u.profileInfo && (
+                                            <tr className="au-info-row" key={`${u.id}-info`}>
+                                                <td colSpan={isSuperAdmin ? 7 : 6}>
+                                                    <div className="au-info-panel">
+                                                        {[
+                                                            { label: "Nome", value: u.profileInfo.requestName },
+                                                            { label: "Empresa", value: u.profileInfo.companyName },
+                                                            { label: "NIF", value: u.profileInfo.nif },
+                                                            { label: "Telemóvel", value: u.profileInfo.phone },
+                                                            { label: "Website", value: u.profileInfo.website },
+                                                        ].filter(f => f.value).map(({ label, value }) => (
+                                                            <div key={label} className="au-info-field">
+                                                                <span className="au-info-label">{label}</span>
+                                                                <span className="au-info-value">{value}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
                                     </>
                                 );
                             })}

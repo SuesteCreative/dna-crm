@@ -144,6 +144,12 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const [filterStatus, setFilterStatus] = useState("ACTIVE");
   const [filterSearch, setFilterSearch] = useState("");
 
+  // Body scroll lock
+  useEffect(() => {
+    document.body.classList.toggle("modal-open", showDrawer);
+    return () => document.body.classList.remove("modal-open");
+  }, [showDrawer]);
+
   const emptyForm = () => ({
     clientName: "", clientPhone: "", clientEmail: "",
     spotId: concession.spots[0]?.id ?? "", startDate: today(), endDate: today(),
