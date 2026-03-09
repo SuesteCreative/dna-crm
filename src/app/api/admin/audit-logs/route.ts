@@ -14,10 +14,22 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const moduleFilter = searchParams.get("module");
+    const actionFilter = searchParams.get("action");
+    const userSearch = searchParams.get("user");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
     const prisma = await getPrisma();
     const where: any = {};
-    if (moduleFilter) where.module = moduleFilter;
+    if (moduleFilter) where.module = { startsWith: moduleFilter };
+    if (actionFilter) where.action = actionFilter;
+    if (userSearch) where.userName = { contains: userSearch, mode: "insensitive" };
+
+    if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) where.createdAt.gte = new Date(startDate + "T00:00:00.000Z");
+        if (endDate) where.createdAt.lte = new Date(endDate + "T23:59:59.999Z");
+    }
 
     const logs = await prisma.auditLog.findMany({
         where,
