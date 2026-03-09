@@ -9,7 +9,6 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { CheckCircle, Clock, XCircle, TrendingUp, TrendingDown, Minus, Pencil, UserCheck } from "lucide-react";
-import "../Dashboard.css";
 import "./statistics.css";
 
 const PERIODS = [
