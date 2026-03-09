@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File | null;
     if (!file) return NextResponse.json({ error: "file required" }, { status: 400 });
 
-    const buf = Buffer.from(await file.arrayBuffer());
+    const arrayBuf = await file.arrayBuffer();
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(buf);
+    await wb.xlsx.load(arrayBuf as ArrayBuffer);
 
     const ws = wb.worksheets[0];
     if (!ws) return NextResponse.json({ error: "Ficheiro sem folhas." }, { status: 400 });
