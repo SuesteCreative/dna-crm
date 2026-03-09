@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
-import { Download, RefreshCw } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Download, RefreshCw, CloudOff, Lock, Unlock, CalendarRange } from "lucide-react";
 import { Skeleton } from "@/components/Skeleton";
 import SpotPanel from "./SpotPanel";
 
@@ -78,11 +78,14 @@ export default function DailyControl({ concession }: { concession: Concession })
   const [loading, setLoading] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<SpotState | null>(null);
   const [exporting, setExporting] = useState(false);
-  const noteKey = `daily-note:${concession.slug}:${date}`;
-  const [dailyNote, setDailyNote] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem(`daily-note:${concession.slug}:${new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" })}`) ?? "";
-  });
+  const [exportingRange, setExportingRange] = useState(false);
+  const [dailyNote, setDailyNote] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockReason, setBlockReason] = useState<string | null>(null);
+  const [blockingAction, setBlockingAction] = useState(false);
+  const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
+  const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Body scroll lock
   useEffect(() => {
@@ -96,21 +99,80 @@ export default function DailyControl({ concession }: { concession: Concession })
     const data = await res.json();
     const newEntries: Entry[] = Array.isArray(data) ? data : [];
     setEntries(newEntries);
-    // Keep panel open with refreshed entries after any action
     setSelectedSpot((prev) =>
       prev ? { spot: prev.spot, entries: newEntries.filter((e) => e.spotId === prev.spot.id) } : null
     );
     setLoading(false);
   }, [concession.slug, date]);
 
-  useEffect(() => { fetchEntries(); }, [fetchEntries]);
+  // Load note + block status from DB when date changes
+  const fetchDayMeta = useCallback(async () => {
+    const [noteRes, blockRes] = await Promise.all([
+      fetch(`/api/concessions/${concession.slug}/daily-note?date=${date}`),
+      fetch(`/api/concessions/${concession.slug}/blocks?date=${date}`),
+    ]);
+    const noteData = await noteRes.json();
+    const blockData = await blockRes.json();
+    setDailyNote(noteData.note ?? "");
+    setIsBlocked(blockData.blocked ?? false);
+    setBlockReason(blockData.reason ?? null);
+  }, [concession.slug, date]);
 
-  // Load note from localStorage when date changes
+  useEffect(() => { fetchEntries(); fetchDayMeta(); }, [fetchEntries, fetchDayMeta]);
+
+  // Weather — Open-Meteo, Alvor coords, no API key
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setDailyNote(localStorage.getItem(noteKey) ?? "");
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.1266&longitude=-8.5968&current=temperature_2m,weather_code&timezone=Europe%2FLisbon")
+      .then((r) => r.json())
+      .then((d) => setWeather({ temp: Math.round(d.current.temperature_2m), code: d.current.weather_code }))
+      .catch(() => {});
+  }, []);
+
+  const saveNote = useCallback(async (value: string) => {
+    setNoteSaving(true);
+    await fetch(`/api/concessions/${concession.slug}/daily-note`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, note: value }),
+    });
+    setNoteSaving(false);
+  }, [concession.slug, date]);
+
+  const handleNoteChange = (value: string) => {
+    setDailyNote(value);
+    if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current);
+    noteSaveTimer.current = setTimeout(() => saveNote(value), 1000);
+  };
+
+  const toggleBlock = async () => {
+    setBlockingAction(true);
+    if (isBlocked) {
+      await fetch(`/api/concessions/${concession.slug}/blocks?date=${date}`, { method: "DELETE" });
+      setIsBlocked(false);
+      setBlockReason(null);
+    } else {
+      const reason = prompt("Motivo do fecho (opcional):", "Mau tempo") ?? "";
+      await fetch(`/api/concessions/${concession.slug}/blocks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, reason: reason || null }),
+      });
+      setIsBlocked(true);
+      setBlockReason(reason || null);
     }
-  }, [noteKey]);
+    setBlockingAction(false);
+  };
+
+  function weatherIcon(code: number) {
+    if (code === 0) return "☀️";
+    if (code <= 3) return "⛅";
+    if (code <= 48) return "🌫️";
+    if (code <= 67) return "🌧️";
+    if (code <= 77) return "❄️";
+    if (code <= 82) return "🌦️";
+    if (code <= 99) return "⛈️";
+    return "🌤️";
+  }
 
   // Build spot states
   const spotStates: SpotState[] = concession.spots.map((spot) => ({
@@ -142,6 +204,27 @@ export default function DailyControl({ concession }: { concession: Concession })
     }
   };
 
+  const handleExportRange = async () => {
+    const from = prompt("Data início (AAAA-MM-DD):", date);
+    if (!from) return;
+    const to = prompt("Data fim (AAAA-MM-DD):", date);
+    if (!to) return;
+    setExportingRange(true);
+    try {
+      const res = await fetch(`/api/concessions/${concession.slug}/export-range?from=${from}&to=${to}`);
+      if (!res.ok) { const d = await res.json(); alert(d.error ?? "Erro ao exportar"); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `relatorio-${concession.slug}-${from}-${to}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingRange(false);
+    }
+  };
+
   return (
     <div>
       {/* Date bar */}
@@ -151,15 +234,40 @@ export default function DailyControl({ concession }: { concession: Concession })
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
+        {weather && (
+          <span className="dc-weather">
+            {weatherIcon(weather.code)} {weather.temp}°C
+          </span>
+        )}
         <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }} className="date-bar-actions">
+          <button
+            className={`export-btn${isBlocked ? " dc-block-active" : ""}`}
+            onClick={toggleBlock}
+            disabled={blockingAction}
+            title={isBlocked ? `Desblocar dia${blockReason ? ` (${blockReason})` : ""}` : "Bloquear dia (mau tempo / manutenção)"}
+          >
+            {isBlocked ? <Unlock size={14} /> : <Lock size={14} />}
+            {isBlocked ? "Desblocar" : "Bloquear"}
+          </button>
           <button className="export-btn" onClick={fetchEntries} disabled={loading}>
             <RefreshCw size={14} className={loading ? "conc-spin" : ""} /> Atualizar
           </button>
           <button className="export-btn" onClick={handleExport} disabled={exporting}>
             <Download size={14} /> {exporting ? "..." : "Exportar"}
           </button>
+          <button className="export-btn" onClick={handleExportRange} disabled={exportingRange} title="Exportar relatório semanal/mensal">
+            <CalendarRange size={14} /> {exportingRange ? "..." : "Relatório"}
+          </button>
         </div>
       </div>
+
+      {/* Blocked day banner */}
+      {isBlocked && (
+        <div className="dc-blocked-banner">
+          <CloudOff size={16} />
+          <span>Dia bloqueado{blockReason ? ` — ${blockReason}` : ""}. Novas entradas desativadas.</span>
+        </div>
+      )}
 
       <div className="summary-chips">
         {loading ? (
@@ -239,14 +347,14 @@ export default function DailyControl({ concession }: { concession: Concession })
       {/* Daily note */}
       <div className="daily-note-area">
         <div className="field-group" style={{ marginBottom: 0 }}>
-          <label>Nota do dia</label>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            Nota do dia
+            {noteSaving && <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>A guardar...</span>}
+          </label>
           <textarea
             placeholder="Observações, incidentes ou notas para este dia..."
             value={dailyNote}
-            onChange={(e) => {
-              setDailyNote(e.target.value);
-              if (typeof window !== "undefined") localStorage.setItem(noteKey, e.target.value);
-            }}
+            onChange={(e) => handleNoteChange(e.target.value)}
             rows={2}
           />
         </div>

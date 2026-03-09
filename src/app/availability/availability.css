@@ -1,0 +1,274 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+.avail-page {
+    margin-left: 240px;
+    padding: 2rem 2.5rem;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+}
+
+@media (max-width: 1024px) {
+    .avail-page { margin-left: 0; padding: 1rem; }
+}
+
+.avail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.avail-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 0.25rem;
+}
+
+.avail-sub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+
+.avail-btn-sec {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+.avail-btn-sec:hover { border-color: var(--blue); color: var(--blue); }
+
+.avail-date-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.avail-date-input {
+    padding: 0.45rem 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.avail-hours {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.avail-loading { color: var(--muted); padding: 2rem 0; }
+
+.avail-closed {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted);
+}
+
+.avail-success {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--green);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.avail-error {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    color: #fca5a5;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+/* ── Layout ─────────────────────────────────────────── */
+.avail-content {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.avail-services { flex: 1; min-width: 0; }
+
+/* ── Category & Service Cards ───────────────────────── */
+.avail-category { margin-bottom: 1.5rem; }
+
+.avail-cat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin: 0 0 0.75rem;
+}
+
+.avail-service-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.15s;
+}
+.avail-service-card:hover { border-color: rgba(255,255,255,0.15); }
+.avail-service-card.avail-full { opacity: 0.55; }
+
+.avail-svc-hdr {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.avail-svc-name { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+.avail-svc-name em { font-style: normal; color: var(--muted); font-weight: 400; }
+.avail-svc-meta { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--muted); }
+
+/* ── Slots ──────────────────────────────────────────── */
+.avail-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.avail-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.35rem 0.6rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    min-width: 56px;
+}
+.avail-slot:hover:not(:disabled) {
+    background: rgba(59,130,246,0.15);
+    border-color: var(--blue);
+}
+.avail-slot.active {
+    background: rgba(59,130,246,0.2);
+    border-color: var(--blue);
+}
+.avail-slot.blocked {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.avail-slot-time { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.avail-slot-cap { display: flex; align-items: center; gap: 0.2rem; font-size: 0.7rem; color: var(--muted); }
+
+/* ── Booking Panel ──────────────────────────────────── */
+.avail-panel {
+    width: 320px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    position: sticky;
+    top: 1rem;
+}
+
+@media (max-width: 900px) {
+    .avail-content { flex-direction: column; }
+    .avail-panel { width: 100%; position: static; }
+}
+
+.avail-panel-hdr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+.avail-panel-hdr h2 { font-size: 1rem; font-weight: 700; margin: 0; }
+.avail-panel-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.2rem 0.4rem;
+}
+.avail-panel-close:hover { color: var(--text); }
+
+.avail-panel-info {
+    font-size: 0.85rem;
+    color: var(--muted);
+    background: var(--surface2);
+    border-radius: 7px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+}
+.avail-panel-info strong { color: var(--text); }
+
+.avail-form { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.avail-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.avail-field label { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
+.avail-field input {
+    padding: 0.45rem 0.7rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-size: 0.88rem;
+}
+.avail-field input:focus { outline: none; border-color: var(--blue); }
+
+.avail-total {
+    font-size: 0.9rem;
+    color: var(--muted);
+    text-align: right;
+}
+.avail-total strong { color: var(--text); font-size: 1.05rem; }
+
+.avail-btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    background: var(--blue);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 0.25rem;
+}
+.avail-btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.avail-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }

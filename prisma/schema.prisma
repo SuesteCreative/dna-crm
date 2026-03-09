@@ -176,6 +176,8 @@ model Concession {
   spots          ConcessionSpot[]
   entries        ConcessionEntry[]
   reservations   ConcessionReservation[]
+  dailyNotes     ConcessionDailyNote[]
+  blocks         ConcessionBlock[]
 }
 
 model ConcessionSpot {
@@ -235,4 +237,26 @@ model ConcessionReservation {
   entries      ConcessionEntry[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+}
+
+model ConcessionDailyNote {
+  id           String     @id @default(cuid())
+  concessionId String
+  concession   Concession @relation(fields: [concessionId], references: [id])
+  date         String     // "YYYY-MM-DD"
+  note         String     @db.Text
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([concessionId, date])
+}
+
+model ConcessionBlock {
+  id           String     @id @default(cuid())
+  concessionId String
+  concession   Concession @relation(fields: [concessionId], references: [id])
+  date         String     // "YYYY-MM-DD"
+  reason       String?    // "Mau tempo", "Manutenção", etc.
+  createdAt    DateTime   @default(now())
+
+  @@unique([concessionId, date])
 }

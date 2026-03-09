@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth, useUser } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm
+    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, CalendarCheck
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -143,6 +143,15 @@ export function Sidebar() {
                         <Waves size={18} />
                         <span>Serviços</span>
                         {pathname === "/services" && <ChevronRight size={14} className="nav-arrow" />}
+                    </button>
+
+                    <button
+                        className={`nav-item ${pathname === "/availability" ? "active" : ""}`}
+                        onClick={() => router.push("/availability")}
+                    >
+                        <CalendarCheck size={18} />
+                        <span>Disponibilidade</span>
+                        {pathname === "/availability" && <ChevronRight size={14} className="nav-arrow" />}
                     </button>
 
                     {canSeePartners && (

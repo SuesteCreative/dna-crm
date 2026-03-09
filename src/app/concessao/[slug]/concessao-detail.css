@@ -837,6 +837,38 @@
   color: var(--theme-primary);
 }
 
+.export-btn.dc-block-active {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.export-btn.dc-block-active:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.dc-weather {
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.dc-blocked-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  color: #fca5a5;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
 /* Dropdown option fix (dark background) */
 .field-group select option {
   background: #1a1a2e;
