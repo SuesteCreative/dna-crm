@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth, useUser } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, CalendarCheck
+    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, CalendarCheck, BookUser
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -204,6 +204,17 @@ export function Sidebar() {
                             <TreePalm size={18} />
                             <span>Concessão</span>
                             {pathname.startsWith("/concessao") && <ChevronRight size={14} className="nav-arrow" />}
+                        </button>
+                    )}
+
+                    {(role === "ADMIN" || role === "SUPER_ADMIN") && (
+                        <button
+                            className={`nav-item ${pathname === "/customers" ? "active" : ""}`}
+                            onClick={() => router.push("/customers")}
+                        >
+                            <BookUser size={18} />
+                            <span>Clientes</span>
+                            {pathname === "/customers" && <ChevronRight size={14} className="nav-arrow" />}
                         </button>
                     )}
 
