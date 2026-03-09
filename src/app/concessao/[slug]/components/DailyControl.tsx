@@ -84,7 +84,11 @@ export default function DailyControl({ concession }: { concession: Concession })
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockReason, setBlockReason] = useState<string | null>(null);
   const [blockingAction, setBlockingAction] = useState(false);
-  const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
+  const [weather, setWeather] = useState<{
+    temp: number; code: number;
+    windSpeed: number; windDir: number;
+    waveHeight: number | null; wavePeriod: number | null;
+  } | null>(null);
   const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Body scroll lock
@@ -120,11 +124,20 @@ export default function DailyControl({ concession }: { concession: Concession })
 
   useEffect(() => { fetchEntries(); fetchDayMeta(); }, [fetchEntries, fetchDayMeta]);
 
-  // Weather — Open-Meteo, Alvor coords, no API key
+  // Weather + Marine — Open-Meteo, Alvor coords, no API key
   useEffect(() => {
-    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.1266&longitude=-8.5968&current=temperature_2m,weather_code&timezone=Europe%2FLisbon")
-      .then((r) => r.json())
-      .then((d) => setWeather({ temp: Math.round(d.current.temperature_2m), code: d.current.weather_code }))
+    Promise.all([
+      fetch("https://api.open-meteo.com/v1/forecast?latitude=37.1266&longitude=-8.5968&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m&timezone=Europe%2FLisbon&wind_speed_unit=ms").then((r) => r.json()),
+      fetch("https://marine-api.open-meteo.com/v1/marine?latitude=37.1266&longitude=-8.5968&current=wave_height,wave_period").then((r) => r.json()),
+    ])
+      .then(([atmos, marine]) => setWeather({
+        temp:       Math.round(atmos.current.temperature_2m),
+        code:       atmos.current.weather_code,
+        windSpeed:  Math.round(atmos.current.wind_speed_10m * 10) / 10,
+        windDir:    Math.round(atmos.current.wind_direction_10m),
+        waveHeight: marine.current?.wave_height != null ? Math.round(marine.current.wave_height * 10) / 10 : null,
+        wavePeriod: marine.current?.wave_period != null ? Math.round(marine.current.wave_period) : null,
+      }))
       .catch(() => {});
   }, []);
 
@@ -172,6 +185,11 @@ export default function DailyControl({ concession }: { concession: Concession })
     if (code <= 82) return "🌦️";
     if (code <= 99) return "⛈️";
     return "🌤️";
+  }
+
+  function windDirLabel(deg: number) {
+    const dirs = ["N","NE","E","SE","S","SO","O","NO"];
+    return dirs[Math.round(deg / 45) % 8];
   }
 
   // Build spot states
@@ -235,9 +253,21 @@ export default function DailyControl({ concession }: { concession: Concession })
           onChange={(e) => setDate(e.target.value)}
         />
         {weather && (
-          <span className="dc-weather">
-            {weatherIcon(weather.code)} {weather.temp}°C
-          </span>
+          <div className="dc-weather">
+            <span className="dc-weather-main">{weatherIcon(weather.code)} {weather.temp}°C</span>
+            <span className="dc-weather-sep">·</span>
+            <span className="dc-weather-item" title="Vento">
+              💨 {weather.windSpeed} m/s {windDirLabel(weather.windDir)}
+            </span>
+            {weather.waveHeight != null && (
+              <>
+                <span className="dc-weather-sep">·</span>
+                <span className="dc-weather-item" title="Ondulação">
+                  🌊 {weather.waveHeight}m{weather.wavePeriod != null ? ` / ${weather.wavePeriod}s` : ""}
+                </span>
+              </>
+            )}
+          </div>
         )}
         <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }} className="date-bar-actions">
           <button
