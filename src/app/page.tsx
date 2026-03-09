@@ -12,6 +12,7 @@ import {
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { exportToExcel, exportToPDF } from "@/lib/export";
+import "./Dashboard.css";
 
 interface Booking {
   id: string;
