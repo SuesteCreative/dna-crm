@@ -3,6 +3,15 @@
 .conc-loading,
 .conc-page {
   margin-left: 240px;
+  --conc-primary: #f97316;
+}
+
+.theme-tropico {
+  --conc-primary: #f97316;
+}
+
+.theme-subnauta {
+  --conc-primary: #0ea5e9;
 }
 
 .conc-loading {
@@ -18,7 +27,9 @@
 }
 
 @keyframes conc-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .conc-page {
@@ -63,7 +74,7 @@
 .conc-tabs {
   display: flex;
   gap: 0.5rem;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
   padding: 0.3rem;
 }
@@ -89,7 +100,7 @@
 }
 
 .conc-tab:hover:not(.active) {
-  background: rgba(249,115,22,0.12);
+  background: rgba(249, 115, 22, 0.12);
   color: #f97316;
 }
 
@@ -101,8 +112,8 @@
 }
 
 .conc-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   padding: 1.4rem;
   cursor: pointer;
@@ -112,8 +123,9 @@
 }
 
 .conc-card:hover {
-  border-color: #f97316;
-  background: rgba(249,115,22,0.06);
+  border-color: var(--conc-primary);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transform: translateY(-2px);
 }
 
@@ -125,7 +137,7 @@
 }
 
 .conc-card-icon {
-  color: #f97316;
+  color: var(--conc-primary);
 }
 
 .conc-card-arrow {
@@ -164,7 +176,7 @@
 }
 
 .conc-card-prices strong {
-  color: #f97316;
+  color: var(--conc-primary);
 }
 
 /* Empty state */
@@ -179,7 +191,7 @@
 }
 
 .conc-empty-icon {
-  color: rgba(249,115,22,0.4);
+  color: rgba(249, 115, 22, 0.4);
 }
 
 .conc-empty-title {
@@ -204,8 +216,8 @@
 }
 
 .conc-settings-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   padding: 1.4rem;
 }
@@ -215,7 +227,7 @@
   align-items: center;
   gap: 0.6rem;
   margin-bottom: 1.2rem;
-  color: #f97316;
+  color: var(--conc-primary);
 }
 
 .conc-settings-card-header h3 {
@@ -260,8 +272,8 @@
 .conc-settings-input-wrap input {
   width: 80px;
   padding: 0.35rem 0.5rem;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
   color: var(--color-text, #f1f1f1);
   font-size: 0.9rem;
@@ -270,7 +282,7 @@
 
 .conc-settings-input-wrap input:focus {
   outline: none;
-  border-color: #f97316;
+  border-color: var(--conc-primary);
 }
 
 .conc-settings-euro {
@@ -281,7 +293,7 @@
 .conc-settings-save {
   width: 100%;
   padding: 0.55rem 1rem;
-  background: #f97316;
+  background: var(--conc-primary);
   border: none;
   border-radius: 8px;
   color: #fff;

@@ -144,7 +144,7 @@ export default function ConcessaoPage() {
           {concessions.map((c) => (
             <button
               key={c.slug}
-              className="conc-card"
+              className={`conc-card theme-${c.slug}`}
               onClick={() => router.push(`/concessao/${c.slug}`)}
             >
               <div className="conc-card-top">
@@ -168,7 +168,7 @@ export default function ConcessaoPage() {
       {tab === "settings" && (
         <div className="conc-settings">
           {concessions.map((c) => (
-            <div key={c.slug} className="conc-settings-card">
+            <div key={c.slug} className={`conc-settings-card theme-${c.slug}`}>
               <div className="conc-settings-card-header">
                 <TreePalm size={20} />
                 <h3>{c.name}</h3>
