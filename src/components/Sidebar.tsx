@@ -114,7 +114,7 @@ export function Sidebar() {
 
             <aside className={`crm-sidebar ${isMobileOpen ? 'is-open' : ''}`}>
                 <div className="brand">
-                    <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', width: '100%', justifyContent: isMobileOpen ? 'space-between' : 'center', alignItems: 'center' }}>
                         <a href="https://desportosnauticosalvor.com/" target="_blank" rel="noopener noreferrer">
                             <img src="/SVG/logo-white.svg" alt="DNA" style={{ height: 60, width: "auto", display: "block" }} />
                         </a>
