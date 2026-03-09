@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { TreePalm, MapPin, LayoutGrid, Settings, ChevronRight, Loader2 } from "lucide-react";
 import "./concessao.css";
@@ -21,9 +21,9 @@ interface Concession {
 }
 
 export default function ConcessaoPage() {
-  const { user, isLoaded } = useUser();
+  const { isLoaded, sessionClaims } = useAuth();
   const router = useRouter();
-  const role = (user?.publicMetadata as any)?.role as string | undefined;
+  const role = (sessionClaims as any)?.metadata?.role as string | undefined;
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN" || role === "STAFF";
 
   const [concessions, setConcessions] = useState<Concession[]>([]);

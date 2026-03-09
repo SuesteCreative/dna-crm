@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { useRouter, useParams } from "next/navigation";
 import { TreePalm, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator } from "lucide-react";
 import DailyControl from "./components/DailyControl";
@@ -28,10 +28,10 @@ interface Concession {
 type Tab = "controlo" | "reservas" | "precario" | "calculadora";
 
 export default function ConcessaoDetailPage() {
-  const { user, isLoaded } = useUser();
+  const { isLoaded, sessionClaims } = useAuth();
   const router = useRouter();
   const params = useParams<{ slug: string }>();
-  const role = (user?.publicMetadata as any)?.role as string | undefined;
+  const role = (sessionClaims as any)?.metadata?.role as string | undefined;
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN" || role === "STAFF";
 
   const [concession, setConcession] = useState<Concession | null>(null);
