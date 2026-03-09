@@ -1,6 +1,6 @@
-"use client";
 import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
+import { useToast } from "@/components/Toast";
 
 interface Spot {
   id: string;
@@ -122,6 +122,8 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
     setFPaid(true); setFNotes(""); setFError("");
   }
 
+  const { showToast } = useToast();
+
   async function handleSubmit() {
     if (!fClient.trim()) { setFError("Nome do cliente obrigatório"); return; }
     const period = modeToPeriod(formMode);
@@ -140,7 +142,12 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
     });
     const data = await res.json();
     setBusy(false);
-    if (!res.ok) { setFError(data.message || data.error || "Erro ao registar"); return; }
+    if (!res.ok) {
+      setFError(data.message || data.error || "Erro ao registar");
+      showToast(data.message || data.error || "Erro ao registar", "error");
+      return;
+    }
+    showToast(`Lugar ${spot.spotNumber} registado com sucesso!`);
     setFormMode(null);
     onRefresh();
   }
@@ -148,8 +155,13 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
   async function handleDelete(entryId: string) {
     if (!confirm("Confirmar libertação deste registo?")) return;
     setBusy(true);
-    await fetch(`/api/concessions/${concession.slug}/entries/${entryId}`, { method: "DELETE" });
+    const res = await fetch(`/api/concessions/${concession.slug}/entries/${entryId}`, { method: "DELETE" });
     setBusy(false);
+    if (res.ok) {
+      showToast("Registo libertado.");
+    } else {
+      showToast("Erro ao libertar registo.", "error");
+    }
     onRefresh();
   }
 
@@ -159,7 +171,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
     const newTotal = morningEntry.totalPrice + extensionCost;
     setBusy(true);
     await fetch(`/api/concessions/${concession.slug}/entries/${morningEntry.id}`, { method: "DELETE" });
-    await fetch(`/api/concessions/${concession.slug}/entries`, {
+    const res = await fetch(`/api/concessions/${concession.slug}/entries`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -170,6 +182,11 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
       }),
     });
     setBusy(false);
+    if (res.ok) {
+      showToast("Extendido para Dia Inteiro.");
+    } else {
+      showToast("Erro ao estender registo.", "error");
+    }
     onRefresh();
   }
 
@@ -185,7 +202,12 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
     });
     const data = await res.json();
     setBusy(false);
-    if (!res.ok) { setCoError(data.error || "Erro no carry-over"); return; }
+    if (!res.ok) {
+      setCoError(data.error || "Erro no carry-over");
+      showToast(data.error || "Erro no carry-over", "error");
+      return;
+    }
+    showToast("Carry-over realizado com sucesso!");
     setShowCarryOver(false);
     onRefresh();
   }

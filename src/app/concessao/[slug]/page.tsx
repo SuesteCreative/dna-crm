@@ -70,7 +70,7 @@ export default function ConcessaoDetailPage() {
   ];
 
   return (
-    <div className="cd-page">
+    <div className={`cd-page theme-${concession.slug}`}>
       <div className="cd-header">
         <button className="cd-back" onClick={() => router.push("/concessao")}>
           <ArrowLeft size={16} /> Concessões

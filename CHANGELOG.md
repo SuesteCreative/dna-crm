@@ -426,6 +426,8 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `7f9d5ea` | Fix Calculator price passthrough (skipAutoCalcRef), "+ Adicionar Chapéu" button in reservations form, reservation date/period edit (PUT regenerates daily entries), note + legend moved below spot grid |
 | `14803f9` | Bug 5: pre-validate all spots before creating any reservation (avoid partial bookings), extra spot creation reports failures explicitly |
 | `7f9d5ea` | exceljs styled export (colour-coded rows, section headers, bold totals), legend redesign, carry-over hides EXTRA_BED option, spacing between grid and note area |
+| `07-03-26` | Visual Improvements: Loading Skeletons (V1), Toast Notifications (V2), Concession Themes (V4: Trópico orange, Subnauta blue), Print-Optimized CSS (V5) |
+
 
 ---
 

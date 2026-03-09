@@ -2,6 +2,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Plus, X, Download, Loader2, Edit2, Trash2, List, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import * as XLSX from "xlsx";
+import { Skeleton } from "@/components/Skeleton";
+import { useToast } from "@/components/Toast";
 
 interface Spot { id: string; spotNumber: number; }
 
@@ -53,8 +55,8 @@ function reservationsOnDay(reservations: Reservation[], dateStr: string) {
   );
 }
 
-const MONTH_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-const DOW_PT = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const MONTH_PT = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+const DOW_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 // ── Calendar sub-component ──────────────────────────────────
 function CalendarView({ reservations }: { reservations: Reservation[] }) {
@@ -159,6 +161,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const [blockedSpotIds, setBlockedSpotIds] = useState<Set<string>>(new Set());
   // Prevent auto-calc from overriding a price explicitly set by Calculator
   const skipAutoCalcRef = useRef(false);
+  const { showToast } = useToast();
 
   const fetchReservations = useCallback(async () => {
     setLoading(true);
@@ -299,12 +302,18 @@ export default function Reservations({ concession, initialReservation, onInitHan
     setConflictDates([]);
     setExtraSpotIds([]);
     setShowDrawer(false);
+    showToast(editing ? "Reserva atualizada!" : "Reserva criada com sucesso!");
     fetchReservations();
   };
 
   const handleCancel = async (id: string) => {
     if (!confirm("Cancelar reserva? As entradas futuras serão libertadas.")) return;
-    await fetch(`/api/concessions/${concession.slug}/reservations/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/concessions/${concession.slug}/reservations/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      showToast("Reserva cancelada.");
+    } else {
+      showToast("Erro ao cancelar reserva.", "error");
+    }
     fetchReservations();
   };
 
@@ -322,11 +331,11 @@ export default function Reservations({ concession, initialReservation, onInitHan
     XLSX.writeFile(wb, `reservas-${concession.slug}.xlsx`);
   };
 
-  const active = reservations.filter((r) => r.status === "ACTIVE");
-  const unpaid = active.filter((r) => !r.isPaid);
-  const revenue = active.reduce((s, r) => s + r.totalPrice, 0);
+  const activeCount = reservations.filter((r) => r.status === "ACTIVE").length;
+  const unpaidCount = reservations.filter((r) => r.status === "ACTIVE" && !r.isPaid).length;
+  const revenueTotal = reservations.filter((r) => r.status === "ACTIVE").reduce((s, r) => s + r.totalPrice, 0);
   const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().slice(0, 10); })();
-  const upcoming = active.filter((r) => r.startDate >= today() && r.startDate <= tomorrowStr);
+  const upcomingCount = reservations.filter((r) => r.status === "ACTIVE" && r.startDate >= today() && r.startDate <= tomorrowStr).length;
 
   const filtered = reservations.filter((r) => {
     if (filterStatus && r.status !== filterStatus) return false;
@@ -341,10 +350,10 @@ export default function Reservations({ concession, initialReservation, onInitHan
     <div>
       {/* Stats */}
       <div className="summary-chips" style={{ marginBottom: "1rem" }}>
-        <span className="summary-chip" style={{ color: "#a855f7" }}>{active.length} reservas ativas</span>
-        <span className="summary-chip" style={{ color: "#fb923c" }}>{upcoming.length} esta semana</span>
-        <span className="summary-chip" style={{ color: "#22c55e" }}>{revenue.toFixed(2)}€ receita</span>
-        <span className="summary-chip" style={{ color: "#ef4444" }}>{unpaid.length} por pagar</span>
+        <span className="summary-chip" style={{ color: "#a855f7" }}>{activeCount} reservas ativas</span>
+        <span className="summary-chip" style={{ color: "#fb923c" }}>{upcomingCount} esta semana</span>
+        <span className="summary-chip" style={{ color: "#22c55e" }}>{revenueTotal.toFixed(2)}€ receita</span>
+        <span className="summary-chip" style={{ color: "#ef4444" }}>{unpaidCount} por pagar</span>
       </div>
 
       {/* Toolbar */}
@@ -385,11 +394,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
       {viewMode === "calendar" && <CalendarView reservations={reservations} />}
 
       {/* List view */}
-      {viewMode === "list" && (loading ? (
-        <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}><Loader2 size={24} className="conc-spin" /></div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Sem reservas.</div>
-      ) : (
+      {viewMode === "list" && (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84rem" }}>
             <thead>
@@ -406,37 +411,49 @@ export default function Reservations({ concession, initialReservation, onInitHan
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <td style={{ padding: "0.5rem 0.8rem" }}>
-                    <div style={{ fontWeight: 600 }}>{r.clientName}</div>
-                    {r.clientPhone && <div style={{ fontSize: "0.75rem", color: "#888" }}>{r.clientPhone}</div>}
-                  </td>
-                  <td style={{ padding: "0.5rem 0.8rem", fontWeight: 700 }}>{r.spot.spotNumber}</td>
-                  <td style={{ padding: "0.5rem 0.8rem", whiteSpace: "nowrap" }}>{r.startDate} → {r.endDate}</td>
-                  <td style={{ padding: "0.5rem 0.8rem" }}>{calcDays(r.startDate, r.endDate)}</td>
-                  <td style={{ padding: "0.5rem 0.8rem" }}>
-                    <span className={`status-badge ${r.period === "MORNING" ? "morning" : r.period === "AFTERNOON" ? "afternoon" : "full"}`}>
-                      {periodLabel(r.period)}
-                    </span>
-                  </td>
-                  <td style={{ padding: "0.5rem 0.8rem", fontWeight: 600 }}>{r.totalPrice.toFixed(2)}€</td>
-                  <td style={{ padding: "0.5rem 0.8rem" }}><span style={{ color: r.isPaid ? "#22c55e" : "#ef4444" }}>{r.isPaid ? "✓" : "✗"}</span></td>
-                  <td style={{ padding: "0.5rem 0.8rem" }}><span className={`status-badge ${r.status.toLowerCase()}`}>{r.status}</span></td>
-                  <td style={{ padding: "0.5rem 0.6rem" }}>
-                    {r.status === "ACTIVE" && (
-                      <div style={{ display: "flex", gap: "0.4rem" }}>
-                        <button onClick={() => openEdit(r)} style={{ background: "none", border: "none", color: "#888", cursor: "pointer", padding: 4 }} title="Editar"><Edit2 size={14} /></button>
-                        <button onClick={() => handleCancel(r.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 4 }} title="Cancelar"><Trash2 size={14} /></button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    {Array.from({ length: 9 }).map((__, j) => (
+                      <td key={j} style={{ padding: "0.8rem" }}><Skeleton height={20} /></td>
+                    ))}
+                  </tr>
+                ))
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: "2rem", color: "#888" }}>Sem reservas.</td></tr>
+              ) : (
+                filtered.map((r) => (
+                  <tr key={r.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <td style={{ padding: "0.5rem 0.8rem" }}>
+                      <div style={{ fontWeight: 600 }}>{r.clientName}</div>
+                      {r.clientPhone && <div style={{ fontSize: "0.75rem", color: "#888" }}>{r.clientPhone}</div>}
+                    </td>
+                    <td style={{ padding: "0.5rem 0.8rem", fontWeight: 700 }}>{r.spot.spotNumber}</td>
+                    <td style={{ padding: "0.5rem 0.8rem", whiteSpace: "nowrap" }}>{r.startDate} → {r.endDate}</td>
+                    <td style={{ padding: "0.5rem 0.8rem" }}>{calcDays(r.startDate, r.endDate)}</td>
+                    <td style={{ padding: "0.5rem 0.8rem" }}>
+                      <span className={`status-badge ${r.period === "MORNING" ? "morning" : r.period === "AFTERNOON" ? "afternoon" : "full"}`}>
+                        {periodLabel(r.period)}
+                      </span>
+                    </td>
+                    <td style={{ padding: "0.5rem 0.8rem", fontWeight: 600 }}>{r.totalPrice.toFixed(2)}€</td>
+                    <td style={{ padding: "0.5rem 0.8rem" }}><span style={{ color: r.isPaid ? "#22c55e" : "#ef4444" }}>{r.isPaid ? "✓" : "✗"}</span></td>
+                    <td style={{ padding: "0.5rem 0.8rem" }}><span className={`status-badge ${r.status.toLowerCase()}`}>{r.status}</span></td>
+                    <td style={{ padding: "0.5rem 0.6rem" }}>
+                      {r.status === "ACTIVE" && (
+                        <div style={{ display: "flex", gap: "0.4rem" }}>
+                          <button onClick={() => openEdit(r)} style={{ background: "none", border: "none", color: "#888", cursor: "pointer", padding: 4 }} title="Editar"><Edit2 size={14} /></button>
+                          <button onClick={() => handleCancel(r.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 4 }} title="Cancelar"><Trash2 size={14} /></button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-      ))}
+      )}
 
       {/* Drawer */}
       {showDrawer && (

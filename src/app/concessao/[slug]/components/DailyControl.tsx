@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { Download, RefreshCw } from "lucide-react";
+import { Skeleton } from "@/components/Skeleton";
 import SpotPanel from "./SpotPanel";
 
 interface Spot {
@@ -145,11 +146,17 @@ export default function DailyControl({ concession }: { concession: Concession })
           onChange={(e) => setDate(e.target.value)}
         />
         <div className="summary-chips">
-          <span className="summary-chip free">{freeCount} livres</span>
-          <span className="summary-chip morning">{morningCount} Manhã</span>
-          <span className="summary-chip afternoon">{afternoonCount} Tarde</span>
-          <span className="summary-chip full">{fullDayCount} Dia Inteiro</span>
-          <span className="summary-chip reserved">{reservedCount} Reservas</span>
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} width={80} height={24} borderRadius={20} />)
+          ) : (
+            <>
+              <span className="summary-chip free">{freeCount} livres</span>
+              <span className="summary-chip morning">{morningCount} Manhã</span>
+              <span className="summary-chip afternoon">{afternoonCount} Tarde</span>
+              <span className="summary-chip full">{fullDayCount} Dia Inteiro</span>
+              <span className="summary-chip reserved">{reservedCount} Reservas</span>
+            </>
+          )}
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
           <button className="export-btn" onClick={fetchEntries} disabled={loading}>
@@ -166,52 +173,58 @@ export default function DailyControl({ concession }: { concession: Concession })
         className="spot-grid"
         style={{ gridTemplateColumns: `repeat(${concession.cols}, minmax(70px, 1fr))` }}
       >
-        {spotStates.map(({ spot, entries: spotEntries }) => {
-          const status = spotStatus(spotEntries);
-          const active = spotEntries.filter(e => e.status === "ACTIVE" || e.status === "CARRIED_OVER");
-          const fullEnt = active.find(e => e.period === "FULL_DAY");
-          const morningEnt = active.find(e => e.period === "MORNING");
-          const afternoonEnt = active.find(e => e.period === "AFTERNOON");
-          const primaryEntry = fullEnt || morningEnt || afternoonEnt;
+        {loading ? (
+          Array.from({ length: concession.spots.length }).map((_, i) => (
+            <Skeleton key={i} height={76} borderRadius={8} style={{ border: "1.5px solid rgba(255,255,255,0.07)" }} />
+          ))
+        ) : (
+          spotStates.map(({ spot, entries: spotEntries }) => {
+            const status = spotStatus(spotEntries);
+            const active = spotEntries.filter(e => e.status === "ACTIVE" || e.status === "CARRIED_OVER");
+            const fullEnt = active.find(e => e.period === "FULL_DAY");
+            const morningEnt = active.find(e => e.period === "MORNING");
+            const afternoonEnt = active.find(e => e.period === "AFTERNOON");
+            const primaryEntry = fullEnt || morningEnt || afternoonEnt;
 
-          // Top half: prefer morning override over full-day
-          const topEnt = morningEnt || fullEnt;
-          const topColor = !topEnt ? "free"
-            : topEnt.reservationId ? "reserved"
-            : topEnt.period === "FULL_DAY" ? "full" : "morning";
+            // Top half: prefer morning override over full-day
+            const topEnt = morningEnt || fullEnt;
+            const topColor = !topEnt ? "free"
+              : topEnt.reservationId ? "reserved"
+                : topEnt.period === "FULL_DAY" ? "full" : "morning";
 
-          // Bottom half: prefer afternoon override over full-day
-          const botColor = afternoonEnt
-            ? (afternoonEnt.reservationId ? "reserved" : "afternoon")
-            : fullEnt ? (fullEnt.reservationId ? "reserved" : "full")
-            : "free";
+            // Bottom half: prefer afternoon override over full-day
+            const botColor = afternoonEnt
+              ? (afternoonEnt.reservationId ? "reserved" : "afternoon")
+              : fullEnt ? (fullEnt.reservationId ? "reserved" : "full")
+                : "free";
 
-          // Merged = pure full-day with no overrides (seamless halves)
-          const isFullMerged = !!fullEnt && !morningEnt && !afternoonEnt;
+            // Merged = pure full-day with no overrides (seamless halves)
+            const isFullMerged = !!fullEnt && !morningEnt && !afternoonEnt;
 
-          return (
-            <div
-              key={spot.id}
-              className={`spot-cell ${status}`}
-              onClick={() => setSelectedSpot({ spot, entries: spotEntries })}
-              title={`Lugar ${spot.spotNumber}${primaryEntry ? " — " + primaryEntry.clientName : ""}`}
-            >
-              <div className="spot-num-bar">{spot.spotNumber}</div>
-              <div className={`spot-halves${isFullMerged ? " merged" : ""}`}>
-                <div className={`spot-half ${topColor}`}>
-                  {topEnt?.reservationId && <span className="spot-r-badge">R</span>}
-                  {topEnt && <span className="spot-client-sm">{topEnt.clientName}</span>}
-                  {topEnt && <span className="spot-bed-sm">{bedIcon(topEnt.bedConfig)}</span>}
-                </div>
-                <div className={`spot-half ${botColor}`}>
-                  {afternoonEnt?.reservationId && <span className="spot-r-badge">R</span>}
-                  {afternoonEnt && <span className="spot-client-sm">{afternoonEnt.clientName}</span>}
-                  {afternoonEnt && <span className="spot-bed-sm">{bedIcon(afternoonEnt.bedConfig)}</span>}
+            return (
+              <div
+                key={spot.id}
+                className={`spot-cell ${status}`}
+                onClick={() => setSelectedSpot({ spot, entries: spotEntries })}
+                title={`Lugar ${spot.spotNumber}${primaryEntry ? " — " + primaryEntry.clientName : ""}`}
+              >
+                <div className="spot-num-bar">{spot.spotNumber}</div>
+                <div className={`spot-halves${isFullMerged ? " merged" : ""}`}>
+                  <div className={`spot-half ${topColor}`}>
+                    {topEnt?.reservationId && <span className="spot-r-badge">R</span>}
+                    {topEnt && <span className="spot-client-sm">{topEnt.clientName}</span>}
+                    {topEnt && <span className="spot-bed-sm">{bedIcon(topEnt.bedConfig)}</span>}
+                  </div>
+                  <div className={`spot-half ${botColor}`}>
+                    {afternoonEnt?.reservationId && <span className="spot-r-badge">R</span>}
+                    {afternoonEnt && <span className="spot-client-sm">{afternoonEnt.clientName}</span>}
+                    {afternoonEnt && <span className="spot-bed-sm">{bedIcon(afternoonEnt.bedConfig)}</span>}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Daily note */}

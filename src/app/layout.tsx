@@ -3,6 +3,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Sidebar } from "@/components/Sidebar";
+import { ToastProvider } from "@/components/Toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,8 +21,10 @@ export default function RootLayout({
         <ClerkProvider>
             <html lang="pt">
                 <body className={inter.className}>
-                    <Sidebar />
-                    {children}
+                    <ToastProvider>
+                        <Sidebar />
+                        {children}
+                    </ToastProvider>
                 </body>
             </html>
         </ClerkProvider>
