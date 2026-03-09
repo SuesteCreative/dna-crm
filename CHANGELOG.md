@@ -425,14 +425,19 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `ba927c8` | Bug fixes: timezone (UTC→Lisbon), cancel releases all entries, walk-in AFTERNOON blocked by active FULL_DAY, daily note in localStorage, carry-over of carry-over blocked, date fields disabled in edit mode |
 | `7f9d5ea` | Fix Calculator price passthrough (skipAutoCalcRef), "+ Adicionar Chapéu" button in reservations form, reservation date/period edit (PUT regenerates daily entries), note + legend moved below spot grid |
 | `14803f9` | Bug 5: pre-validate all spots before creating any reservation (avoid partial bookings), extra spot creation reports failures explicitly |
-### [2026-03-09] - Responsiveness & Mobile Optimization
+| `d4a0dec` | Visual Improvements: Loading Skeletons (V1), Toast Notifications (V2), Concession Themes (V4: Trópico orange, Subnauta blue), Print-Optimized CSS (V5) |
+| `d261dce` | **Responsiveness & Mobile Optimization**: Mobile-First Sidebar, Adaptive Concessão Grid, Responsive Statistics, Mobile Modals/Forms, Layout adjustments across all modules |
+
+### Feature Details (Recent)
+
+#### Responsiveness & Mobile Optimization (2026-03-09)
 - **Mobile-First Sidebar**: Implemented a slide-in mobile navigation menu with overlay and toggle button.
 - **Adaptive Concessão Grid**: Improved beach chair management view for tablets and phones with horizontal scrolling and full-width reservation drawers.
 - **Responsive Statistics**: Refined charts and tables to stack vertically and scroll horizontally on smaller viewports.
 - **Mobile Forms**: Optimized "New Reservation" and "Edit" modals to stack fields on narrow screens.
 - **Layout Adjustments**: Removed fixed margins and optimized paddings across all modules (Profile, Services, Dashboard) for a seamless mobile experience.
 
-### [2026-03-09] - Visual Improvements (V1, V2, V4, V5)
+#### Visual Improvements (2026-03-09)
 - **Loading Skeletons (V1)**: Replaced spinners with skeleton loaders for smoother perceived performance.
 - **Toast Notifications (V2)**: Integrated a custom toast system for non-intrusive alerts.
 - **Concession Themes (V4)**: Applied distinct color themes (Trópico: Orange, Subnauta: Blue) to concessions.
