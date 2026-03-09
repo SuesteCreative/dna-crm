@@ -132,6 +132,13 @@ export default function Dashboard() {
   const [overrideModal, setOverrideModal] = useState<{ time: string; available: number; capacity: number } | null>(null);
   const [overrideReason, setOverrideReason] = useState("");
 
+  // Body scroll lock
+  useEffect(() => {
+    const isAnyModalOpen = showModal || !!editTarget || !!attendanceTarget || !!overrideModal;
+    document.body.classList.toggle("modal-open", isAnyModalOpen);
+    return () => document.body.classList.remove("modal-open");
+  }, [showModal, editTarget, attendanceTarget, overrideModal]);
+
   useEffect(() => {
     if (isSignedIn) {
       fetchBookings();

@@ -21,10 +21,16 @@ export function Sidebar() {
     const [bugError, setBugError] = useState<string | null>(null);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-    // Close sidebar on navigation (mobile)
     useEffect(() => {
         setIsMobileOpen(false);
     }, [pathname]);
+
+    // Body scroll lock
+    useEffect(() => {
+        const isLock = isMobileOpen || showBugReport;
+        document.body.classList.toggle("modal-open", isLock);
+        return () => document.body.classList.remove("modal-open");
+    }, [isMobileOpen, showBugReport]);
 
     if (!userId) return null;
     if (pathname.startsWith("/pending") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;

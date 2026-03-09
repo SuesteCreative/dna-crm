@@ -254,7 +254,16 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 2000;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(4px);
+    overflow-y: auto;
+    padding: 24px 16px;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+    .bug-modal-backdrop {
+        align-items: flex-start;
+    }
 }
 
 .bug-modal {
@@ -263,7 +272,14 @@ body {
     border-radius: 14px;
     width: 100%;
     max-width: 460px;
-    overflow: hidden;
+    margin: auto;
+    position: relative;
+}
+
+@media (max-width: 600px) {
+    .bug-modal {
+        margin-top: 0;
+    }
 }
 
 .bug-modal-hdr {
@@ -1338,14 +1354,22 @@ body {
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 2000;
     background: rgba(0, 0, 0, .6);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 24px 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     animation: fadeIn .2s ease;
+}
+
+@media (max-width: 600px) {
+    .modal-backdrop {
+        align-items: flex-start;
+    }
 }
 
 .modal-box {
@@ -1354,7 +1378,15 @@ body {
     border-radius: 16px;
     width: 100%;
     max-width: 560px;
+    margin: auto;
+    position: relative;
     animation: slideUp .2s ease;
+}
+
+@media (max-width: 600px) {
+    .modal-box {
+        margin-top: 0;
+    }
 }
 
 @keyframes slideUp {
@@ -1926,7 +1958,9 @@ body {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 200;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+    overflow: hidden;
 }
 
 .edit-drawer {
@@ -2419,4 +2453,11 @@ body {
 .noshow-empty {
     font-size: 12px;
     color: var(--muted);
+}
+/* Body locked when any backdrop is open */
+body.modal-open {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
 }
