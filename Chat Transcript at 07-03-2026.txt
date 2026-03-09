@@ -1,0 +1,129 @@
+This is the transcript of your conversation with Meety on the 07/03/2026:
+
+---
+
+06/03/2026
+
+[19:56:08] Desportos: Hello!
+[19:56:14] Meety: Hello! There might be a delay in response as it is weekend here. 
+
+But don't worry, please leave your message in one chat here and we will reply right after getting back :$ .
+[19:56:30] Desportos: Is there any way to export all the bookings?
+[19:56:31] Meety: Thank you for your message! Our team have received it and a live agent will contact you with an update soon :$
+
+---
+
+07/03/2026
+
+[02:35:44] Irene: Hello,
+
+This is Irene from the Meety app. Thank you for reaching out to us!
+
+At the moment, we support exporting all bookings. Please go to the Booking tab > Click on "Export bookings" > Select all needed information > Export.
+
+![](https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/1_y3ta4p.png)
+
+Please give it a try and let me know if it works for you.
+
+Best regards,
+Irene from Meety
+[13:33:53] Desportos: Hey, thanks! I had to export 3 months at a time but i manged. Thank you
+[13:33:59] Desportos: I need help with something else
+[13:34:46] Peony: Hi, it's Peony from Meety. How can I help you?
+[13:36:46] Desportos: I'm developing a CRM with built in bookings for our partners. 
+I need to figure out a way to lock time slots on meety/shopify if a booking is made in the CRM. 
+I'm currently connected to shopify via Access Token and Webhooks, but I have no idea how will I make the timeslots unavailable If a booking is made in the CRM. Does meety have a way to configure webhooks or perhaps an API? 
+Do you have any suggestions?
+[13:38:49] Peony: At the moment, Meety does not provide a public API or webhook system to directly control booking slots from external systems.
+
+However, one integration that is currently supported is through calendar syncing. Meety can sync with Google Calendar or Outlook Calendar, and any time marked as Busy in the connected calendar will automatically be blocked in the booking widget.
+
+So one possible approach would be: When a booking is created in your CRM > Your system creates a Busy event in the connected Google/Outlook calendar > Meety will then sync that event and make the corresponding time slot unavailable. This is currently the most common method.
+[13:39:26] Desportos: I thought of using Google Calendar since it is already integrated with meety. 
+But creating a booking inside the calender wont affect meety in anyway, right?
+[13:41:03] Desportos: Ah ok, i see. I didn't know Meety would actually "see" what was in the Calendar.
+[13:42:15] Desportos: How would this work with the 3 workers?
+[13:43:03] Desportos: If i create a busy event on google calendar will it affect the 3 workers? do I need 3 busy events for the same timeslot 1 for each worker?
+[13:43:18] Desportos: sorry, not workers, i meant staff
+[13:43:25] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_h6n6k0.png
+[13:44:28] Peony: All the staffs are assigned to all services, am I correct? This is just to be sure
+[13:44:59] Desportos: Correct
+[13:49:31] Peony: In Meety, availability is calculated per staff member. If all 3 of your staff members are assigned to all services, the app looks at the individual Google/Outlook calendars connected to each specific staff profile.
+* To block a specific staff member: You only need to create a 'Busy' event on that person’s connected calendar. Meety will then see that Staff A is busy and will only show time slots for Staff B and Staff C for that period.
+* To block the entire timeslot (all workers): Yes, you would need to ensure there is a 'Busy' event covering that time for all 3 staff members.
+Meety's primary goal is to maximize your booking potential. If one worker is busy but two others are free, the app will keep the time slot open on your Shopify store to allow more customers to book with the available staff.
+[13:49:57] Desportos: i've added a busy event on the may 10th. 
+but i noticed it is displayed on all 3 staff
+[13:49:57] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_zgw9up.png
+[13:51:29] Peony: > i've added a busy event on the may 10th. 
+> but i noticed it is displayed on all 3 staff
+As the staffs are connected to one calendar, this happens
+[13:51:54] Desportos: Ok, that sounds lovely. But do I need a different google account for each staff? They are all connected to the same calendar at the moment. And 1 busy event affects all the staff, how do i set this up in order to have 1 calendar per staff?
+[13:53:25] Desportos: Sorry for all the questions, I just need to figure this out properly
+[13:53:44] Peony: No worries, dear, please give me some minutes to check
+[13:54:29] Desportos: ok go ahead. I checked and there's only 1 calender on each staff. I will create a new google account and calendar to test this
+[13:54:29] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_f58juy.png
+[13:58:07] Peony: If you would like each staff member to have independent availability, then each staff member should be connected to a different calendar. This can be each staff member’s own Google Calendar
+The important part is to make sure that the calendar is shared with the Google account that is connected to Meety, so it can be selected when connecting the calendar in the app.
+
+You can then connect it like this: Meety > Staff > Select the staff member > Connect calendar > Sycn calendar > Choose the calendar of that staff. This way, a busy event in one staff’s calendar will only block that specific staff, while the others remain available.
+[13:59:43] Desportos: Ok, so 1 google account for each staff, each one with 1 calendar. Then I need to sync those calendars with the main one? desportosnauticosdealvor@gmail.com calendar?
+[14:01:12] Peony: Just to clarify — you don’t need to sync the calendars with the main one, you only need to share them.
+
+Once the calendar is shared, the main account will be able to see and select it when connecting calendars in Meety.
+[14:01:46] Desportos: Ok perfect. I will try that. 
+One last question
+[14:02:43] Desportos: I noticed I only have 2 slots available on the booking process. I should have 3, 1 for each staff. 
+I don't recall changing anything, how do I make 3 available again?
+[14:02:43] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_1hxvc21.png
+[14:03:27] Peony: This happens on the date of 10th only or any other dates, dear?
+[14:03:55] Desportos: it should be displaying 3 slots, right?
+[14:03:55] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_1ytc1a3.png
+[14:03:55] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_b9aqhy.png
+[14:04:02] Desportos: All other dates have 2 slots
+[14:04:02] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_w8rfe0.png
+[14:05:20] Peony: Understood. Please wait for me
+[14:05:29] Desportos: sure, take your time
+[14:07:42] Peony: I noticed that the access has been removed on your end. Can I send the request again, dear/
+[14:08:21] Desportos: Collaborator access? You can send a new one
+[14:08:52] Peony: Yes, dear, I have just sent it, please check
+[14:10:01] Desportos: done
+[14:10:01] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_1p25eo9.png
+[14:13:02] Peony: Thanks, dear, Please allow me some time to check
+[14:14:37] Desportos: Sure, take your time
+[14:16:09] Peony: <3
+[14:26:08] Peony: I see the 3rd staff's, Jetski 3, weekly schedule is being disabled, dear. Please change that
+[14:26:08] Peony: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_1n72d4h.png
+[14:26:42] Desportos: ahhh wait
+[14:28:42] Desportos: ok it is showing 3. i've also created a seperate calendar for each worker. let me just test this for 15th of august
+[14:29:00] Peony: Sure, dear :$
+[14:29:19] Desportos: wait it still displays 2 slots
+[14:29:19] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_1ak7vat.png
+[14:29:31] Desportos: let me check all the schedule
+[14:31:01] Desportos: i just had to refresh
+[14:31:15] Desportos: ok busy event 15th august 2026 at 11h30
+[14:31:15] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_19u73uu.png
+[14:31:57] Desportos: I blocked correctly. but block the next timeslot aswel
+[14:31:57] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_1vue2ug.png
+[14:32:04] Desportos: Does it have any buffers?
+[14:32:38] Peony: Buffer can be set in the Service setting > Availability > Scroll down and you will see Buffer
+[14:34:35] Desportos: They are disabled, I don't want to have buffers. 
+The only blocked slot at the moment is staff 1, on the 15th august at 11h30 to 12h00.
+Why does the 12h10 slot only have 2 slots available?
+[14:34:35] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_mfmzxo.png
+[14:34:35] Desportos: image.png https://storage.crisp.chat/users/upload/session/-/a/0/3/4/a034e0c03b9e7800/image_9oxsjv.png
+[14:34:41] Desportos: Am i doing something wrong?
+[14:43:53] Peony: Thanks for the details.
+Since Staff 1 has a busy event from 11:30 to 12:00, the slot 11:20–11:50 overlaps with that event, so that staff is not available for that slot.
+For the next slot 12:00–12:20, the busy event ends exactly at 12:00, which is the start of the slot. In this case, the system may still treat that staff as unavailable to avoid bookings immediately adjacent to another event.
+So for that time slot the system detects:
+* Staff 2 > available
+* Staff 3 > available
+* Staff 1 > unavailable
+That’s why the widget shows 2 available spots.
+[14:45:09] Desportos: hum ok, that makes sense. Thank you very much
+[14:45:14] Desportos: Really appreciate your help
+[14:47:14] Peony: Happy to help. :$
+[14:48:45] Desportos: Have a great day Peony!
+[14:48:51] Desportos: See you!
+[14:50:23] Peony: You, too. See you. <3

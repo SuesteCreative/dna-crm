@@ -5,6 +5,14 @@
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
+    margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+    .stats-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
 }
 
 .period-select {
@@ -75,11 +83,15 @@
 }
 
 @media (max-width: 1280px) {
-    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    .kpi-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 @media (max-width: 768px) {
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 .kpi-card {
@@ -115,9 +127,17 @@
     gap: 3px;
 }
 
-.kpi-growth.positive { color: var(--green); }
-.kpi-growth.negative { color: var(--red); }
-.kpi-growth.neutral  { color: var(--muted); }
+.kpi-growth.positive {
+    color: var(--green);
+}
+
+.kpi-growth.negative {
+    color: var(--red);
+}
+
+.kpi-growth.neutral {
+    color: var(--muted);
+}
 
 /* ── SECTION ──────────────────────────────────────────── */
 .stats-section {
@@ -158,7 +178,9 @@
 }
 
 @media (max-width: 960px) {
-    .chart-two-col { grid-template-columns: 1fr; }
+    .chart-two-col {
+        grid-template-columns: 1fr;
+    }
 }
 
 .chart-three-col {
@@ -168,11 +190,15 @@
 }
 
 @media (max-width: 1100px) {
-    .chart-three-col { grid-template-columns: 1fr 1fr; }
+    .chart-three-col {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 @media (max-width: 700px) {
-    .chart-three-col { grid-template-columns: 1fr; }
+    .chart-three-col {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ── RECHARTS CUSTOM TOOLTIP ──────────────────────────── */
@@ -206,10 +232,16 @@
 }
 
 /* ── STATS TABLE ──────────────────────────────────────── */
+.stats-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .stats-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
+    min-width: 600px;
 }
 
 .stats-table th {
@@ -225,7 +257,7 @@
 
 .stats-table td {
     padding: 10px 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     color: var(--text);
 }
 
@@ -256,7 +288,9 @@
 }
 
 @media (max-width: 600px) {
-    .status-cards { grid-template-columns: 1fr; }
+    .status-cards {
+        grid-template-columns: 1fr;
+    }
 }
 
 .status-card {
@@ -279,9 +313,20 @@
     justify-content: center;
 }
 
-.status-icon.green { background: var(--green-dim); color: var(--green); }
-.status-icon.amber { background: var(--amber-dim); color: var(--amber); }
-.status-icon.red   { background: rgba(239,68,68,.12); color: var(--red); }
+.status-icon.green {
+    background: var(--green-dim);
+    color: var(--green);
+}
+
+.status-icon.amber {
+    background: var(--amber-dim);
+    color: var(--amber);
+}
+
+.status-icon.red {
+    background: rgba(239, 68, 68, .12);
+    color: var(--red);
+}
 
 .status-info-label {
     font-size: 11px;
@@ -312,7 +357,9 @@
     padding: 20px 22px;
 }
 
-.nvr-card .kpi-label { margin-bottom: 6px; }
+.nvr-card .kpi-label {
+    margin-bottom: 6px;
+}
 
 /* ── EMPTY STATE ──────────────────────────────────────── */
 .stats-empty {

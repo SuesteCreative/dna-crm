@@ -21,6 +21,14 @@
   margin-left: 240px;
 }
 
+@media (max-width: 1024px) {
+
+  .cd-loading,
+  .cd-page {
+    margin-left: 0;
+  }
+}
+
 .cd-loading {
   display: flex;
   align-items: center;
@@ -49,6 +57,12 @@
   padding: 1.5rem 2rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   background: rgba(255, 255, 255, 0.02);
+}
+
+@media (max-width: 768px) {
+  .cd-header {
+    padding: 1rem 1rem 0;
+  }
 }
 
 .cd-back {
@@ -97,6 +111,15 @@
 .cd-tabs {
   display: flex;
   gap: 0.2rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* Hide scrollbar Firefox */
+}
+
+.cd-tabs::-webkit-scrollbar {
+  display: none;
+  /* Hide scrollbar Chrome/Safari */
 }
 
 .cd-tab {
@@ -129,12 +152,32 @@
   padding: 1.5rem 2rem 2rem;
 }
 
+@media (max-width: 768px) {
+  .cd-body {
+    padding: 1rem;
+  }
+}
+
 /* ── Shared sub-components styles ────────────────────────── */
 
 /* Spot grid */
 .spot-grid {
   display: grid;
-  gap: 6px;
+  gap: 10px;
+  width: max-content;
+  min-width: 100%;
+}
+
+.daily-control {
+  padding: 1.5rem 2rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .daily-control {
+    padding: 1rem;
+  }
 }
 
 /* Each spot card — no background here, halves carry their own colour */
@@ -335,14 +378,25 @@
 }
 
 .panel-drawer {
-  width: 380px;
-  max-width: 96vw;
-  background: #1a1a2e;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 440px;
+  background: var(--surface, #111827);
+  border-left: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  z-index: 1100;
   display: flex;
   flex-direction: column;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
   overflow-y: auto;
   animation: panel-slide-in 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .panel-drawer {
+    width: 100%;
+  }
 }
 
 @keyframes panel-slide-in {
@@ -432,6 +486,12 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.7rem;
+}
+
+@media (max-width: 480px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .toggle-row {

@@ -6,6 +6,14 @@
   --conc-primary: #f97316;
 }
 
+@media (max-width: 1024px) {
+
+  .conc-loading,
+  .conc-page {
+    margin-left: 0;
+  }
+}
+
 .theme-tropico {
   --conc-primary: #f97316;
 }
@@ -36,6 +44,12 @@
   padding: 2rem;
   max-width: 960px;
   margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .conc-page {
+    padding: 1.5rem 1rem;
+  }
 }
 
 .conc-header {

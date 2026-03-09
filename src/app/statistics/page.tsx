@@ -13,11 +13,11 @@ import "../Dashboard.css";
 import "./statistics.css";
 
 const PERIODS = [
-    { value: "7d",     label: "Últimos 7 dias" },
-    { value: "30d",    label: "Últimos 30 dias" },
-    { value: "90d",    label: "Últimos 90 dias" },
-    { value: "1y",     label: "Último ano" },
-    { value: "all",    label: "Todo o período" },
+    { value: "7d", label: "Últimos 7 dias" },
+    { value: "30d", label: "Últimos 30 dias" },
+    { value: "90d", label: "Últimos 90 dias" },
+    { value: "1y", label: "Último ano" },
+    { value: "all", label: "Todo o período" },
     { value: "custom", label: "Personalizado" },
 ];
 
@@ -45,7 +45,7 @@ function ChartTooltip({ active, payload, label, currency }: any) {
 }
 
 function BarRankList({ items, valueKey, valuePrefix = "", maxItems = 10 }: {
-    items: Array<{ name: string; [k: string]: any }>;
+    items: Array<{ name: string;[k: string]: any }>;
     valueKey: string;
     valuePrefix?: string;
     maxItems?: number;
@@ -263,236 +263,238 @@ export default function StatisticsPage() {
                         </div>
 
                         {/* ── CLIENTES POR PAÍS ── */}{!isPartner && (<>
-                        <div className="stats-section">
-                            <h2 className="stats-section-title">Clientes por País</h2>
-                            {data.topCountries?.length > 0 ? (
-                                <div className="chart-two-col">
+                            <div className="stats-section">
+                                <h2 className="stats-section-title">Clientes por País</h2>
+                                {data.topCountries?.length > 0 ? (
+                                    <div className="chart-two-col">
+                                        <div className="chart-card">
+                                            <div className="chart-card-title">País com maior volume de compras</div>
+                                            <BarRankList
+                                                items={data.topCountries}
+                                                valueKey="revenue"
+                                                valuePrefix="€"
+                                            />
+                                        </div>
+                                        <div className="chart-card">
+                                            <div className="chart-card-title">Nº de ordens por país</div>
+                                            <BarRankList
+                                                items={data.topCountries}
+                                                valueKey="count"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
                                     <div className="chart-card">
-                                        <div className="chart-card-title">País com maior volume de compras</div>
+                                        <p className="stats-empty">Sem dados de país. Faça Sync Shopify para popular esta secção.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* ── CLIENTES ── */}
+                            <div className="stats-section">
+                                <h2 className="stats-section-title">Clientes</h2>
+
+                                <div className="chart-two-col">
+                                    {/* New vs Returning */}
+                                    <div className="chart-card">
+                                        <div className="chart-card-title">Novos vs Recorrentes</div>
+                                        {period === "all" ? (
+                                            <p className="stats-empty">Disponível apenas com filtro de período</p>
+                                        ) : (
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingTop: 8 }}>
+                                                <div>
+                                                    <div className="bar-rank-meta" style={{ marginBottom: 6 }}>
+                                                        <span style={{ color: "var(--green)", fontWeight: 600 }}>Novos clientes</span>
+                                                        <span className="bar-rank-val">{data.newVsReturning?.new ?? 0}</span>
+                                                    </div>
+                                                    <div className="bar-rank-track">
+                                                        <div className="bar-rank-fill" style={{ background: "var(--green)", width: `${Math.max(data.newVsReturning?.new, data.newVsReturning?.returning) > 0 ? (data.newVsReturning.new / Math.max(data.newVsReturning.new, data.newVsReturning.returning)) * 100 : 0}%` }} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="bar-rank-meta" style={{ marginBottom: 6 }}>
+                                                        <span style={{ color: "var(--blue)", fontWeight: 600 }}>Recorrentes</span>
+                                                        <span className="bar-rank-val">{data.newVsReturning?.returning ?? 0}</span>
+                                                    </div>
+                                                    <div className="bar-rank-track">
+                                                        <div className="bar-rank-fill" style={{ background: "var(--blue)", width: `${Math.max(data.newVsReturning?.new, data.newVsReturning?.returning) > 0 ? (data.newVsReturning.returning / Math.max(data.newVsReturning.new, data.newVsReturning.returning)) * 100 : 0}%` }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Top customers */}
+                                    <div className="chart-card">
+                                        <div className="chart-card-title">Top 10 clientes por valor gasto</div>
                                         <BarRankList
-                                            items={data.topCountries}
+                                            items={data.topCustomers?.map((c: any) => ({ name: c.name, revenue: c.revenue }))}
                                             valueKey="revenue"
                                             valuePrefix="€"
                                         />
                                     </div>
-                                    <div className="chart-card">
-                                        <div className="chart-card-title">Nº de ordens por país</div>
-                                        <BarRankList
-                                            items={data.topCountries}
-                                            valueKey="count"
-                                        />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="chart-card">
-                                    <p className="stats-empty">Sem dados de país. Faça Sync Shopify para popular esta secção.</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* ── CLIENTES ── */}
-                        <div className="stats-section">
-                            <h2 className="stats-section-title">Clientes</h2>
-
-                            <div className="chart-two-col">
-                                {/* New vs Returning */}
-                                <div className="chart-card">
-                                    <div className="chart-card-title">Novos vs Recorrentes</div>
-                                    {period === "all" ? (
-                                        <p className="stats-empty">Disponível apenas com filtro de período</p>
-                                    ) : (
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingTop: 8 }}>
-                                            <div>
-                                                <div className="bar-rank-meta" style={{ marginBottom: 6 }}>
-                                                    <span style={{ color: "var(--green)", fontWeight: 600 }}>Novos clientes</span>
-                                                    <span className="bar-rank-val">{data.newVsReturning?.new ?? 0}</span>
-                                                </div>
-                                                <div className="bar-rank-track">
-                                                    <div className="bar-rank-fill" style={{ background: "var(--green)", width: `${Math.max(data.newVsReturning?.new, data.newVsReturning?.returning) > 0 ? (data.newVsReturning.new / Math.max(data.newVsReturning.new, data.newVsReturning.returning)) * 100 : 0}%` }} />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div className="bar-rank-meta" style={{ marginBottom: 6 }}>
-                                                    <span style={{ color: "var(--blue)", fontWeight: 600 }}>Recorrentes</span>
-                                                    <span className="bar-rank-val">{data.newVsReturning?.returning ?? 0}</span>
-                                                </div>
-                                                <div className="bar-rank-track">
-                                                    <div className="bar-rank-fill" style={{ background: "var(--blue)", width: `${Math.max(data.newVsReturning?.new, data.newVsReturning?.returning) > 0 ? (data.newVsReturning.returning / Math.max(data.newVsReturning.new, data.newVsReturning.returning)) * 100 : 0}%` }} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Top customers */}
-                                <div className="chart-card">
-                                    <div className="chart-card-title">Top 10 clientes por valor gasto</div>
-                                    <BarRankList
-                                        items={data.topCustomers?.map((c: any) => ({ name: c.name, revenue: c.revenue }))}
-                                        valueKey="revenue"
-                                        valuePrefix="€"
-                                    />
                                 </div>
                             </div>
-                        </div>
 
-                        {/* ── COMPORTAMENTO TEMPORAL ── */}
-                        <div className="stats-section">
-                            <h2 className="stats-section-title">Comportamento Temporal</h2>
+                            {/* ── COMPORTAMENTO TEMPORAL ── */}
+                            <div className="stats-section">
+                                <h2 className="stats-section-title">Comportamento Temporal</h2>
 
-                            <div className="chart-two-col">
-                                {/* Day of week */}
-                                <div className="chart-card">
-                                    <div className="chart-card-title">Ordens por dia da semana</div>
-                                    <ResponsiveContainer width="100%" height={200}>
-                                        <BarChart data={data.salesByDayOfWeek} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                            <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-                                            <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                            <Tooltip content={<ChartTooltip />} />
-                                            <Bar dataKey="count" name="Ordens" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-
-                                {/* Hour of day */}
-                                <div className="chart-card">
-                                    <div className="chart-card-title">Ordens por hora do dia</div>
-                                    {data.salesByHour?.length > 0 ? (
+                                <div className="chart-two-col">
+                                    {/* Day of week */}
+                                    <div className="chart-card">
+                                        <div className="chart-card-title">Ordens por dia da semana</div>
                                         <ResponsiveContainer width="100%" height={200}>
-                                            <BarChart data={data.salesByHour} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                                            <BarChart data={data.salesByDayOfWeek} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                                <XAxis dataKey="hour" tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
+                                                <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
                                                 <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                                                 <Tooltip content={<ChartTooltip />} />
-                                                <Bar dataKey="count" name="Ordens" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="count" name="Ordens" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
-                                    ) : <p className="stats-empty">Sem dados de horário</p>}
-                                </div>
-                            </div>
-                        </div>
+                                    </div>
 
-                        {/* ── OPERACIONAL ── */}
-                        <div className="stats-section">
-                            <h2 className="stats-section-title">Operacional</h2>
-                            <div className="status-cards">
-                                <div className="status-card">
-                                    <div className="status-icon green"><CheckCircle size={20} /></div>
-                                    <div>
-                                        <div className="status-info-label">Confirmadas</div>
-                                        <div className="status-info-value">{fmtInt(data.statusBreakdown?.confirmed ?? 0)}</div>
-                                    </div>
-                                </div>
-                                <div className="status-card">
-                                    <div className="status-icon amber"><Clock size={20} /></div>
-                                    <div>
-                                        <div className="status-info-label">Pendentes</div>
-                                        <div className="status-info-value">{fmtInt(data.statusBreakdown?.pending ?? 0)}</div>
-                                    </div>
-                                </div>
-                                <div className="status-card">
-                                    <div className="status-icon red"><XCircle size={20} /></div>
-                                    <div>
-                                        <div className="status-info-label">Canceladas</div>
-                                        <div className="status-info-value">{fmtInt(data.statusBreakdown?.cancelled ?? 0)}</div>
+                                    {/* Hour of day */}
+                                    <div className="chart-card">
+                                        <div className="chart-card-title">Ordens por hora do dia</div>
+                                        {data.salesByHour?.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height={200}>
+                                                <BarChart data={data.salesByHour} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                                    <XAxis dataKey="hour" tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
+                                                    <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                                                    <Tooltip content={<ChartTooltip />} />
+                                                    <Bar dataKey="count" name="Ordens" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        ) : <p className="stats-empty">Sem dados de horário</p>}
                                     </div>
                                 </div>
                             </div>
-                            {/* No-show stats */}
-                            {data.noShowStats && (
-                                <div className="chart-two-col" style={{ marginTop: 16 }}>
-                                    <div className="chart-card">
-                                        <div className="chart-card-title">Presenças</div>
-                                        <div className="status-cards" style={{ padding: 0, background: "none", border: "none" }}>
-                                            <div className="status-card">
-                                                <div className="status-icon green"><UserCheck size={20} /></div>
-                                                <div>
-                                                    <div className="status-info-label">Taxa de presença</div>
-                                                    <div className="status-info-value">
-                                                        {data.noShowStats.showRate !== null
-                                                            ? `${data.noShowStats.showRate.toFixed(1)}%`
-                                                            : "—"}
+
+                            {/* ── OPERACIONAL ── */}
+                            <div className="stats-section">
+                                <h2 className="stats-section-title">Operacional</h2>
+                                <div className="status-cards">
+                                    <div className="status-card">
+                                        <div className="status-icon green"><CheckCircle size={20} /></div>
+                                        <div>
+                                            <div className="status-info-label">Confirmadas</div>
+                                            <div className="status-info-value">{fmtInt(data.statusBreakdown?.confirmed ?? 0)}</div>
+                                        </div>
+                                    </div>
+                                    <div className="status-card">
+                                        <div className="status-icon amber"><Clock size={20} /></div>
+                                        <div>
+                                            <div className="status-info-label">Pendentes</div>
+                                            <div className="status-info-value">{fmtInt(data.statusBreakdown?.pending ?? 0)}</div>
+                                        </div>
+                                    </div>
+                                    <div className="status-card">
+                                        <div className="status-icon red"><XCircle size={20} /></div>
+                                        <div>
+                                            <div className="status-info-label">Canceladas</div>
+                                            <div className="status-info-value">{fmtInt(data.statusBreakdown?.cancelled ?? 0)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* No-show stats */}
+                                {data.noShowStats && (
+                                    <div className="chart-two-col" style={{ marginTop: 16 }}>
+                                        <div className="chart-card">
+                                            <div className="chart-card-title">Presenças</div>
+                                            <div className="status-cards" style={{ padding: 0, background: "none", border: "none" }}>
+                                                <div className="status-card">
+                                                    <div className="status-icon green"><UserCheck size={20} /></div>
+                                                    <div>
+                                                        <div className="status-info-label">Taxa de presença</div>
+                                                        <div className="status-info-value">
+                                                            {data.noShowStats.showRate !== null
+                                                                ? `${data.noShowStats.showRate.toFixed(1)}%`
+                                                                : "—"}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="status-card">
+                                                    <div className="status-icon red"><XCircle size={20} /></div>
+                                                    <div>
+                                                        <div className="status-info-label">No-shows</div>
+                                                        <div className="status-info-value">{fmtInt(data.noShowStats.count ?? 0)}</div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="status-card">
-                                                <div className="status-icon red"><XCircle size={20} /></div>
-                                                <div>
-                                                    <div className="status-info-label">No-shows</div>
-                                                    <div className="status-info-value">{fmtInt(data.noShowStats.count ?? 0)}</div>
-                                                </div>
-                                            </div>
+                                        </div>
+                                        <div className="chart-card">
+                                            <div className="chart-card-title">Receita perdida (no-shows)</div>
+                                            <span className="kpi-value" style={{ color: "var(--red)", fontSize: 28, fontWeight: 700 }}>
+                                                −€{fmt(data.noShowStats.revenue ?? 0)}
+                                            </span>
+                                            {data.kpis?.totalRevenue > 0 && (
+                                                <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+                                                    {((data.noShowStats.revenue / data.kpis.totalRevenue) * 100).toFixed(1)}% da receita total
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="chart-card">
-                                        <div className="chart-card-title">Receita perdida (no-shows)</div>
-                                        <span className="kpi-value" style={{ color: "var(--red)", fontSize: 28, fontWeight: 700 }}>
-                                            −€{fmt(data.noShowStats.revenue ?? 0)}
-                                        </span>
-                                        {data.kpis?.totalRevenue > 0 && (
-                                            <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-                                                {((data.noShowStats.revenue / data.kpis.totalRevenue) * 100).toFixed(1)}% da receita total
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
 
                         </>)}{/* end !isPartner sections */}
 
                         {/* ── EDIÇÕES ── */}{!isPartner && (
-                        <div className="stats-section">
-                            <h2 className="stats-section-title">Edições de Reservas</h2>
-                            <div className="chart-three-col">
-                                <div className="kpi-card">
-                                    <span className="kpi-label">Reservas editadas</span>
-                                    <span className="kpi-value">{fmtInt(data.editStats?.count ?? 0)}</span>
-                                    {kpis.totalOrders > 0 && (
-                                        <span className="kpi-growth neutral">
-                                            <Pencil size={12} />
-                                            {((data.editStats?.count ?? 0) / kpis.totalOrders * 100).toFixed(1)}% do total
+                            <div className="stats-section">
+                                <h2 className="stats-section-title">Edições de Reservas</h2>
+                                <div className="chart-three-col">
+                                    <div className="kpi-card">
+                                        <span className="kpi-label">Reservas editadas</span>
+                                        <span className="kpi-value">{fmtInt(data.editStats?.count ?? 0)}</span>
+                                        {kpis.totalOrders > 0 && (
+                                            <span className="kpi-growth neutral">
+                                                <Pencil size={12} />
+                                                {((data.editStats?.count ?? 0) / kpis.totalOrders * 100).toFixed(1)}% do total
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="kpi-card">
+                                        <span className="kpi-label">Impacto na receita</span>
+                                        <span className="kpi-value" style={{ color: (data.editStats?.revenueDelta ?? 0) >= 0 ? "var(--green)" : "var(--red)" }}>
+                                            {(data.editStats?.revenueDelta ?? 0) >= 0 ? "+" : ""}€{fmt(Math.abs(data.editStats?.revenueDelta ?? 0))}
                                         </span>
-                                    )}
+                                        <span className="kpi-growth neutral">vs. valor original</span>
+                                    </div>
+                                    <div className="kpi-card">
+                                        <span className="kpi-label">Variação de pax</span>
+                                        <span className="kpi-value" style={{ color: (data.editStats?.paxDelta ?? 0) >= 0 ? "var(--green)" : "var(--red)" }}>
+                                            {(data.editStats?.paxDelta ?? 0) >= 0 ? "+" : ""}{fmtInt(data.editStats?.paxDelta ?? 0)}
+                                        </span>
+                                        <span className="kpi-growth neutral">pessoas vs. original</span>
+                                    </div>
                                 </div>
-                                <div className="kpi-card">
-                                    <span className="kpi-label">Impacto na receita</span>
-                                    <span className="kpi-value" style={{ color: (data.editStats?.revenueDelta ?? 0) >= 0 ? "var(--green)" : "var(--red)" }}>
-                                        {(data.editStats?.revenueDelta ?? 0) >= 0 ? "+" : ""}€{fmt(Math.abs(data.editStats?.revenueDelta ?? 0))}
-                                    </span>
-                                    <span className="kpi-growth neutral">vs. valor original</span>
-                                </div>
-                                <div className="kpi-card">
-                                    <span className="kpi-label">Variação de pax</span>
-                                    <span className="kpi-value" style={{ color: (data.editStats?.paxDelta ?? 0) >= 0 ? "var(--green)" : "var(--red)" }}>
-                                        {(data.editStats?.paxDelta ?? 0) >= 0 ? "+" : ""}{fmtInt(data.editStats?.paxDelta ?? 0)}
-                                    </span>
-                                    <span className="kpi-growth neutral">pessoas vs. original</span>
-                                </div>
+                                {data.editStats?.topTypeChanges?.length > 0 && (
+                                    <div className="chart-card">
+                                        <div className="chart-card-title">Alterações de atividade mais frequentes</div>
+                                        <div className="stats-table-wrap">
+                                            <table className="stats-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>De → Para</th>
+                                                        <th className="t-right">Vezes</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {data.editStats.topTypeChanges.map((c: any, i: number) => (
+                                                        <tr key={i}>
+                                                            <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.change}</td>
+                                                            <td className="t-right">{fmtInt(c.count)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            {data.editStats?.topTypeChanges?.length > 0 && (
-                                <div className="chart-card">
-                                    <div className="chart-card-title">Alterações de atividade mais frequentes</div>
-                                    <table className="stats-table">
-                                        <thead>
-                                            <tr>
-                                                <th>De → Para</th>
-                                                <th className="t-right">Vezes</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {data.editStats.topTypeChanges.map((c: any, i: number) => (
-                                                <tr key={i}>
-                                                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>{c.change}</td>
-                                                    <td className="t-right">{fmtInt(c.count)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
 
                         )}{/* end !isPartner edit section */}
 
@@ -502,34 +504,36 @@ export default function StatisticsPage() {
                                 <h2 className="stats-section-title">Marcações por Parceiro</h2>
                                 <div className="chart-card">
                                     <div className="chart-card-title">Ordens, receita e comissão por parceiro</div>
-                                    <table className="stats-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Parceiro</th>
-                                                <th className="t-right">Ordens</th>
-                                                <th className="t-right">No-shows</th>
-                                                <th className="t-right">Receita Total</th>
-                                                <th className="t-right">Receita Elegível</th>
-                                                <th className="t-right">Comissão %</th>
-                                                <th className="t-right">Comissão Est.</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {data.bookingsByPartner.map((p: any, i: number) => (
-                                                <tr key={i}>
-                                                    <td>{p.name}</td>
-                                                    <td className="t-right">{fmtInt(p.count)}</td>
-                                                    <td className="t-right" style={{ color: p.noShowCount > 0 ? "var(--red)" : "var(--muted)" }}>
-                                                        {p.noShowCount > 0 ? `${fmtInt(p.noShowCount)} (−€${fmt(p.noShowRevenue)})` : "—"}
-                                                    </td>
-                                                    <td className="t-right">€{fmt(p.revenue)}</td>
-                                                    <td className="t-right">€{fmt(p.revenueEligible)}</td>
-                                                    <td className="t-right">{p.commissionPct}%</td>
-                                                    <td className="t-right" style={{ color: "var(--green)" }}>€{fmt(p.commissionEarned)}</td>
+                                    <div className="stats-table-wrap">
+                                        <table className="stats-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Parceiro</th>
+                                                    <th className="t-right">Ordens</th>
+                                                    <th className="t-right">No-shows</th>
+                                                    <th className="t-right">Receita Total</th>
+                                                    <th className="t-right">Receita Elegível</th>
+                                                    <th className="t-right">Comissão %</th>
+                                                    <th className="t-right">Comissão Est.</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {data.bookingsByPartner.map((p: any, i: number) => (
+                                                    <tr key={i}>
+                                                        <td>{p.name}</td>
+                                                        <td className="t-right">{fmtInt(p.count)}</td>
+                                                        <td className="t-right" style={{ color: p.noShowCount > 0 ? "var(--red)" : "var(--muted)" }}>
+                                                            {p.noShowCount > 0 ? `${fmtInt(p.noShowCount)} (−€${fmt(p.noShowRevenue)})` : "—"}
+                                                        </td>
+                                                        <td className="t-right">€{fmt(p.revenue)}</td>
+                                                        <td className="t-right">€{fmt(p.revenueEligible)}</td>
+                                                        <td className="t-right">{p.commissionPct}%</td>
+                                                        <td className="t-right" style={{ color: "var(--green)" }}>€{fmt(p.commissionEarned)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         )}
