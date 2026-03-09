@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { deleteBusyEvent } from "@/lib/gcal";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,17 @@ export async function PATCH(req: NextRequest) {
                     originalActivityDate: current.activityDate,
                     originalActivityTime: current.activityTime,
                 }),
+            },
+        });
+
+        await logAudit({
+            userId,
+            action: fields.status === "CANCELLED" ? "CANCEL" : "UPDATE",
+            module: "DASHBOARD",
+            targetId: booking.id,
+            targetName: booking.customerName,
+            details: {
+                changes: fields,
             },
         });
 

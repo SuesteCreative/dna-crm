@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getPrisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,9 @@ function todayLisbon() {
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { slug: string; id: string } }) {
-  const { sessionClaims } = await auth();
+  const { userId, sessionClaims } = await auth();
   const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+  if (!userId || (role !== "ADMIN" && role !== "SUPER_ADMIN")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const prisma = await getPrisma();
@@ -111,13 +112,23 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
     },
     include: { spot: true },
   });
+
+  await logAudit({
+    userId,
+    action: "UPDATE",
+    module: "CONCESSION_RESERVATION",
+    targetId: updated.id,
+    targetName: `L${updated.spot.spotNumber} - ${updated.clientName}`,
+    details: { changes: body },
+  });
+
   return NextResponse.json(updated);
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { slug: string; id: string } }) {
-  const { sessionClaims } = await auth();
+  const { userId, sessionClaims } = await auth();
   const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+  if (!userId || (role !== "ADMIN" && role !== "SUPER_ADMIN")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const prisma = await getPrisma();
@@ -128,9 +139,20 @@ export async function DELETE(_req: NextRequest, { params }: { params: { slug: st
     data: { status: "RELEASED" },
   });
 
-  await prisma.concessionReservation.update({
+  const reservation = await prisma.concessionReservation.update({
     where: { id: params.id },
     data: { status: "CANCELLED" },
+    include: { spot: true },
   });
+
+  await logAudit({
+    userId,
+    action: "CANCEL",
+    module: "CONCESSION_RESERVATION",
+    targetId: reservation.id,
+    targetName: `L${reservation.spot.spotNumber} - ${reservation.clientName}`,
+    details: { message: "Reservation and related entries released." },
+  });
+
   return NextResponse.json({ success: true });
 }

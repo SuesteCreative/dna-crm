@@ -1,0 +1,29 @@
+
+> crm-desportos-nauticos@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.3
+  - Environments: .env.production, .env
+
+   Creating an optimized production build ...
+ Ô£ô Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new el (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\api\bug-report\route.js:5:28075)
+    at 43890 (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\api\bug-report\route.js:5:30255)
+    at t (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js:1:143)
+    at r (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\api\bug-report\route.js:8:1015)
+    at C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\api\bug-report\route.js:8:1063
+    at t.X (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\webpack-runtime.js:1:1285)
+    at C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\api\bug-report\route.js:8:1028
+    at Object.<anonymous> (C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\.next\server\app\api\bug-report\route.js:8:1091)
+    at Module._compile (node:internal/modules/cjs/loader:1554:14)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+
+> Build error occurred
+Error: Failed to collect page data for /api/bug-report
+    at C:\Users\pedro\OneDrive\Desportos N├íuticos de Alvor\CRM\node_modules\next\dist\build\utils.js:1268:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  type: 'Error'
+}

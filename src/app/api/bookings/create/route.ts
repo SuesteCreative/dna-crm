@@ -3,6 +3,7 @@ import { getPrisma } from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { timeToMinutes, timesOverlap } from "@/lib/slots";
 import { createBusyEvent, toGcalTimes } from "@/lib/gcal";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -138,6 +139,25 @@ export async function POST(req: Request) {
                 serviceId: serviceId || null,
                 activityType: activityType || null,
                 partnerId: isPartner ? (sessionPartnerId || null) : adminPartnerId,
+            },
+        });
+
+        await logAudit({
+            userId,
+            userName,
+            action: "CREATE",
+            module: "DASHBOARD",
+            targetId: booking.id,
+            targetName: booking.customerName,
+            details: {
+                serviceId,
+                activityDate,
+                activityTime,
+                quantity: booking.quantity,
+                totalPrice: booking.totalPrice,
+                override,
+                isPartner,
+                adminPartnerId,
             },
         });
 

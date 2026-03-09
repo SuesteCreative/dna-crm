@@ -205,7 +205,7 @@ export function Sidebar() {
                                 onClick={() => router.push("/admin/logs")}
                             >
                                 <AlertTriangle size={18} />
-                                <span>Logs Override</span>
+                                <span>Logs Reservas</span>
                                 {pathname === "/admin/logs" && <ChevronRight size={14} className="nav-arrow" />}
                             </button>
                         </>

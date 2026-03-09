@@ -124,6 +124,18 @@ model OverrideLog {
   createdAt   DateTime @default(now())
 }
 
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String   @default("system")
+  userName    String   @default("System")
+  action      String   // "CREATE", "UPDATE", "DELETE", "OVERRIDE", "CHECK_IN", etc.
+  module      String   // "DASHBOARD", "CONCESSION_ENTRY", "CONCESSION_RESERVATION"
+  targetId    String?
+  targetName  String?
+  details     String?  @db.Text
+  createdAt   DateTime @default(now())
+}
+
 // ── CONCESSION MODELS ────────────────────────────────────
 
 model Concession {

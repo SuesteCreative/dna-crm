@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { deleteBusyEvent } from "@/lib/gcal";
+import { logAudit } from "@/lib/audit";
 
 export async function DELETE(req: Request) {
     const { userId } = await auth();
@@ -22,7 +23,7 @@ export async function DELETE(req: Request) {
         // Delete Google Calendar events before removing the booking
         const booking = await prisma.booking.findUnique({
             where: { id },
-            select: { gcalEventIds: true, gcalCalendarIds: true },
+            select: { customerName: true, gcalEventIds: true, gcalCalendarIds: true },
         });
         if (booking?.gcalEventIds && booking?.gcalCalendarIds) {
             try {
@@ -37,6 +38,17 @@ export async function DELETE(req: Request) {
         }
 
         await prisma.booking.delete({ where: { id } });
+
+        await logAudit({
+            userId,
+            action: "DELETE",
+            module: "DASHBOARD",
+            targetId: id,
+            targetName: booking?.customerName || id,
+            details: {
+                message: "Booking deleted via API (possibly partner deletion)",
+            },
+        });
 
         return NextResponse.json({ success: true });
     } catch (error) {

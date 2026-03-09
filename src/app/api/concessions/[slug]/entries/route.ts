@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getPrisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,9 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 }
 
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
-  const { sessionClaims } = await auth();
+  const { userId, sessionClaims } = await auth();
   const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+  if (!userId || (role !== "ADMIN" && role !== "SUPER_ADMIN")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const prisma = await getPrisma();
@@ -80,5 +81,22 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     },
     include: { spot: true },
   });
+
+  await logAudit({
+    userId,
+    action: override ? "OVERRIDE" : "CREATE",
+    module: "CONCESSION_ENTRY",
+    targetId: entry.id,
+    targetName: `L${entry.spot.spotNumber} - ${clientName}`,
+    details: {
+      concession: concession.slug,
+      date,
+      period,
+      totalPrice,
+      isPaid,
+      bedConfig,
+    },
+  });
+
   return NextResponse.json(entry);
 }
