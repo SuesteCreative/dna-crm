@@ -16,7 +16,8 @@
 | Icons | `lucide-react` | |
 | Export | `exceljs` (styled Excel) + `xlsx` (client-side) + `jspdf` + `jspdf-autotable` (PDF) | |
 | Charts | `recharts` | Statistics page only |
-| Email | `resend` | Bug reports only |
+| Email | `resend` | QR Codes + Bug reports |
+| QR Code | `qrcode` (generate) + `html5-qrcode` (scan) | Data URI embedding for zero-maintenance |
 | Calendar | `googleapis` | Google Calendar two-way sync |
 | Deployment | Vercel (auto-deploy on push to `main`) | GitHub → Vercel |
 | Schema sync | `prisma db push` | NOT `prisma migrate dev` (non-interactive env) |
@@ -428,8 +429,15 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `d4a0dec` | Visual Improvements: Loading Skeletons (V1), Toast Notifications (V2), Concession Themes (V4: Trópico orange, Subnauta blue), Print-Optimized CSS (V5) |
 | `d261dce` | **Responsiveness & Mobile Optimization**: Mobile-First Sidebar, Adaptive Concessão Grid, Responsive Statistics, Mobile Modals/Forms, Layout adjustments across all modules |
 | `59486ea` | **Security**: Removed `_CRM_V1_SNAPSHOT.zip` from entire git history (filter-branch, force push), rotated exposed GCP service account key, added `*.zip` to `.gitignore` |
+| `QR-01` | **QR Check-in System**: Integrated automated QR email delivery, Data URI embedding (zero-file maintenance), and professional in-CRM scanner. |
 
 ### Feature Details (Recent)
+
+#### QR Check-in System (2026-03-10)
+- **Automated Delivery**: Confirmation emails now include an embedded QR code (Data URI format) for zero-maintenance file tracking.
+- **Embedded Scanning**: New `/scanner` route using `html5-qrcode` for professional in-app QR scanning.
+- **Digital Check-in Card**: Mobile-optimized `/check-in/[id]` page for staff to verify booking details and toggle attendance.
+- **Vercel Optimized**: Logic redesigned to work without filesystem access, ensuring 100% compatibility with cloud deployments.
 
 #### Responsiveness & Mobile Optimization (2026-03-09)
 - **Mobile-First Sidebar**: Implemented a slide-in mobile navigation menu with overlay and toggle button.
