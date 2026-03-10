@@ -34,13 +34,12 @@ export default function ScannerPage() {
     }, []);
 
     function onScanSuccess(decodedText: string) {
-        // The URL is like: https://yourdomain.com/check-in/clun123...
-        // We want to navigate to the /check-in part
+        // Look for the check-in ID in the URL
         try {
             if (decodedText.includes("/check-in/")) {
                 const id = decodedText.split("/check-in/")[1];
                 if (id) {
-                    // Success! Redirect to the check-in page
+                    // Success! Redirect
                     if (scannerRef.current) {
                         scannerRef.current.clear().then(() => {
                             router.push(`/check-in/${id}`);
@@ -57,7 +56,7 @@ export default function ScannerPage() {
     }
 
     function onScanFailure(error: any) {
-        // Silently ignore scan failures (they happen constantly while searching for a code)
+        // Ignore noise
     }
 
     return (

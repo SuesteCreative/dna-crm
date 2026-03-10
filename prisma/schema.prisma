@@ -21,24 +21,17 @@ model User {
 }
 
 model RolePermission {
-  id                 String   @id @default(cuid())
-  role               String   @unique // "ADMIN", "STAFF", "PARTNER"
-  
-  // Dashboard & Books
-  dashboardAccess    Boolean  @default(false)
-  dashboardCreate    Boolean  @default(false)
-  dashboardOverride  Boolean  @default(false)
-  
-  // Concession
-  concessionAccess   Boolean  @default(false)
-  
-  // Management
-  statisticsAccess   Boolean  @default(false)
-  partnersAccess     Boolean  @default(false)
-  adminAccess        Boolean  @default(false) // Users, Schedule, Logs
-  shopifySync        Boolean  @default(false)
-  
-  updatedAt          DateTime @updatedAt
+  id                String   @id @default(cuid())
+  role              String   @unique
+  dashboardAccess   Boolean  @default(false)
+  dashboardCreate   Boolean  @default(false)
+  dashboardOverride Boolean  @default(false)
+  concessionAccess  Boolean  @default(false)
+  statisticsAccess  Boolean  @default(false)
+  partnersAccess    Boolean  @default(false)
+  adminAccess       Boolean  @default(false)
+  shopifySync       Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
 }
 
 model Partner {
@@ -47,64 +40,62 @@ model Partner {
   email      String    @unique
   phone      String?
   address    String?
-  website    String?
-  commission Float     @default(10)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+  commission Float     @default(10)
+  website    String?
   bookings   Booking[]
   users      User[]
 }
 
 model Customer {
-  id          String   @id @default(cuid())
-  name        String
-  email       String?
-  phone       String?
-  country     String?
-  notes       String?  @db.Text
-  source      String   @default("MANUAL") // "SHOPIFY" | "MANUAL" | "IMPORT" | "BOOKING"
-  optedOut    Boolean  @default(false)     // email marketing opt-out
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([email], map: "Customer_email_unique")
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique(map: "Customer_email_unique")
+  phone     String?
+  country   String?
+  notes     String?
+  source    String   @default("MANUAL")
+  optedOut  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Booking {
-  id            String   @id @default(cuid())
-  customerName  String
-  customerEmail String?
-  customerPhone String?
-  activityDate  DateTime
-  activityTime  String?
-  pax           Int      @default(1)
-  status        String   @default("CONFIRMED")
-  source        String   @default("MANUAL")
-  shopifyId     String?  @unique
-  totalPrice    Float?
-  notes         String?
-  activityType  String?
-  partnerId     String?
-  serviceId     String?
-  createdById   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  orderNumber   String?
-  quantity      Int?     @default(1)
-  country       String?
-  showedUp      Boolean?
-  isEdited      Boolean  @default(false)
+  id                   String    @id @default(cuid())
+  customerName         String
+  customerEmail        String?
+  customerPhone        String?
+  activityDate         DateTime
+  activityTime         String?
+  pax                  Int       @default(1)
+  status               String    @default("CONFIRMED")
+  source               String    @default("MANUAL")
+  shopifyId            String?   @unique
+  totalPrice           Float?
+  notes                String?
+  activityType         String?
+  partnerId            String?
+  serviceId            String?
+  createdById          String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  orderNumber          String?
+  quantity             Int?      @default(1)
+  country              String?
+  showedUp             Boolean?
+  isEdited             Boolean   @default(false)
   originalActivityType String?
   originalPax          Int?
   originalQuantity     Int?
   originalTotalPrice   Float?
   originalActivityDate DateTime?
   originalActivityTime String?
-  gcalEventIds         String?  // JSON array of Google Calendar event IDs
-  gcalCalendarIds      String?  // JSON array of calendar IDs (parallel to gcalEventIds)
-  postalCode    String?  // billing/shipping zip code from Shopify
-  discountCodes String?  // comma-separated discount codes from Shopify
-  partner       Partner? @relation(fields: [partnerId], references: [id])
+  gcalCalendarIds      String?
+  gcalEventIds         String?
+  discountCodes        String?
+  postalCode           String?
+  partner              Partner?  @relation(fields: [partnerId], references: [id])
 }
 
 model Service {
@@ -117,23 +108,23 @@ model Service {
   imageUrl         String?
   category         String?
   isActive         Boolean  @default(true)
-  durationMinutes  Int?
-  unitCapacity     Int      @default(1)
-  capacityGroup    String?
-  slotGapMinutes   Int      @default(10)
-  serviceCloseTime String?  // Per-service close time override e.g. "17:40"
-  gcalEnabled      Boolean  @default(false)
-  minPax           Int?     // Min attendees (pax-priced services, e.g. sofa/banana)
-  maxPax           Int?     // Max attendees
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  capacityGroup    String?
+  durationMinutes  Int?
+  slotGapMinutes   Int      @default(10)
+  unitCapacity     Int      @default(1)
+  gcalEnabled      Boolean  @default(false)
+  serviceCloseTime String?
+  maxPax           Int?
+  minPax           Int?
 }
 
 model Schedule {
   id        String   @id @default(cuid())
-  dayOfWeek Int      @unique // 0=Sunday, 1=Monday, ... 6=Saturday
-  openTime  String   // "HH:MM"
-  closeTime String   // "HH:MM"
+  dayOfWeek Int      @unique
+  openTime  String
+  closeTime String
   isOpen    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -141,9 +132,9 @@ model Schedule {
 
 model GcalStaff {
   id         String   @id @default(cuid())
-  name       String   // "Jetski 1", "Jetski 2", "Jetski 3", "Sofa/Banana"
-  calendarId String   // Google Calendar ID
-  serviceId  String?  // Optional: link to a specific Service
+  name       String
+  calendarId String
+  serviceId  String?
   order      Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -158,27 +149,25 @@ model OverrideLog {
   serviceId   String?
   serviceName String?
   slotTime    String
-  date        String   // "YYYY-MM-DD"
+  date        String
   createdAt   DateTime @default(now())
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String   @default("system")
-  userName    String   @default("System")
-  action      String   // "CREATE", "UPDATE", "DELETE", "OVERRIDE", "CHECK_IN", etc.
-  module      String   // "DASHBOARD", "CONCESSION_ENTRY", "CONCESSION_RESERVATION"
-  targetId    String?
-  targetName  String?
-  details     String?  @db.Text
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String   @default("system")
+  userName   String   @default("System")
+  action     String
+  module     String
+  targetId   String?
+  targetName String?
+  details    String?
+  createdAt  DateTime @default(now())
 }
 
-// ── CONCESSION MODELS ────────────────────────────────────
-
 model Concession {
-  id             String   @id @default(cuid())
-  slug           String   @unique // "tropico" | "subnauta"
+  id             String                  @id @default(cuid())
+  slug           String                  @unique
   name           String
   location       String
   rows           Int
@@ -188,81 +177,81 @@ model Concession {
   priceAfternoon Float
   priceExtraBed  Float
   priceOneBed    Float
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  spots          ConcessionSpot[]
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  blocks         ConcessionBlock[]
+  dailyNotes     ConcessionDailyNote[]
   entries        ConcessionEntry[]
   reservations   ConcessionReservation[]
-  dailyNotes     ConcessionDailyNote[]
-  blocks         ConcessionBlock[]
+  spots          ConcessionSpot[]
 }
 
 model ConcessionSpot {
-  id           String     @id @default(cuid())
+  id           String                  @id @default(cuid())
   concessionId String
-  concession   Concession @relation(fields: [concessionId], references: [id])
   spotNumber   Int
   row          Int
   col          Int
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
+  isActive     Boolean                 @default(true)
+  createdAt    DateTime                @default(now())
   entries      ConcessionEntry[]
   reservations ConcessionReservation[]
+  concession   Concession              @relation(fields: [concessionId], references: [id])
 
   @@unique([concessionId, spotNumber])
 }
 
 model ConcessionEntry {
-  id            String     @id @default(cuid())
+  id            String                 @id @default(cuid())
   concessionId  String
-  concession    Concession @relation(fields: [concessionId], references: [id])
   spotId        String
-  spot          ConcessionSpot @relation(fields: [spotId], references: [id])
-  date          String     // "YYYY-MM-DD"
-  period        String     // "MORNING" | "AFTERNOON" | "FULL_DAY"
+  date          String
+  period        String
   clientName    String
   clientPhone   String?
-  bedConfig     String     @default("TWO_BEDS") // "TWO_BEDS" | "ONE_BED" | "EXTRA_BED"
+  bedConfig     String                 @default("TWO_BEDS")
   totalPrice    Float
-  isPaid        Boolean    @default(true)
+  isPaid        Boolean                @default(true)
   notes         String?
   reservationId String?
+  isCarryOver   Boolean                @default(false)
+  status        String                 @default("ACTIVE")
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  concession    Concession             @relation(fields: [concessionId], references: [id])
   reservation   ConcessionReservation? @relation(fields: [reservationId], references: [id])
-  isCarryOver   Boolean    @default(false)
-  status        String     @default("ACTIVE") // "ACTIVE" | "RELEASED" | "CARRIED_OVER"
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  spot          ConcessionSpot         @relation(fields: [spotId], references: [id])
 }
 
 model ConcessionReservation {
-  id           String     @id @default(cuid())
+  id           String            @id @default(cuid())
   concessionId String
-  concession   Concession @relation(fields: [concessionId], references: [id])
   spotId       String
-  spot         ConcessionSpot @relation(fields: [spotId], references: [id])
   clientName   String
   clientPhone  String?
   clientEmail  String?
-  startDate    String     // "YYYY-MM-DD"
-  endDate      String     // "YYYY-MM-DD"
-  period       String     // "MORNING" | "AFTERNOON" | "FULL_DAY"
-  bedConfig    String     @default("TWO_BEDS")
+  startDate    String
+  endDate      String
+  period       String
+  bedConfig    String            @default("TWO_BEDS")
   totalPrice   Float
-  isPaid       Boolean    @default(false)
+  isPaid       Boolean           @default(false)
   notes        String?
-  status       String     @default("ACTIVE") // "ACTIVE" | "COMPLETED" | "CANCELLED"
+  status       String            @default("ACTIVE")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
   entries      ConcessionEntry[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  concession   Concession        @relation(fields: [concessionId], references: [id])
+  spot         ConcessionSpot    @relation(fields: [spotId], references: [id])
 }
 
 model ConcessionDailyNote {
   id           String     @id @default(cuid())
   concessionId String
-  concession   Concession @relation(fields: [concessionId], references: [id])
-  date         String     // "YYYY-MM-DD"
-  note         String     @db.Text
+  date         String
+  note         String
   updatedAt    DateTime   @updatedAt
+  concession   Concession @relation(fields: [concessionId], references: [id])
 
   @@unique([concessionId, date])
 }
@@ -270,10 +259,10 @@ model ConcessionDailyNote {
 model ConcessionBlock {
   id           String     @id @default(cuid())
   concessionId String
-  concession   Concession @relation(fields: [concessionId], references: [id])
-  date         String     // "YYYY-MM-DD"
-  reason       String?    // "Mau tempo", "Manutenção", etc.
+  date         String
+  reason       String?
   createdAt    DateTime   @default(now())
+  concession   Concession @relation(fields: [concessionId], references: [id])
 
   @@unique([concessionId, date])
 }
