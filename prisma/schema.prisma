@@ -102,6 +102,8 @@ model Booking {
   originalActivityTime String?
   gcalEventIds         String?  // JSON array of Google Calendar event IDs
   gcalCalendarIds      String?  // JSON array of calendar IDs (parallel to gcalEventIds)
+  postalCode    String?  // billing/shipping zip code from Shopify
+  discountCodes String?  // comma-separated discount codes from Shopify
   partner       Partner? @relation(fields: [partnerId], references: [id])
 }
 

@@ -4,6 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { timeToMinutes, timesOverlap } from "@/lib/slots";
 import { createBusyEvent, toGcalTimes } from "@/lib/gcal";
 import { logAudit } from "@/lib/audit";
+import { sendBookingQRCode } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -160,6 +161,13 @@ export async function POST(req: Request) {
                 adminPartnerId,
             },
         });
+
+        // Generate and send QR code via email (non-blocking)
+        if (booking.customerEmail) {
+            sendBookingQRCode(booking).catch(err =>
+                console.error("Failed to send QR code email background:", err)
+            );
+        }
 
         // Update override log with real booking id
         if (override && overrideReason && !isPartner && serviceId && activityTime) {

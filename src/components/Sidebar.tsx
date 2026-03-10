@@ -43,7 +43,7 @@ export function Sidebar() {
     }, [isMobileOpen, showBugReport]);
 
     if (!userId) return null;
-    if (pathname.startsWith("/pending") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) return null;
+    if (pathname.startsWith("/pending") || pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up") || pathname.startsWith("/check-in")) return null;
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
 
