@@ -52,6 +52,7 @@ export function Sidebar() {
     const canSyncShopify = perms ? perms.shopifySync : role === "SUPER_ADMIN" || role === "ADMIN";
     const canSeeConcession = perms ? perms.concessionAccess : role === "SUPER_ADMIN" || role === "ADMIN";
     const canSeeAdmin = perms ? perms.adminAccess : role === "SUPER_ADMIN" || role === "ADMIN";
+    const canSeeScanner = role === "SUPER_ADMIN" || role === "ADMIN" || role === "STAFF";
 
     const handleSync = async () => {
         setSyncing(true);
@@ -129,14 +130,16 @@ export function Sidebar() {
                         {pathname === "/" && <ChevronRight size={14} className="nav-arrow" />}
                     </button>
 
-                    <button
-                        className={`nav-item ${pathname === "/scanner" ? "active" : ""}`}
-                        onClick={() => router.push("/scanner")}
-                    >
-                        <Scan size={18} />
-                        <span>Scanner QR</span>
-                        {pathname === "/scanner" && <ChevronRight size={14} className="nav-arrow" />}
-                    </button>
+                    {canSeeScanner && (
+                        <button
+                            className={`nav-item ${pathname === "/scanner" ? "active" : ""}`}
+                            onClick={() => router.push("/scanner")}
+                        >
+                            <Scan size={18} />
+                            <span>Scanner QR</span>
+                            {pathname === "/scanner" && <ChevronRight size={14} className="nav-arrow" />}
+                        </button>
+                    )}
 
                     <button
                         className={`nav-item ${pathname === "/services" ? "active" : ""}`}
