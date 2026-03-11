@@ -7,7 +7,7 @@ import {
   Calendar, CalendarDays, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
   TrendingUp, Activity, UserCheck, UserX,
-  AlertCircle, Trash2, ChevronDown, ChevronRight, Pencil, BarChart2
+  AlertCircle, Trash2, ChevronDown, ChevronRight, Pencil, BarChart2, Zap
 } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
@@ -59,6 +59,7 @@ interface Service {
 interface Partner {
   id: string;
   name: string;
+  commission: number;
 }
 
 interface SlotInfo {
@@ -104,6 +105,7 @@ export default function Dashboard() {
   const { isLoaded, isSignedIn, user } = useUser();
   const { sessionClaims } = useAuth();
   const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+  const partnerId = (sessionClaims as any)?.metadata?.partnerId as string | undefined;
   const isPartner = role === "PARTNER";
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filtered, setFiltered] = useState<Booking[]>([]);
@@ -140,6 +142,47 @@ export default function Dashboard() {
   const [overrideReason, setOverrideReason] = useState("");
   const [statsCollapsed, setStatsCollapsed] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [partnerCommission, setPartnerCommission] = useState<number | null>(null);
+
+  const applyQuickCommission = () => {
+    const pId = isPartner ? partnerId : formData.forPartnerId;
+    const partner = partners.find(p => p.id === pId);
+    if (!partner) return;
+    const svc = services.find(s => s.id === formData.serviceId);
+    const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+    const base = (createUnitPrice || 0) * multiplier;
+    const d = parseFloat(formData.discountAmount) || 0;
+    let discounted = base;
+    if (d > 0) {
+      discounted = formData.discountType === "%" ? base * (1 - d / 100) : base - d;
+    }
+    const calculatedFee = (discounted * (partner.commission / 100)).toFixed(2);
+    setFormData({
+      ...formData,
+      bookingFee: calculatedFee,
+      totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, calculatedFee)
+    });
+  };
+
+  const applyEditQuickCommission = () => {
+    const pId = isPartner ? partnerId : (editForm.forPartnerId || editTarget?.partnerId);
+    const partner = partners.find(p => p.id === pId);
+    if (!partner) return;
+    const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+    const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+    const base = (editUnitPrice || 0) * multiplier;
+    const d = parseFloat(editForm.discountAmount) || 0;
+    let discounted = base;
+    if (d > 0) {
+      discounted = editForm.discountType === "%" ? base * (1 - d / 100) : base - d;
+    }
+    const calculatedFee = (discounted * (partner.commission / 100)).toFixed(2);
+    setEditForm({
+      ...editForm,
+      bookingFee: calculatedFee,
+      totalPrice: recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, calculatedFee)
+    });
+  };
 
   // Auto-expand stats on desktop
   useEffect(() => {
@@ -159,7 +202,7 @@ export default function Dashboard() {
     if (isSignedIn) {
       fetchBookings();
       fetchServices();
-      if (!isPartner) fetchPartners();
+      fetchPartners();
     }
   }, [isSignedIn]);
 
@@ -1296,6 +1339,11 @@ export default function Dashboard() {
                         });
                       }}
                     />
+                    {(isPartner || formData.forPartnerId) && (
+                      <button type="button" className="btn-quick-fee" onClick={applyQuickCommission} title="Aplicar comissão automática">
+                        <Zap size={14} /> Quick Apply
+                      </button>
+                    )}
                     <span className="fee-hint">O preço total será ajustado (Preço - Comissão)</span>
                   </div>
                 </div>
@@ -1643,19 +1691,25 @@ export default function Dashboard() {
                 )}
                 <div className="field">
                   <label>Comissão (Booking Fee)</label>
-                  <div className="booking-fee-wrap">
-                    <input
-                      type="number" step="0.01" placeholder="0.00"
-                      value={editForm.bookingFee}
-                      onChange={e => {
-                        const fee = e.target.value;
-                        const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
-                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
-                        const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, fee);
-                        setEditForm({ ...editForm, bookingFee: fee, totalPrice: newPrice || editForm.totalPrice });
-                      }}
-                    />
-                  </div>
+                    <div className="booking-fee-wrap">
+                      <input
+                        type="number" step="0.01" placeholder="0.00"
+                        value={editForm.bookingFee}
+                        onChange={e => {
+                          const fee = e.target.value;
+                          const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                          const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+                          const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, fee);
+                          setEditForm({ ...editForm, bookingFee: fee, totalPrice: newPrice || editForm.totalPrice });
+                        }}
+                      />
+                      {(isPartner || editForm.forPartnerId || editTarget.partnerId) && (
+                        <button type="button" className="btn-quick-fee" onClick={applyEditQuickCommission} title="Aplicar comissão automática">
+                          <Zap size={14} /> Quick Apply
+                        </button>
+                      )}
+                      <span className="fee-hint">O preço total será ajustado (Preço - Comissão)</span>
+                    </div>
                 </div>
               </div>
             </div>
