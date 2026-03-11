@@ -14,6 +14,10 @@ export async function DELETE(req: Request) {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
 
+        if (!id) {
+            return NextResponse.json({ error: "Missing ID" }, { status: 400 });
+        }
+
         const prisma = await getPrisma();
         const booking = await prisma.booking.findUnique({
             where: { id },
@@ -43,7 +47,7 @@ export async function DELETE(req: Request) {
             userId,
             action: "DELETE",
             module: "DASHBOARD",
-            targetId: id as string,
+            targetId: id,
             targetName: booking.customerName || undefined,
             details: {
                 message: "Reserva eliminada permanentemente.",
