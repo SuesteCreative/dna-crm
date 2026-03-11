@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { logAudit } from './audit';
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://dna-crm.vercel.app';
+// Updated design version: 2026-03-11 08:45
 
 export async function sendBookingQRCode(booking: any) {
     const resendApiKey = process.env.RESEND_API_KEY;
@@ -53,8 +54,8 @@ export async function sendBookingQRCode(booking: any) {
                 {
                     filename: 'qrcode.png',
                     content: qrBuffer,
-                    content_type: 'image/png',
-                    id: 'qrcode_cid'
+                    contentType: 'image/png',
+                    contentId: 'qrcode_cid'
                 }
             ],
             html: `

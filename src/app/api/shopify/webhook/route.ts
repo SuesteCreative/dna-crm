@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { getPrisma } from "@/lib/prisma";
+import { sendBookingQRCode } from "@/lib/email";
+
+// Deployment force update: 2026-03-11 08:50
 
 async function verifyHmac(body: string, secret: string, hmacHeader: string): Promise<boolean> {
     try {
@@ -134,7 +137,7 @@ export async function POST(req: NextRequest) {
         if (topic === "orders/create" || topic === "orders/updated" || topic === "orders/paid") {
             const bookingData = parseOrderToBooking(order);
 
-            await prisma.booking.upsert({
+            const createdBooking = await prisma.booking.upsert({
                 where: { shopifyId: bookingData.shopifyId },
                 update: {
                     status: bookingData.status,
@@ -148,6 +151,11 @@ export async function POST(req: NextRequest) {
                 },
                 create: bookingData,
             });
+
+            // Send QR code for new Shopify bookings
+            if (createdBooking.customerEmail && createdBooking.status === "CONFIRMED") {
+                sendBookingQRCode(createdBooking).catch(e => console.error("Shopify QR send failed:", e));
+            }
             console.log(`Webhook ${topic}: upserted booking for order ${order.id}`);
         } else if (topic === "orders/cancelled") {
             await prisma.booking.updateMany({
