@@ -499,7 +499,6 @@ export default function Dashboard() {
           </tbody>
         </table>
       </div>
-      {renderBookingCards(bkgs)}
     </>
   );
 
