@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth, useUser } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, CalendarCheck, BookUser, Camera
+    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, CalendarCheck, BookUser, Scan
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -47,7 +47,6 @@ export function Sidebar() {
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
 
-    // Safefalls in case perms aren't loaded yet
     const canSeePartners = perms ? perms.partnersAccess : role === "SUPER_ADMIN" || role === "ADMIN";
     const canSeeStats = perms ? perms.statisticsAccess : role !== "USER";
     const canSyncShopify = perms ? perms.shopifySync : role === "SUPER_ADMIN" || role === "ADMIN";
@@ -132,7 +131,7 @@ export function Sidebar() {
                         className={`nav-item ${pathname === "/scanner" ? "active" : ""}`}
                         onClick={() => router.push("/scanner")}
                     >
-                        <Camera size={18} />
+                        <Scan size={18} />
                         <span>Scanner QR</span>
                         {pathname === "/scanner" && <ChevronRight size={14} className="nav-arrow" />}
                     </button>
@@ -146,6 +145,7 @@ export function Sidebar() {
                         {pathname === "/services" && <ChevronRight size={14} className="nav-arrow" />}
                     </button>
 
+                    {/* REST OF THE ITEMS */}
                     <button
                         className={`nav-item ${pathname === "/availability" ? "active" : ""}`}
                         onClick={() => router.push("/availability")}
