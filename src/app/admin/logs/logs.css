@@ -70,11 +70,12 @@
 
 /* Filters Bar */
 .logs-filters-bar {
-    background: var(--surface);
-    padding: 20px;
-    border-radius: 16px;
+    background: var(--surface2);
+    padding: 16px 20px;
+    border-radius: 14px;
     border: 1px solid var(--border);
     margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .filters-section {
@@ -85,30 +86,70 @@
 }
 
 .filter-title {
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 800;
     color: var(--muted);
     text-transform: uppercase;
     display: flex;
     align-items: center;
     gap: 8px;
+    letter-spacing: 0.05em;
+    margin-right: 4px;
 }
 
 .date-inputs {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .date-sep {
     color: var(--muted);
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Modern Inputs & Selects */
+.au-search,
+.au-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit;
+}
+
+.au-search:hover,
+.au-select:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.au-search:focus,
+.au-select:focus {
+    border-color: var(--blue);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--blue-dim);
 }
 
 .search-input {
-    flex: 1;
-    min-width: 250px;
+    flex: 2;
+    min-width: 300px;
 }
+
+/* Style for date inputs specifically */
+input[type="date"].au-search {
+    padding: 8px 12px;
+    cursor: pointer;
+    min-width: 135px;
+}
+
+/* custom scrollbar for selects if needed, but standard should be fine */
 
 /* Table Section */
 .logs-table-wrap {
