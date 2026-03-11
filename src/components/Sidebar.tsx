@@ -58,9 +58,8 @@ export function Sidebar() {
         setSyncing(true);
         try {
             await fetch("/api/shopify/sync", { method: "POST" });
-            router.refresh();
         } catch (e) {
-            console.error("Sync failed", e);
+            console.error(e);
         } finally {
             setSyncing(false);
         }
@@ -73,24 +72,19 @@ export function Sidebar() {
         try {
             const res = await fetch("/api/bug-report", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    subject: bugForm.subject,
-                    description: bugForm.description,
-                    senderEmail: user?.primaryEmailAddress?.emailAddress,
-                }),
+                body: JSON.stringify({ ...bugForm, senderEmail: user?.primaryEmailAddress?.emailAddress }),
             });
             if (res.ok) {
                 setBugSent(true);
                 setTimeout(() => {
                     setShowBugReport(false);
-                    setBugForm({ subject: "", description: "" });
                     setBugSent(false);
+                    setBugForm({ subject: "", description: "" });
                 }, 2000);
             } else {
-                setBugError("Erro ao enviar. Tente novamente.");
+                setBugError("Erro ao enviar relatório. Tente novamente.");
             }
-        } catch {
+        } catch (e) {
             setBugError("Erro de ligação.");
         } finally {
             setBugSending(false);
@@ -99,14 +93,12 @@ export function Sidebar() {
 
     return (
         <>
-            <div className="mobile-header">
-                <button className="mobile-menu-btn" onClick={() => setIsMobileOpen(true)}>
-                    <Menu size={24} />
-                </button>
-                <img src="/SVG/logo-white.svg" alt="DNA" className="mobile-logo" />
-                <div style={{ width: 40 }} /> {/* Spacer to center logo */}
-            </div>
+            {/* Mobile menu trigger */}
+            <button className="mobile-trigger" onClick={() => setIsMobileOpen(true)}>
+                <Menu size={24} />
+            </button>
 
+            {/* Mobile menu backdrop */}
             <div
                 className={`sidebar-overlay ${isMobileOpen ? 'active' : ''}`}
                 onClick={() => setIsMobileOpen(false)}

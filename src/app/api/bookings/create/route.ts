@@ -6,6 +6,7 @@ import { createBusyEvent, toGcalTimes } from "@/lib/gcal";
 import { logAudit } from "@/lib/audit";
 import { sendBookingQRCode } from "@/lib/email";
 
+// Deployment update: 2026-03-11 07:44
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
