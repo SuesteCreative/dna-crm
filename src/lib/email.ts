@@ -1,16 +1,23 @@
 import { Resend } from 'resend';
 import QRCode from 'qrcode';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 'missing');
 const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
 export async function sendBookingQRCode(booking: any) {
+    const resendApiKey = process.env.RESEND_API_KEY;
+
+    if (!resendApiKey || resendApiKey === 'missing') {
+        console.error("RESEND_API_KEY is missing. Cannot send QR code email.");
+        return;
+    }
+
     if (!booking.customerEmail) {
         console.log(`No email for booking ${booking.id}, skipping QR code email.`);
         return;
     }
 
     try {
+        const resend = new Resend(resendApiKey);
         const checkInUrl = `${baseUrl}/check-in/${booking.id}`;
 
         // Generate QR Code as Data URL for embedding in email
