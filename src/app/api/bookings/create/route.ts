@@ -14,15 +14,13 @@ export async function POST(req: Request) {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
-    const isPartner = role === "PARTNER";
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.getUser(userId);
+    const metadata = clerkUser.publicMetadata as any;
+    const sessionPartnerId = metadata.partnerId as string | undefined;
 
-    // Read partnerId directly from Clerk (bypasses JWT template/caching limitations)
-    let sessionPartnerId: string | undefined;
-    if (isPartner) {
-        const clerk = await clerkClient();
-        const clerkUser = await clerk.users.getUser(userId);
-        sessionPartnerId = clerkUser.publicMetadata?.partnerId as string | undefined;
-    }
+    // Use sessionPartnerId as primary signal instead of just role string
+    const isPartner = !!sessionPartnerId || role === "PARTNER";
 
     try {
         const prisma = await getPrisma();

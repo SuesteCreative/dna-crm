@@ -122,6 +122,12 @@ export default function AvailabilityPage() {
         const qty = isJetski ? bookingForm.quantity : bookingForm.pax;
         const finalPrice = selected.service.price ? selected.service.price * qty : 0;
 
+        if (!selected.slot.time) {
+            setError("Por favor, selecione um horário válido.");
+            setSubmitting(false);
+            return;
+        }
+
         try {
             const res = await fetch("/api/bookings/create", {
                 method: "POST",

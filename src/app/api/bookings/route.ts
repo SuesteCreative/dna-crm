@@ -14,12 +14,14 @@ export async function GET() {
         const prisma = await getPrisma();
 
         let where: Record<string, any> = {};
-        if (role === "PARTNER") {
-            // Read partnerId directly from Clerk (bypasses JWT template limitations)
-            const clerk = await clerkClient();
-            const clerkUser = await clerk.users.getUser(userId);
-            const partnerId = clerkUser.publicMetadata?.partnerId as string | undefined;
-            where = { partnerId: partnerId ?? "__none__" };
+        const clerk = await clerkClient();
+        const clerkUser = await clerk.users.getUser(userId);
+        const metadata = clerkUser.publicMetadata as any;
+        const pId = metadata.partnerId as string | undefined;
+
+        // Force partner filter if they have a partnerId or the explicit role
+        if (role === "PARTNER" || pId) {
+            where = { partnerId: pId ?? "__none__" };
         }
 
         const bookings = await prisma.booking.findMany({

@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     const serviceId = searchParams.get("serviceId");
     const date = searchParams.get("date"); // "YYYY-MM-DD"
     const quantity = parseInt(searchParams.get("quantity") || "1", 10);
+    const excludeBookingId = searchParams.get("excludeBookingId");
 
     if (!serviceId || !date) {
         return NextResponse.json({ error: "serviceId and date required" }, { status: 400 });
@@ -84,6 +85,7 @@ export async function GET(req: NextRequest) {
             serviceId: { in: serviceIds },
             activityDate: { gte: startOfDay, lte: endOfDay },
             status: { not: "CANCELLED" },
+            ...(excludeBookingId && { id: { not: excludeBookingId } }),
         },
         select: { activityTime: true, quantity: true, serviceId: true },
     });

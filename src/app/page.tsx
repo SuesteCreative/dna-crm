@@ -136,8 +136,10 @@ export default function Dashboard() {
   const [slotsClosed, setSlotsClosed] = useState(false);
   const [canOverride, setCanOverride] = useState(false);
   const [overrideModal, setOverrideModal] = useState<{ time: string; available: number; capacity: number } | null>(null);
+  const [overrideType, setOverrideType] = useState<'create' | 'edit'>('create');
   const [overrideReason, setOverrideReason] = useState("");
   const [statsCollapsed, setStatsCollapsed] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // Auto-expand stats on desktop
   useEffect(() => {
@@ -201,13 +203,13 @@ export default function Dashboard() {
     } catch { }
   };
 
-  const fetchSlots = async (serviceId: string, date: string, quantity: number) => {
+  const fetchSlots = async (serviceId: string, date: string, quantity: number, excludeBookingId?: string) => {
     if (!serviceId || !date) { setSlots([]); return; }
     const svc = services.find(s => s.id === serviceId);
     if (!svc?.durationMinutes) { setSlots([]); return; }
     setSlotsLoading(true);
     try {
-      const res = await fetch(`/api/slots?serviceId=${serviceId}&date=${date}&quantity=${quantity}`);
+      const res = await fetch(`/api/slots?serviceId=${serviceId}&date=${date}&quantity=${quantity}${excludeBookingId ? `&excludeBookingId=${excludeBookingId}` : ""}`);
       if (res.ok) {
         const data = await res.json();
         setSlotsClosed(data.closed ?? false);
@@ -351,7 +353,7 @@ export default function Dashboard() {
               <span className={`price-val ${isNoShow(b) ? "price-noshow" : ""}`}>
                 {isNoShow(b) ? "0.00€" : b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}
               </span>
-              {b.status !== "CANCELLED" && (
+              {b.status !== "CANCELLED" && !isPartner && (
                 <button
                   className={b.showedUp ? "attendance-verified-sm" : "btn-attendance-sm"}
                   title={b.showedUp ? "Clique para desmarcar presença" : "Confirmar presença"}
@@ -428,7 +430,7 @@ export default function Dashboard() {
                     {isNoShow(b) ? "0.00€" : b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}
                   </td>
                   <td>
-                    {b.status !== "CANCELLED" ? (
+                    {b.status !== "CANCELLED" && !isPartner ? (
                       <button
                         className={b.showedUp ? "attendance-verified" : "btn-attendance"}
                         title={b.showedUp ? "Clique para desmarcar presença" : "Confirmar presença"}
@@ -538,6 +540,12 @@ export default function Dashboard() {
   };
 
   const submitCreate = async (override = false, reason = "") => {
+    if (submitting) return;
+    if (!formData.activityTime) {
+      setFormError("Por favor, selecione um horário.");
+      return;
+    }
+    setSubmitting(true);
     setFormError(null);
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -564,6 +572,7 @@ export default function Dashboard() {
       } else {
         const d = await res.json();
         if (d.error === "SLOT_FULL" && d.canOverride) {
+          setOverrideType("create");
           setOverrideModal({ time: formData.activityTime, available: d.available, capacity: d.capacity });
         } else if (d.error === "SLOT_FULL") {
           setFormError(`Slot sem disponibilidade (${d.available}/${d.capacity} livres)`);
@@ -572,6 +581,7 @@ export default function Dashboard() {
         }
       }
     } catch { setFormError("Erro de ligação"); }
+    finally { setSubmitting(false); }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -643,9 +653,14 @@ export default function Dashboard() {
       discountAmount: "",
       discountType: "%",
     });
+
+    const targetSvcId = svcById?.id || services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === b.activityType)?.id;
+    if (targetSvcId) {
+      fetchSlots(targetSvcId, dateStr, b.quantity ?? 1, b.id);
+    }
   };
 
-  const handleEditSave = async () => {
+  const handleEditSave = async (override = false, reason = "") => {
     if (!editTarget) return;
     setEditSaving(true); setEditError(null);
     try {
@@ -654,15 +669,32 @@ export default function Dashboard() {
       const res = await fetch("/api/bookings/update", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editTarget.id, ...editPayload }),
+        body: JSON.stringify({
+          id: editTarget.id,
+          ...editPayload,
+          override,
+          overrideReason: reason,
+          userName: user?.fullName || "Staff",
+        }),
       });
       if (res.ok) {
         const updated = await res.json();
         setBookings(prev => prev.map(b => b.id === updated.id ? { ...b, ...updated } : b));
         setEditTarget(null);
+        setOverrideModal(null);
+        setOverrideReason("");
       } else {
         const d = await res.json();
-        setEditError(d.error || "Erro ao guardar");
+        if (d.error === "SLOT_FULL") {
+          if (d.canOverride) {
+            setOverrideType("edit");
+            setOverrideModal({ time: editForm.activityTime || "", available: d.available, capacity: d.capacity });
+          } else {
+            setEditError("Este horário está lotado.");
+          }
+        } else {
+          setEditError(d.error || "Erro ao guardar");
+        }
       }
     } catch { setEditError("Erro de ligação"); }
     finally { setEditSaving(false); }
@@ -1270,8 +1302,10 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="modal-actions">
-                <button type="button" className="btn-ghost" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Criar Reserva</button>
+                <button type="button" className="btn-ghost" onClick={() => setShowModal(false)} disabled={submitting}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={submitting}>
+                  {submitting ? "A criar..." : "Criar Reserva"}
+                </button>
               </div>
             </form>
           </div>
@@ -1347,7 +1381,13 @@ export default function Dashboard() {
                 </div>
                 <div className="field">
                   <label>Data</label>
-                  <input type="date" value={editForm.activityDate} onChange={e => setEditForm({ ...editForm, activityDate: e.target.value })} />
+                  <input type="date" value={editForm.activityDate} onChange={e => {
+                    const d = e.target.value;
+                    setEditForm({ ...editForm, activityDate: d });
+                    const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                    const sId = svc?.id || editTarget?.serviceId;
+                    if (sId) fetchSlots(sId, d, editForm.quantity || 1, editTarget?.id);
+                  }} />
                 </div>
 
                 {(() => {
@@ -1375,6 +1415,8 @@ export default function Dashboard() {
                               pax: Math.max(qty, Math.min(editForm.pax, qty * 2)),
                               totalPrice: newPrice || editForm.totalPrice
                             });
+                            const svcId = svc?.id || editTarget?.serviceId;
+                            if (svcId) fetchSlots(svcId, editForm.activityDate, qty, editTarget?.id);
                           }}>
                             {qtyOptions.map(q => <option key={q} value={q}>{q}</option>)}
                           </select>
@@ -1424,6 +1466,8 @@ export default function Dashboard() {
                           const multiplier = svc?.minPax != null ? editForm.pax : qty;
                           const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
                           setEditForm({ ...editForm, quantity: qty, totalPrice: newPrice || editForm.totalPrice });
+                          const sId = svc?.id || editTarget?.serviceId;
+                          if (sId) fetchSlots(sId, editForm.activityDate, qty, editTarget?.id);
                         }} />
                       </div>
                       <div className="field">
@@ -1480,10 +1524,70 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="field">
-                  <label>Hora</label>
-                  <input type="time" value={editForm.activityTime} onChange={e => setEditForm({ ...editForm, activityTime: e.target.value })} />
-                </div>
+                {(() => {
+                  const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                  if (svc?.durationMinutes && editForm.activityDate) {
+                    return (
+                      <div className="field full slot-picker-wrap">
+                        <label>Hora {editForm.activityTime && <span className="slot-selected-label">— {editForm.activityTime} selecionada</span>}</label>
+                        {slotsLoading ? (
+                          <div className="slot-loading">A carregar horários...</div>
+                        ) : slotsClosed ? (
+                          <div className="slot-closed">Encerrado neste dia</div>
+                        ) : (() => {
+                          const slotGroups = [
+                            { label: "Manhã", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h < 12; }) },
+                            { label: "Tarde", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 12 && h < 17; }) },
+                            { label: "Final do dia", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 17; }) },
+                          ].filter(g => g.slots.length > 0);
+                          return (
+                            <div className="slot-groups">
+                              {slotGroups.map(group => (
+                                <div key={group.label} className="slot-group">
+                                  <div className="slot-group-label">{group.label}</div>
+                                  <div className="slot-grid">
+                                    {group.slots.map(slot => {
+                                      const isPast = !!slot.past;
+                                      const isBlocked = slot.blocked;
+                                      const isSelected = editForm.activityTime === slot.time;
+                                      let cls = "slot-btn";
+                                      if (isSelected) cls += " slot-selected";
+                                      else if (isPast) cls += " slot-past";
+                                      else if (isBlocked) cls += canOverride && !isPartner ? " slot-override" : " slot-blocked";
+                                      else cls += " slot-free";
+                                      return (
+                                        <button
+                                          key={slot.time}
+                                          type="button"
+                                          className={cls}
+                                          disabled={isPast || (isBlocked && (!canOverride || isPartner))}
+                                          onClick={() => {
+                                            if (isPast || (isBlocked && (!canOverride || isPartner))) return;
+                                            setEditForm({ ...editForm, activityTime: slot.time });
+                                          }}
+                                          title={isPast ? "Horário já passou" : isBlocked ? `Lotado (${slot.available}/${slot.capacity} livres)` : `${slot.available}/${slot.capacity} livres`}
+                                        >
+                                          {slot.time}
+                                          {isBlocked && !isPartner && canOverride && !isPast && <span className="slot-override-tag">Override</span>}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="field">
+                      <label>Hora</label>
+                      <input type="time" value={editForm.activityTime} onChange={e => setEditForm({ ...editForm, activityTime: e.target.value })} />
+                    </div>
+                  );
+                })()}
                 <div className="field">
                   <label>Estado</label>
                   <select className="field-select" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
@@ -1563,7 +1667,7 @@ export default function Dashboard() {
               </button>
               <div style={{ display: "flex", gap: 8 }}>
                 <button className="btn-ghost" onClick={() => setEditTarget(null)}>Cancelar</button>
-                <button className="btn-primary" disabled={editSaving} onClick={handleEditSave}>
+                <button className="btn-primary" disabled={editSaving} onClick={() => handleEditSave()}>
                   {editSaving ? "A guardar..." : "Guardar"}
                 </button>
               </div>
@@ -1597,7 +1701,10 @@ export default function Dashboard() {
               <button
                 className="btn-override-confirm"
                 disabled={!overrideReason.trim()}
-                onClick={() => submitCreate(true, overrideReason)}
+                onClick={() => {
+                  if (overrideType === 'edit') handleEditSave(true, overrideReason);
+                  else submitCreate(true, overrideReason);
+                }}
               >
                 Confirmar Override
               </button>
