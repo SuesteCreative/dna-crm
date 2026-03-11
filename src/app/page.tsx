@@ -631,6 +631,7 @@ export default function Dashboard() {
       notes: b.notes || "",
       countryCode: b.country || "Other",
       bookingFee: b.bookingFee?.toString() || "",
+      forPartnerId: b.partnerId || "",
       discountAmount: "",
       discountType: "%",
     });
@@ -1362,8 +1363,23 @@ export default function Dashboard() {
 
               <div className="drawer-section-label" style={{ marginTop: 16 }}>Reserva</div>
               <div className="form-grid">
-                <div className="field full">
-                  <label>Comissão paga ao parceiro (Booking Fee)</label>
+                {!isPartner && partners.length > 0 && (
+                  <div className="field">
+                    <label>Parceiro</label>
+                    <select
+                      className="field-select"
+                      value={editForm.forPartnerId}
+                      onChange={e => setEditForm({ ...editForm, forPartnerId: e.target.value })}
+                    >
+                      <option value="">— Sem parceiro —</option>
+                      {partners.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="field">
+                  <label>Comissão (Booking Fee)</label>
                   <div className="booking-fee-wrap">
                     <input
                       type="number" step="0.01" placeholder="0.00"
@@ -1376,7 +1392,6 @@ export default function Dashboard() {
                         setEditForm({ ...editForm, bookingFee: fee, totalPrice: newPrice || editForm.totalPrice });
                       }}
                     />
-                    <span className="fee-hint">O preço total será ajustado (Preço - Comissão)</span>
                   </div>
                 </div>
               </div>

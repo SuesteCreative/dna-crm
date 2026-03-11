@@ -1998,7 +1998,7 @@ body {
     max-width: 100vw;
     background: var(--surface);
     border-left: 1px solid var(--border);
-    z-index: 201;
+    z-index: 2100;
     display: flex;
     flex-direction: column;
     animation: slideIn .2s ease;
