@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import QRCode from 'qrcode';
 import { logAudit } from './audit';
 
-const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
 export async function sendBookingQRCode(booking: any) {
     const resendApiKey = process.env.RESEND_API_KEY;
@@ -39,13 +39,13 @@ export async function sendBookingQRCode(booking: any) {
             },
         });
 
-        // Send Email
+        // Send Email using the official domain address
         const { data, error } = await resend.emails.send({
-            from: 'Desportos Náuticos Alvor <onboarding@resend.dev>',
+            from: 'Desportos Náuticos Alvor <booking@desportosnauticosalvor.com>',
             to: booking.customerEmail,
             subject: `Reserva Confirmada - ${booking.customerName}`,
             html: `
-                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #e1e1e1; border-radius: 12px; color: #333;">
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #e1e1e1; border-radius: 12px; color: #333; background: white;">
                     <div style="text-align: center; margin-bottom: 30px;">
                         <h1 style="color: #0056b3; margin-bottom: 10px;">Reserva Confirmada!</h1>
                         <p style="font-size: 18px; color: #555;">Olá ${booking.customerName}, aqui está o seu comprovativo.</p>
@@ -104,7 +104,7 @@ export async function sendBookingQRCode(booking: any) {
                 module: "BOOKING",
                 targetId: booking.id,
                 targetName: booking.customerName,
-                details: `Email sent to ${booking.customerEmail}`
+                details: `Email sent to ${booking.customerEmail} via Resend ID ${data?.id}`
             });
         }
     } catch (err: any) {
