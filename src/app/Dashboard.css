@@ -589,7 +589,75 @@ body {
     }
 }
 
-/* ── STATS ───────────────────────────────────────────── */
+/* ── STATS ACCORDION ─────────────────────────────────── */
+.stats-accordion {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.stats-accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    user-select: none;
+}
+
+.stats-accordion-header:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.stats-accordion-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.stats-accordion-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+}
+
+.stats-accordion-toggle .rotate-180 {
+    transform: rotate(180deg);
+}
+
+.stats-accordion-content {
+    transition: all 0.3s ease-in-out;
+    max-height: 2000px;
+    opacity: 1;
+    padding: 0 16px 16px;
+}
+
+.stats-accordion-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+}
+
+/* On desktop, we don't necessarily need it collapsed by default, 
+   the state handles it, but maybe add a rule to make it clear it's a feature. */
+
+@media (min-width: 1025px) {
+    /* Optional: can make it always visible on desktop if preferred, 
+       but keeping it as a conscious toggle is also fine. */
+}
+
+/* ────────────────────────────────────────────────────── */
 .stats-row {
     display: grid;
     grid-template-columns: repeat(5, 1fr);

@@ -7,7 +7,7 @@ import {
   Calendar, CalendarDays, RefreshCcw, Plus, Search,
   CheckCircle, Clock, X, Download, FileText,
   TrendingUp, Activity, UserCheck, UserX,
-  AlertCircle, Trash2, ChevronDown, ChevronRight, Pencil
+  AlertCircle, Trash2, ChevronDown, ChevronRight, Pencil, BarChart2
 } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
@@ -137,6 +137,14 @@ export default function Dashboard() {
   const [canOverride, setCanOverride] = useState(false);
   const [overrideModal, setOverrideModal] = useState<{ time: string; available: number; capacity: number } | null>(null);
   const [overrideReason, setOverrideReason] = useState("");
+  const [statsCollapsed, setStatsCollapsed] = useState(true);
+
+  // Auto-expand stats on desktop
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth > 1024) {
+      setStatsCollapsed(false);
+    }
+  }, []);
 
   // Body scroll lock
   useEffect(() => {
@@ -772,74 +780,89 @@ export default function Dashboard() {
         </div>
       )}
 
-      <section className="stats-row">
-        <div className="stat-tile blue">
-          <div className="tile-ico"><Calendar size={22} /></div>
-          <div className="tile-info"><span className="tile-val">{bookings.length}</span><span className="tile-lbl">Total de Reservas</span></div>
-          <TrendingUp size={40} className="tile-bg-ico" />
-        </div>
-        <div className="stat-tile green">
-          <div className="tile-ico"><CheckCircle size={22} /></div>
-          <div className="tile-info"><span className="tile-val">{confirmed}</span><span className="tile-lbl">Confirmadas</span></div>
-          <CheckCircle size={40} className="tile-bg-ico" />
-        </div>
-        <div className="stat-tile red">
-          <div className="tile-ico"><UserX size={22} /></div>
-          <div className="tile-info"><span className="tile-val">{noShows.length}</span><span className="tile-lbl">Não Compareceu</span></div>
-          <UserX size={40} className="tile-bg-ico" />
-        </div>
-        <div className="stat-tile teal">
-          <div className="tile-ico"><Activity size={22} /></div>
-          <div className="tile-info">
-            <span className="tile-val">{revenue.toFixed(0)}€</span>
-            <span className="tile-lbl">Receita Total</span>
+      <div className="stats-accordion">
+        <div className="stats-accordion-header" onClick={() => setStatsCollapsed(!statsCollapsed)}>
+          <div className="stats-accordion-title">
+            <BarChart2 size={18} />
+            <span>Estatísticas Rápidas</span>
           </div>
-          <TrendingUp size={40} className="tile-bg-ico" />
-        </div>
-        <div className="stat-tile teal">
-          <div className="tile-ico"><TrendingUp size={22} /></div>
-          <div className="tile-info">
-            <span className="tile-val">{(revenue + projectedRevenue).toFixed(0)}€</span>
-            <span className="tile-lbl">Receita Projetada</span>
-            <span className="tile-note">+{projectedRevenue.toFixed(0)}€ futuro</span>
+          <div className="stats-accordion-toggle">
+            {statsCollapsed ? 'Ver Mais' : 'Ver Menos'}
+            <ChevronDown size={16} className={statsCollapsed ? '' : 'rotate-180'} />
           </div>
-          <TrendingUp size={40} className="tile-bg-ico" />
         </div>
-      </section>
 
-      {!isPartner && (noShowByPartner.length > 0 || noShowByChannel.length > 0) && (
-        <div className="noshow-breakdown">
-          {noShowByPartner.length > 0 && (
-            <div className="noshow-card">
-              <div className="noshow-card-title">Parceiros — Não Compareceu</div>
-              <div className="noshow-list">
-                {noShowByPartner.map(p => {
-                  const color = partnerColorMap.get(p.id) ?? PARTNER_PALETTE[0];
-                  return (
-                    <div key={p.id} className="noshow-row">
-                      <span className="noshow-row-name" style={{ color: color.text }}>{p.name}</span>
-                      <span className="noshow-row-count">{p.count}</span>
-                    </div>
-                  );
-                })}
-              </div>
+        <div className={`stats-accordion-content ${statsCollapsed ? 'collapsed' : ''}`}>
+          <section className="stats-row">
+            <div className="stat-tile blue">
+              <div className="tile-ico"><Calendar size={22} /></div>
+              <div className="tile-info"><span className="tile-val">{bookings.length}</span><span className="tile-lbl">Total de Reservas</span></div>
+              <TrendingUp size={40} className="tile-bg-ico" />
             </div>
-          )}
-          {noShowByChannel.length > 0 && (
-            <div className="noshow-card">
-              <div className="noshow-card-title">Canal — Não Compareceu</div>
-              <div className="noshow-list">
-                {noShowByChannel.map(x => (
-                  <div key={x.src} className="noshow-row">
-                    <span className="noshow-row-name">{x.src}</span>
-                    <span className="noshow-row-count">{x.count}</span>
-                  </div>
-                ))}
+            <div className="stat-tile green">
+              <div className="tile-ico"><CheckCircle size={22} /></div>
+              <div className="tile-info"><span className="tile-val">{confirmed}</span><span className="tile-lbl">Confirmadas</span></div>
+              <CheckCircle size={40} className="tile-bg-ico" />
+            </div>
+            <div className="stat-tile red">
+              <div className="tile-ico"><UserX size={22} /></div>
+              <div className="tile-info"><span className="tile-val">{noShows.length}</span><span className="tile-lbl">Não Compareceu</span></div>
+              <UserX size={40} className="tile-bg-ico" />
+            </div>
+            <div className="stat-tile teal">
+              <div className="tile-ico"><Activity size={22} /></div>
+              <div className="tile-info">
+                <span className="tile-val">{revenue.toFixed(0)}€</span>
+                <span className="tile-lbl">Receita Total</span>
               </div>
+              <TrendingUp size={40} className="tile-bg-ico" />
+            </div>
+            <div className="stat-tile teal">
+              <div className="tile-ico"><TrendingUp size={22} /></div>
+              <div className="tile-info">
+                <span className="tile-val">{(revenue + projectedRevenue).toFixed(0)}€</span>
+                <span className="tile-lbl">Receita Projetada</span>
+                <span className="tile-note">+{projectedRevenue.toFixed(0)}€ futuro</span>
+              </div>
+              <TrendingUp size={40} className="tile-bg-ico" />
+            </div>
+          </section>
+
+          {!isPartner && (noShowByPartner.length > 0 || noShowByChannel.length > 0) && (
+            <div className="noshow-breakdown">
+              {noShowByPartner.length > 0 && (
+                <div className="noshow-card">
+                  <div className="noshow-card-title">Parceiros — Não Compareceu</div>
+                  <div className="noshow-list">
+                    {noShowByPartner.map(p => {
+                      const color = partnerColorMap.get(p.id) ?? PARTNER_PALETTE[0];
+                      return (
+                        <div key={p.id} className="noshow-row">
+                          <span className="noshow-row-name" style={{ color: color.text }}>{p.name}</span>
+                          <span className="noshow-row-count">{p.count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {noShowByChannel.length > 0 && (
+                <div className="noshow-card">
+                  <div className="noshow-card-title">Canal — Não Compareceu</div>
+                  <div className="noshow-list">
+                    {noShowByChannel.map(x => (
+                      <div key={x.src} className="noshow-row">
+                        <span className="noshow-row-name">{x.src}</span>
+                        <span className="noshow-row-count">{x.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
+      </div>
 
       <section className="dashboard-content">
         <div className="table-card-header">
