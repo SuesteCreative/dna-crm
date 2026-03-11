@@ -5,7 +5,6 @@ import { Resend } from "resend";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-    const resend = new Resend(process.env.RESEND_API_KEY || "missing");
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -14,7 +13,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey || resendApiKey === 'missing') {
+        console.error("Resend API key missing");
+        return NextResponse.json({ error: "Email configuration missing" }, { status: 500 });
+    }
+
     try {
+        const resend = new Resend(resendApiKey);
         await resend.emails.send({
             from: "DNA CRM <onboarding@resend.dev>",
             to: "booking@desportosnauticosalvor.com",
