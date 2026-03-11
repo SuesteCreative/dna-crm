@@ -431,8 +431,17 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `59486ea` | **Security**: Removed `_CRM_V1_SNAPSHOT.zip` from entire git history (filter-branch, force push), rotated exposed GCP service account key, added `*.zip` to `.gitignore` |
 | `QR-01` | **QR Check-in System**: Integrated automated QR email delivery, Data URI embedding (zero-file maintenance), and professional in-CRM scanner. |
 | `QR-02` | **Payment Breakthrough & Partner Attribution**: Price breakdown (Paid vs Pending), real partner names in check-in, and UX improvements (Close button). |
+| `BKG-03` | **Slot Logic & Partner Tools**: Meety-sync slot intervals, Quick Apply commission, Country Selector v2 (image flags + expanded list), and mobile UI fixes. |
+| `BKG-04` | **Security & UX**: Enhanced security for attendance toggle, improved mobile UI, and refined partner commission application. |
 
 ### Feature Details (Recent)
+
+#### Slot Logic, Mobile UX & Partner Tools (2026-03-11)
+- **Slot Synchronization**: Aligned Service durations and gaps to match Meety's 10-minute intervals with 5-min buffers (e.g., 10min activity = 20min duration / -10min gap).
+- **Mobile Dashboard Fix**: Resolved duplicated booking cards displayed on mobile devices.
+- **Enhanced Country Selector**: Replaced emoji flags with high-quality icons for Windows compatibility, swapped field order for better UX, and expanded the list to 50+ countries (all EU + major globals).
+- **Quick Apply Commission**: Added lightning (Zap) button to booking forms that automatically calculates partner commission based on their stored rate.
+- **Security Hardening**: Locked `/api/bookings/attendance` to prevent partner accounts from marking attendance.
 
 #### Payment Breakthrough & Partner Attribution (2026-03-11)
 - **Price Breakdown**: Automated calculation of Amount Paid (Sinal) vs Pending (Na Praia) displayed in both confirmation emails and the staff check-in view.
