@@ -1250,15 +1250,15 @@ export default function Dashboard() {
                   <input type="email" value={formData.customerEmail} onChange={e => setFormData({ ...formData, customerEmail: e.target.value })} />
                 </div>
                 <div className="field">
-                  <label>Telefone</label>
-                  <input value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} />
-                </div>
-                <div className="field">
                   <CountrySelector
-                    label="País / Stats"
+                    label="País / Indicativo"
                     value={formData.countryCode}
                     onChange={val => setFormData({ ...formData, countryCode: val })}
                   />
+                </div>
+                <div className="field">
+                  <label>Telefone</label>
+                  <input value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} />
                 </div>
 
                 <div className="field-section-label" style={{ marginTop: 8 }}>Reserva</div>
@@ -1608,15 +1608,15 @@ export default function Dashboard() {
                   <input type="email" value={editForm.customerEmail} onChange={e => setEditForm({ ...editForm, customerEmail: e.target.value })} />
                 </div>
                 <div className="field">
-                  <label>Telefone</label>
-                  <input value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: e.target.value })} />
-                </div>
-                <div className="field">
                   <CountrySelector
-                    label="País / Stats"
+                    label="País / Indicativo"
                     value={editForm.countryCode}
                     onChange={val => setEditForm({ ...editForm, countryCode: val })}
                   />
+                </div>
+                <div className="field">
+                  <label>Telefone</label>
+                  <input value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: e.target.value })} />
                 </div>
                 <div className="field full">
                   <label>Notas</label>
