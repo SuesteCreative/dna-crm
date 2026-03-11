@@ -67,18 +67,22 @@ interface SlotInfo {
 }
 
 const defaultForm = {
-  customerName: "", customerEmail: "", customerPhone: "",
+  customerName: "", customerEmail: "", customerPhone: "", countryCode: "351",
   activityDate: "", activityTime: "", pax: 1, quantity: 1, totalPrice: "",
   serviceId: "", activityType: "", discountAmount: "", discountType: "%",
-  forPartnerId: "",
+  forPartnerId: "", bookingFee: "",
 };
 
-function recalcPrice(unitPrice: number | null, qty: number, discAmt: string, discType: string): string {
+function recalcPrice(unitPrice: number | null, qtyOrPax: number, discAmt: string, discType: string, bookingFee: string = ""): string {
   if (unitPrice == null) return "";
-  const base = unitPrice * qty;
+  const base = unitPrice * qtyOrPax;
   const d = parseFloat(discAmt) || 0;
-  if (d <= 0) return base.toFixed(2);
-  const final = discType === "%" ? base * (1 - d / 100) : base - d;
+  let discounted = base;
+  if (d > 0) {
+    discounted = discType === "%" ? base * (1 - d / 100) : base - d;
+  }
+  const fee = parseFloat(bookingFee) || 0;
+  const final = discounted - fee;
   return Math.max(0, final).toFixed(2);
 }
 
@@ -503,7 +507,7 @@ export default function Dashboard() {
       activityTime: svc.durationMinutes ? "" : formData.activityTime,
       pax: initPax,
       quantity: initQty,
-      totalPrice: recalcPrice(unitPrice, priceMultiplier, formData.discountAmount, formData.discountType),
+      totalPrice: recalcPrice(unitPrice, priceMultiplier, formData.discountAmount, formData.discountType, formData.bookingFee),
     };
     setFormData(newForm);
     if (svc.durationMinutes && formData.activityDate) {
@@ -942,6 +946,8 @@ export default function Dashboard() {
             <form onSubmit={handleCreate} className="modal-form">
               {formError && <div className="form-error"><AlertCircle size={14} />{formError}</div>}
               <div className="form-grid">
+                <div className="field-section-label">Atividade</div>
+
                 <div className="field full">
                   <label>Atividade / Serviço</label>
                   <select
@@ -961,34 +967,8 @@ export default function Dashboard() {
                     ))}
                   </select>
                 </div>
-                {!isPartner && partners.length > 0 && (
-                  <div className="field full">
-                    <label>Reserva em nome de parceiro (opcional)</label>
-                    <select
-                      className="field-select"
-                      value={formData.forPartnerId}
-                      onChange={e => setFormData({ ...formData, forPartnerId: e.target.value })}
-                    >
-                      <option value="">— Reserva direta (sem parceiro) —</option>
-                      {partners.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div className="field">
-                  <label>Nome do Cliente *</label>
-                  <input value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />
-                </div>
-                <div className="field">
-                  <label>Email</label>
-                  <input type="email" value={formData.customerEmail} onChange={e => setFormData({ ...formData, customerEmail: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label>Telefone</label>
-                  <input value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} />
-                </div>
-                <div className="field">
+
+                <div className="field full">
                   <label>Data da Atividade *</label>
                   <input type="date" value={formData.activityDate} min={isPartner ? todayStr : undefined} onChange={e => {
                     const d = e.target.value;
@@ -996,6 +976,67 @@ export default function Dashboard() {
                     if (formData.serviceId) fetchSlots(formData.serviceId, d, formData.quantity);
                   }} required />
                 </div>
+
+                <div className="field">
+                  <label>Quantidade (unidades)</label>
+                  <input type="number" min="1" value={formData.quantity} onChange={e => {
+                    const qty = parseInt(e.target.value) || 1;
+                    const svc = services.find(s => s.id === formData.serviceId);
+                    const multiplier = svc?.minPax != null ? formData.pax : qty;
+                    setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
+                    if (formData.serviceId && formData.activityDate) fetchSlots(formData.serviceId, formData.activityDate, qty);
+                  }} />
+                </div>
+                <div className="field">
+                  <label>Nº Pessoas *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.pax}
+                    onChange={e => {
+                      const p = parseInt(e.target.value) || 1;
+                      const svc = services.find(s => s.id === formData.serviceId);
+                      const multiplier = svc?.minPax != null ? p : formData.quantity;
+                      const newPrice = recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee);
+                      setFormData({ ...formData, pax: p, totalPrice: newPrice });
+                    }}
+                    required
+                  />
+                </div>
+
+                <div className="field">
+                  <label>Preço Total (€)</label>
+                  <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
+                </div>
+
+                <div className="field discount-row">
+                  <label>Desconto</label>
+                  <div className="discount-wrap">
+                    <input
+                      type="number" min="0" step="0.01" placeholder="0"
+                      value={formData.discountAmount}
+                      onChange={e => {
+                        const discAmt = e.target.value;
+                        const svc = services.find(s => s.id === formData.serviceId);
+                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+                        setFormData({ ...formData, discountAmount: discAmt, totalPrice: recalcPrice(createUnitPrice, multiplier, discAmt, formData.discountType, formData.bookingFee) });
+                      }}
+                    />
+                    <div className="discount-type-toggle">
+                      <button type="button" className={formData.discountType === "%" ? "active" : ""} onClick={() => {
+                        const svc = services.find(s => s.id === formData.serviceId);
+                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+                        setFormData({ ...formData, discountType: "%", totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, "%", formData.bookingFee) });
+                      }}>%</button>
+                      <button type="button" className={formData.discountType === "€" ? "active" : ""} onClick={() => {
+                        const svc = services.find(s => s.id === formData.serviceId);
+                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+                        setFormData({ ...formData, discountType: "€", totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, "€", formData.bookingFee) });
+                      }}>€</button>
+                    </div>
+                  </div>
+                </div>
+
                 {(() => {
                   const svc = services.find(s => s.id === formData.serviceId);
                   if (svc?.durationMinutes && formData.activityDate) {
@@ -1060,73 +1101,62 @@ export default function Dashboard() {
                     </div>
                   );
                 })()}
-                {(() => {
-                  const svc = services.find(s => s.id === formData.serviceId);
-                  const isPaxPriced = svc?.minPax != null;
-                  return (
-                    <>
-                      <div className="field">
-                        <label>Nº Pessoas *{isPaxPriced && svc?.minPax != null && <span className="field-hint"> (mín {svc.minPax}{svc.maxPax ? `, máx ${svc.maxPax}` : ""})</span>}</label>
-                        <input
-                          type="number"
-                          min={isPaxPriced ? (svc?.minPax ?? 1) : 1}
-                          max={isPaxPriced ? (svc?.maxPax ?? undefined) : undefined}
-                          value={formData.pax}
-                          onChange={e => {
-                            const p = parseInt(e.target.value) || 1;
-                            const newPrice = isPaxPriced
-                              ? recalcPrice(createUnitPrice, p, formData.discountAmount, formData.discountType)
-                              : formData.totalPrice as string;
-                            setFormData({ ...formData, pax: p, totalPrice: newPrice });
-                          }}
-                          required
-                        />
-                      </div>
-                      {!isPaxPriced && (
-                        <div className="field">
-                          <label>Quantidade (unidades)</label>
-                          <input type="number" min="1" value={formData.quantity} onChange={e => {
-                            const qty = parseInt(e.target.value) || 1;
-                            setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, qty, formData.discountAmount, formData.discountType) });
-                            if (formData.serviceId && formData.activityDate) fetchSlots(formData.serviceId, formData.activityDate, qty);
-                          }} />
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-                <div className="field full discount-row">
-                  <label>Desconto</label>
-                  <div className="discount-wrap">
+
+                <div className="field-section-label" style={{ marginTop: 8 }}>Cliente</div>
+
+                <div className="field">
+                  <label>Nome do Cliente *</label>
+                  <input value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />
+                </div>
+                <div className="field">
+                  <label>Email</label>
+                  <input type="email" value={formData.customerEmail} onChange={e => setFormData({ ...formData, customerEmail: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>Telefone</label>
+                  <input value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>País / Stats</label>
+                  <input placeholder="Ex: PT, UK, Other..." value={formData.countryCode} onChange={e => setFormData({ ...formData, countryCode: e.target.value })} />
+                </div>
+
+                <div className="field-section-label" style={{ marginTop: 8 }}>Reserva</div>
+
+                {!isPartner && partners.length > 0 && (
+                  <div className="field full">
+                    <label>Reserva em nome de parceiro (opcional)</label>
+                    <select
+                      className="field-select"
+                      value={formData.forPartnerId}
+                      onChange={e => setFormData({ ...formData, forPartnerId: e.target.value })}
+                    >
+                      <option value="">— Reserva direta (sem parceiro) —</option>
+                      {partners.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="field full">
+                  <label>Comissão paga ao parceiro (Booking Fee)</label>
+                  <div className="booking-fee-wrap">
                     <input
-                      type="number" min="0" step="0.01" placeholder="0"
-                      value={formData.discountAmount}
+                      type="number" step="0.01" placeholder="0.00"
+                      value={formData.bookingFee}
                       onChange={e => {
-                        const discAmt = e.target.value;
-                        setFormData({ ...formData, discountAmount: discAmt, totalPrice: recalcPrice(createUnitPrice, formData.quantity, discAmt, formData.discountType) });
+                        const fee = e.target.value;
+                        const svc = services.find(s => s.id === formData.serviceId);
+                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+                        setFormData({
+                          ...formData,
+                          bookingFee: fee,
+                          totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, fee)
+                        });
                       }}
                     />
-                    <div className="discount-type-toggle">
-                      <button type="button" className={formData.discountType === "%" ? "active" : ""} onClick={() => {
-                        setFormData({ ...formData, discountType: "%", totalPrice: recalcPrice(createUnitPrice, formData.quantity, formData.discountAmount, "%") });
-                      }}>%</button>
-                      <button type="button" className={formData.discountType === "€" ? "active" : ""} onClick={() => {
-                        setFormData({ ...formData, discountType: "€", totalPrice: recalcPrice(createUnitPrice, formData.quantity, formData.discountAmount, "€") });
-                      }}>€</button>
-                    </div>
-                  </div>
-                </div>
-                <div className="field full price-display-row">
-                  <label>Preço Total (€)</label>
-                  <div className="price-display-wrap">
-                    <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
-                    {createUnitPrice != null && (() => {
-                      const svc = services.find(s => s.id === formData.serviceId);
-                      const isPaxPriced = svc?.minPax != null;
-                      return isPaxPriced
-                        ? <span className="price-base-hint">{createUnitPrice}€ × {formData.pax} pax</span>
-                        : <span className="price-base-hint">{createUnitPrice}€ × {formData.quantity} unid.</span>;
-                    })()}
+                    <span className="fee-hint">O preço total será ajustado (Preço - Comissão)</span>
                   </div>
                 </div>
               </div>

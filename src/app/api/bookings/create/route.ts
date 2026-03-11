@@ -43,6 +43,8 @@ export async function POST(req: Request) {
             overrideReason,
             userName,
             forPartnerId,
+            countryCode,
+            bookingFee,
         } = data;
 
         // Admins can pass forPartnerId to book on behalf of a partner
@@ -141,6 +143,7 @@ export async function POST(req: Request) {
                 serviceId: serviceId || null,
                 activityType: activityType || null,
                 partnerId: isPartner ? (sessionPartnerId || null) : adminPartnerId,
+                country: countryCode || "Other",
             },
         });
 
@@ -160,6 +163,7 @@ export async function POST(req: Request) {
                 override,
                 isPartner,
                 adminPartnerId,
+                bookingFee,
             },
         });
 

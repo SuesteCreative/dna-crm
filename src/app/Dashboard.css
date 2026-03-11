@@ -1439,6 +1439,32 @@ body {
     gap: 20px;
 }
 
+.field-section-label {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+    margin-top: 10px;
+}
+
+.booking-fee-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fee-hint {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+}
+
+
+
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2454,6 +2480,7 @@ body {
     font-size: 12px;
     color: var(--muted);
 }
+
 /* Body locked when any backdrop is open */
 body.modal-open {
     overflow: hidden !important;
