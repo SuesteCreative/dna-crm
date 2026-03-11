@@ -86,6 +86,9 @@ export default function LogsReservasPage() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [deleting, setDeleting] = useState(false);
+
     const fetchLogs = useCallback(async () => {
         if (!userId || !isAdmin) return;
         setLoading(true);
@@ -98,7 +101,11 @@ export default function LogsReservasPage() {
             if (endDate) params.append("endDate", endDate);
 
             const res = await fetch(`/api/admin/audit-logs?${params.toString()}`);
-            if (res.ok) setLogs(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                setLogs(data);
+                setSelectedIds(new Set());
+            }
         } catch { }
         finally { setLoading(false); }
     }, [userId, isAdmin, moduleFilter, actionFilter, userSearch, startDate, endDate]);
@@ -106,6 +113,42 @@ export default function LogsReservasPage() {
     useEffect(() => {
         fetchLogs();
     }, [fetchLogs]);
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === logs.length) setSelectedIds(new Set());
+        else setSelectedIds(new Set(logs.map(l => l.id)));
+    };
+
+    const toggleSelect = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedIds(newSet);
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedIds.size === 0) return;
+        if (!confirm(`Eliminar ${selectedIds.size} registos permanentemente?`)) return;
+
+        setDeleting(true);
+        try {
+            const res = await fetch("/api/admin/audit-logs/delete", {
+                method: "DELETE",
+                body: JSON.stringify({ ids: Array.from(selectedIds) })
+            });
+            if (res.ok) {
+                setLogs(prev => prev.filter(l => !selectedIds.has(l.id)));
+                setSelectedIds(new Set());
+            } else {
+                alert("Erro ao eliminar registos.");
+            }
+        } catch {
+            alert("Erro de ligação.");
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     const toggleRow = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -126,9 +169,17 @@ export default function LogsReservasPage() {
                     <h1 className="logs-title"><Shield size={22} className="text-secondary" /> Logs Reservas</h1>
                     <p className="logs-sub">Registo de alterações a reservas e ocupação de lugares.</p>
                 </div>
-                <button className="logs-refresh" onClick={fetchLogs} disabled={loading}>
-                    <RefreshCcw size={15} className={loading ? "spin" : ""} /> Atualizar
-                </button>
+                <div style={{ display: "flex", gap: 12 }}>
+                    {role === "SUPER_ADMIN" && selectedIds.size > 0 && (
+                        <button className="logs-delete-bulk" onClick={handleDeleteSelected} disabled={deleting}>
+                            {deleting ? <RefreshCcw size={14} className="spin" /> : <AlertCircle size={14} />}
+                            Eliminar ({selectedIds.size})
+                        </button>
+                    )}
+                    <button className="logs-refresh" onClick={fetchLogs} disabled={loading}>
+                        <RefreshCcw size={15} className={loading ? "spin" : ""} /> Atualizar
+                    </button>
+                </div>
             </header>
 
             <div className="logs-filters-bar">
@@ -178,6 +229,15 @@ export default function LogsReservasPage() {
                     <table className="logs-table">
                         <thead>
                             <tr>
+                                <th style={{ width: 40 }}>
+                                    <input
+                                        type="checkbox"
+                                        className="log-checkbox"
+                                        checked={logs.length > 0 && selectedIds.size === logs.length}
+                                        onChange={toggleSelectAll}
+                                        onClick={e => e.stopPropagation()}
+                                    />
+                                </th>
                                 <th style={{ width: 40 }}></th>
                                 <th>Data/Hora</th>
                                 <th>Utilizador</th>
@@ -196,8 +256,16 @@ export default function LogsReservasPage() {
                                     <React.Fragment key={log.id}>
                                         <tr
                                             onClick={(e) => toggleRow(log.id, e)}
-                                            className={`log-row ${isExpanded ? 'active' : ''}`}
+                                            className={`log-row ${isExpanded ? 'active' : ''} ${selectedIds.has(log.id) ? 'selected' : ''}`}
                                         >
+                                            <td className="check-cell" onClick={e => toggleSelect(log.id, e)}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="log-checkbox"
+                                                    checked={selectedIds.has(log.id)}
+                                                    readOnly
+                                                />
+                                            </td>
                                             <td className="expand-cell">
                                                 <div className={`chevron ${isExpanded ? 'rotated' : ''}`}>
                                                     <ChevronRight size={14} />
@@ -231,7 +299,7 @@ export default function LogsReservasPage() {
                                         </tr>
                                         {isExpanded && (
                                             <tr className="details-row">
-                                                <td colSpan={7}>
+                                                <td colSpan={8}>
                                                     <LogDetails details={log.details} />
                                                 </td>
                                             </tr>

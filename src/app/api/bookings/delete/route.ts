@@ -14,18 +14,18 @@ export async function DELETE(req: Request) {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
 
-        if (!id) {
-            return NextResponse.json({ error: "Missing ID" }, { status: 400 });
-        }
-
         const prisma = await getPrisma();
-
-        // Delete Google Calendar events before removing the booking
         const booking = await prisma.booking.findUnique({
             where: { id },
-            select: { customerName: true, gcalEventIds: true, gcalCalendarIds: true },
+            include: { partner: true }
         });
-        if (booking?.gcalEventIds && booking?.gcalCalendarIds) {
+
+        if (!booking) {
+            return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+        }
+
+        // Delete Google Calendar events before removing the booking
+        if (booking.gcalEventIds && booking.gcalCalendarIds) {
             try {
                 const eventIds: string[] = JSON.parse(booking.gcalEventIds);
                 const calendarIds: string[] = JSON.parse(booking.gcalCalendarIds);
@@ -43,10 +43,12 @@ export async function DELETE(req: Request) {
             userId,
             action: "DELETE",
             module: "DASHBOARD",
-            targetId: id,
-            targetName: booking?.customerName || id,
+            targetId: id as string,
+            targetName: booking.customerName || undefined,
             details: {
-                message: "Booking deleted via API (possibly partner deletion)",
+                message: "Reserva eliminada permanentemente.",
+                ...booking,
+                partnerName: (booking as any).partner?.name || "N/A"
             },
         });
 
