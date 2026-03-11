@@ -2629,9 +2629,11 @@ body.modal-open {
     flex: 1;
 }
 
-.country-flag {
-    font-size: 18px;
-    line-height: 1;
+.country-flag-img {
+    width: 20px;
+    height: 14px;
+    object-fit: cover;
+    border-radius: 2px;
 }
 
 .country-code-iso {
@@ -2770,8 +2772,11 @@ body.modal-open {
     background: var(--blue-dim);
 }
 
-.country-item-flag {
-    font-size: 18px;
+.country-item-flag-img {
+    width: 20px;
+    height: 14px;
+    object-fit: cover;
+    border-radius: 2px;
 }
 
 .country-item-name {

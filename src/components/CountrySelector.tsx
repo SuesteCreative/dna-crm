@@ -120,7 +120,11 @@ export function CountrySelector({ value, onChange, label, placeholder }: Country
                 <div className="country-trigger-content">
                     {currentCountry ? (
                         <>
-                            <span className="country-flag">{currentCountry.flag}</span>
+                            <img 
+                                src={`https://flagcdn.com/w40/${currentCountry.code.toLowerCase()}.png`} 
+                                alt={currentCountry.name}
+                                className="country-flag-img"
+                            />
                             <span className="country-code-iso">{currentCountry.code}</span>
                         </>
                     ) : (
@@ -163,7 +167,11 @@ export function CountrySelector({ value, onChange, label, placeholder }: Country
                                         className={`country-item ${value === c.prefix ? 'selected' : ''}`}
                                         onClick={() => handleSelect(c)}
                                     >
-                                        <span className="country-item-flag">{c.flag}</span>
+                                        <img 
+                                            src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`} 
+                                            alt={c.name}
+                                            className="country-item-flag-img"
+                                        />
                                         <span className="country-item-name">{c.name}</span>
                                         <span className="country-item-prefix">{c.prefix}</span>
                                         {value === c.prefix && <Check size={14} className="country-item-check" />}
@@ -180,7 +188,11 @@ export function CountrySelector({ value, onChange, label, placeholder }: Country
                                 className={`country-item ${value === c.prefix ? 'selected' : ''}`}
                                 onClick={() => handleSelect(c)}
                             >
-                                <span className="country-item-flag">{c.flag}</span>
+                                <img 
+                                    src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`} 
+                                    alt={c.name}
+                                    className="country-item-flag-img"
+                                />
                                 <span className="country-item-name">{c.name}</span>
                                 <span className="country-item-prefix">{c.prefix}</span>
                                 {value === c.prefix && <Check size={14} className="country-item-check" />}
