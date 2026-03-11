@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
                 status: true,
                 source: true,
                 notes: true,
+                bookingFee: true,
             }
         });
 

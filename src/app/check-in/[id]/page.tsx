@@ -146,10 +146,35 @@ export default function CheckInPage() {
                 <div className="payment-section">
                     <div className="info-item">
                         <CreditCard size={18} className="info-icon" />
-                        <div className="info-details">
-                            <label>Valor da Reserva</label>
-                            <p className="price-text">{(booking?.totalPrice || 0).toFixed(2)}€</p>
-                            <p className="source-text">Origem: {booking?.source || 'MANUAL'} {booking?.shopifyId ? `(Shopify: ${booking.shopifyId})` : ''}</p>
+                        <div className="info-details" style={{ width: '100%' }}>
+                            <label>Pagamento</label>
+
+                            {(booking?.bookingFee > 0) ? (
+                                <div className="price-breakdown">
+                                    <div className="breakdown-row">
+                                        <span>Total da Atividade</span>
+                                        <span>{((booking.totalPrice || 0) + (booking.bookingFee || 0)).toFixed(2)}€</span>
+                                    </div>
+                                    <div className="breakdown-row paid">
+                                        <span>Valor Pago (Sinal)</span>
+                                        <span>-{(booking.bookingFee || 0).toFixed(2)}€</span>
+                                    </div>
+                                    <div className="breakdown-row balance">
+                                        <span>A Cobrar na Praia</span>
+                                        <span className="price-text">{(booking?.totalPrice || 0).toFixed(2)}€</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="price-text">{(booking?.totalPrice || 0).toFixed(2)}€</p>
+                                    <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Total a cobrar na praia</p>
+                                </>
+                            )}
+
+                            <p className="source-text" style={{ marginTop: '12px' }}>
+                                Origem: {booking?.source || 'MANUAL'}
+                                {booking?.orderNumber ? ` (Nº ${booking.orderNumber})` : ''}
+                            </p>
                         </div>
                     </div>
                 </div>

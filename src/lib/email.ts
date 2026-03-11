@@ -78,7 +78,26 @@ export async function sendBookingQRCode(booking: any) {
                             <div style="margin-bottom: 8px;"><strong>Data:</strong> <span style="color: #555;">${new Date(booking.activityDate).toLocaleDateString('pt-PT')}</span></div>
                             <div style="margin-bottom: 8px;"><strong>Hora:</strong> <span style="color: #555;">${booking.activityTime || 'A confirmar'}</span></div>
                             <div style="margin-bottom: 8px;"><strong>Quantidade:</strong> <span style="color: #555;">${booking.quantity || booking.pax} unidades/pax</span></div>
-                            <div style="margin-top: 12px; font-size: 18px; color: #0056b3;"><strong>Preço Total:</strong> ${booking.totalPrice?.toFixed(2) || '0.00'}€</div>
+                            
+                            ${(booking.bookingFee > 0) ? `
+                                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eeeeee;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; color: #666;">
+                                        <span>Total da Atividade:</span>
+                                        <span>${((booking.totalPrice || 0) + (booking.bookingFee || 0)).toFixed(2)}€</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; color: #10b981;">
+                                        <span>Valor Pago (Sinal):</span>
+                                        <span>-${(booking.bookingFee || 0).toFixed(2)}€</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 18px; color: #0056b3;">
+                                        <strong>Total na Praia:</strong>
+                                        <strong>${(booking.totalPrice || 0).toFixed(2)}€</strong>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div style="margin-top: 12px; font-size: 18px; color: #0056b3;"><strong>Preço Total:</strong> ${booking.totalPrice?.toFixed(2) || '0.00'}€</div>
+                                <div style="font-size: 12px; color: #999; margin-top: 4px;">Valor total a liquidar à chegada.</div>
+                            `}
                         </div>
                     </div>
 
