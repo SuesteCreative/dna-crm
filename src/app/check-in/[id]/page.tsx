@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { CheckCircle, AlertCircle, Clock, User, CreditCard, Activity } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { CheckCircle, AlertCircle, Clock, User, CreditCard, Activity, X } from "lucide-react";
 import "./check-in.css";
 
 export default function CheckInPage() {
     const params = useParams();
+    const router = useRouter();
     const id = params.id as string;
     const [booking, setBooking] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -91,6 +92,9 @@ export default function CheckInPage() {
                         <h2>Check-in DNA</h2>
                         <p className="id-text">Referência: {booking.id}</p>
                     </div>
+                    <button className="btn-close-checkin" onClick={() => router.push("/scanner")}>
+                        <X size={20} />
+                    </button>
                 </div>
 
                 <div className="status-banner">
