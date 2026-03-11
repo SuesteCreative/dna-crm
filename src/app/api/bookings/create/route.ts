@@ -146,6 +146,7 @@ export async function POST(req: Request) {
                 country: countryCode || "Other",
                 bookingFee: parseFloat(bookingFee || 0),
             },
+            include: { partner: true },
         });
 
         await logAudit({

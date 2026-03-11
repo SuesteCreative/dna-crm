@@ -98,6 +98,10 @@ export async function sendBookingQRCode(booking: any) {
                                 <div style="margin-top: 12px; font-size: 18px; color: #0056b3;"><strong>Preço Total:</strong> ${booking.totalPrice?.toFixed(2) || '0.00'}€</div>
                                 <div style="font-size: 12px; color: #999; margin-top: 4px;">Valor total a liquidar à chegada.</div>
                             `}
+                            
+                            <div style="margin-top: 15px; font-size: 12px; color: #888;">
+                                <strong>Origem:</strong> ${(booking.source === "PARTNER" && booking.partner?.name) ? booking.partner.name : booking.source}
+                            </div>
                         </div>
                     </div>
 

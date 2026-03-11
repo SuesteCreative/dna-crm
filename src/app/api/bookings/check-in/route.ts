@@ -31,6 +31,11 @@ export async function GET(req: NextRequest) {
                 source: true,
                 notes: true,
                 bookingFee: true,
+                partner: {
+                    select: {
+                        name: true
+                    }
+                }
             }
         });
 

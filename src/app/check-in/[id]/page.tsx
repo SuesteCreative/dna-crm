@@ -176,7 +176,7 @@ export default function CheckInPage() {
                             )}
 
                             <p className="source-text" style={{ marginTop: '12px' }}>
-                                Origem: {booking?.source || 'MANUAL'}
+                                Origem: {(booking?.source === "PARTNER" && booking?.partner?.name) ? booking.partner.name : (booking?.source || 'MANUAL')}
                                 {booking?.orderNumber ? ` (Nº ${booking.orderNumber})` : ''}
                             </p>
                         </div>
