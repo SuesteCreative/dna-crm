@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Clock, Users, CheckCircle, Plus, ChevronRight } from "lucide-react";
+import { CalendarDays, Clock, Users, CheckCircle, Plus, ChevronRight, X } from "lucide-react";
 import "./availability.css";
 
 interface SlotInfo { time: string; available: number; capacity: number; blocked: boolean; }
@@ -21,22 +21,39 @@ export default function AvailabilityPage() {
     const { sessionClaims, isLoaded } = useAuth();
     const { user } = useUser();
     const router = useRouter();
+
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    const partnerId = (sessionClaims as any)?.metadata?.partnerId as string | undefined;
 
     const [date, setDate] = useState(todayLisbon());
     const [data, setData] = useState<AvailResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [selected, setSelected] = useState<{ service: ServiceAvail; slot: SlotInfo } | null>(null);
-    const [bookingForm, setBookingForm] = useState({ customerName: "", customerPhone: "", customerEmail: "", pax: 1 });
+
+    // Booking Form State
+    const [bookingForm, setBookingForm] = useState({
+        customerName: "",
+        customerPhone: "",
+        customerEmail: "",
+        pax: 1,
+        quantity: 1
+    });
+
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Initial Security Check
     useEffect(() => {
         if (!isLoaded) return;
-        if (!role) { router.push("/sign-in"); return; }
-    }, [isLoaded, role]);
+        // Allow access if they have a role or if they are a partner
+        if (!role && !partnerId) {
+            router.push("/sign-in");
+            return;
+        }
+    }, [isLoaded, role, partnerId]);
 
+    // Fetch Availability
     useEffect(() => {
         setData(null);
         setSelected(null);
@@ -48,6 +65,39 @@ export default function AvailabilityPage() {
             .catch(() => setData(null))
             .finally(() => setLoading(false));
     }, [date]);
+
+    // Service Type Logic (Matching main dashboard)
+    const isJetski = selected?.service.name.toLowerCase().includes("jetski");
+    const isSofa = selected?.service.name.toLowerCase().includes("sofa");
+    const isBanana = selected?.service.name.toLowerCase().includes("banana");
+
+    // Quantity range
+    const qtyRange = useMemo(() => {
+        if (isJetski) return [1, 2, 3];
+        return [1];
+    }, [isJetski]);
+
+    // Pax range
+    const paxRange = useMemo(() => {
+        if (isJetski) {
+            const start = bookingForm.quantity;
+            const end = bookingForm.quantity * 2;
+            const range = [];
+            for (let i = start; i <= end; i++) range.push(i);
+            return range;
+        }
+        if (isSofa) return [2, 3, 4, 5, 6];
+        if (isBanana) return [2, 3, 4, 5, 6, 7, 8];
+        return null; // For others, use numeric input
+    }, [isJetski, isSofa, isBanana, bookingForm.quantity]);
+
+    // Reset Pax/Qty when selecting a new slot
+    useEffect(() => {
+        if (selected) {
+            const defaultPax = isSofa || isBanana ? 2 : (selected.service.minPax ?? 1);
+            setBookingForm(f => ({ ...f, pax: defaultPax, quantity: 1 }));
+        }
+    }, [selected, isSofa, isBanana]);
 
     const handleBook = async () => {
         if (!selected) return;
@@ -67,8 +117,9 @@ export default function AvailabilityPage() {
                     serviceId: selected.service.id,
                     activityType: selected.service.name + (selected.service.variant ? ` — ${selected.service.variant}` : ""),
                     totalPrice: selected.service.price ? selected.service.price * bookingForm.pax : 0,
-                    quantity: 1,
-                    userName: user?.fullName ?? "Partner",
+                    quantity: bookingForm.quantity,
+                    partnerId: partnerId || undefined, // Attach partner ID if available
+                    userName: user?.fullName ?? "Partner User",
                 }),
             });
             if (!res.ok) {
@@ -145,7 +196,18 @@ export default function AvailabilityPage() {
                                                         key={slot.time}
                                                         className={`avail-slot${slot.blocked ? " blocked" : ""}${selected?.service.id === svc.id && selected?.slot.time === slot.time ? " active" : ""}`}
                                                         disabled={slot.blocked}
-                                                        onClick={() => { setSelected({ service: svc, slot }); setSuccess(null); setError(null); setBookingForm({ customerName: "", customerPhone: "", customerEmail: "", pax: svc.minPax ?? 1 }); }}
+                                                        onClick={() => {
+                                                            setSelected({ service: svc, slot });
+                                                            setSuccess(null);
+                                                            setError(null);
+                                                            setBookingForm({
+                                                                customerName: "",
+                                                                customerPhone: "",
+                                                                customerEmail: "",
+                                                                pax: svc.minPax ?? 1,
+                                                                quantity: 1
+                                                            });
+                                                        }}
                                                     >
                                                         <span className="avail-slot-time">{slot.time}</span>
                                                         <span className="avail-slot-cap">
@@ -163,41 +225,63 @@ export default function AvailabilityPage() {
 
                     {/* Booking panel */}
                     {selected && (
-                        <div className="avail-panel">
-                            <div className="avail-panel-hdr">
-                                <h2>Nova Reserva</h2>
-                                <button className="avail-panel-close" onClick={() => setSelected(null)}>✕</button>
-                            </div>
-                            <div className="avail-panel-info">
-                                <strong>{selected.service.name}</strong>{selected.service.variant ? ` — ${selected.service.variant}` : ""}
-                                <span> · {selected.slot.time} · {selected.service.durationMinutes} min</span>
-                            </div>
-                            {error && <div className="avail-error">{error}</div>}
-                            <div className="avail-form">
-                                <div className="avail-field">
-                                    <label>Nome do cliente *</label>
-                                    <input value={bookingForm.customerName} onChange={(e) => setBookingForm((f) => ({ ...f, customerName: e.target.value }))} placeholder="Nome completo" />
+                        <div className="avail-panel-backdrop" onClick={() => setSelected(null)}>
+                            <div className="avail-panel" onClick={(e) => e.stopPropagation()}>
+                                <div className="avail-panel-hdr">
+                                    <h2>Nova Reserva</h2>
+                                    <button className="avail-panel-close" onClick={() => setSelected(null)}><X size={20} /></button>
                                 </div>
-                                <div className="avail-field">
-                                    <label>Telefone</label>
-                                    <input value={bookingForm.customerPhone} onChange={(e) => setBookingForm((f) => ({ ...f, customerPhone: e.target.value }))} placeholder="+351 9xx xxx xxx" />
+                                <div className="avail-panel-info">
+                                    <strong>{selected.service.name}</strong>{selected.service.variant ? ` — ${selected.service.variant}` : ""}
+                                    <span> · {selected.slot.time} · {selected.service.durationMinutes} min</span>
                                 </div>
-                                <div className="avail-field">
-                                    <label>Email</label>
-                                    <input type="email" value={bookingForm.customerEmail} onChange={(e) => setBookingForm((f) => ({ ...f, customerEmail: e.target.value }))} placeholder="email@exemplo.com" />
-                                </div>
-                                <div className="avail-field">
-                                    <label>Nº de pessoas</label>
-                                    <input type="number" min={selected.service.minPax ?? 1} max={Math.min(selected.service.maxPax ?? selected.slot.available, selected.slot.available)} value={bookingForm.pax} onChange={(e) => setBookingForm((f) => ({ ...f, pax: parseInt(e.target.value) || 1 }))} />
-                                </div>
-                                {selected.service.price && (
-                                    <div className="avail-total">
-                                        Total: <strong>{(selected.service.price * bookingForm.pax).toFixed(2)}€</strong>
+                                {error && <div className="avail-error">{error}</div>}
+                                <div className="avail-form">
+                                    <div className="avail-field">
+                                        <label>Nome do cliente *</label>
+                                        <input value={bookingForm.customerName} onChange={(e) => setBookingForm((f) => ({ ...f, customerName: e.target.value }))} placeholder="Nome completo" />
                                     </div>
-                                )}
-                                <button className="avail-btn-primary" onClick={handleBook} disabled={submitting || !bookingForm.customerName}>
-                                    <Plus size={14} /> {submitting ? "A criar..." : "Criar Reserva"}
-                                </button>
+                                    <div className="avail-field">
+                                        <label>Telefone</label>
+                                        <input value={bookingForm.customerPhone} onChange={(e) => setBookingForm((f) => ({ ...f, customerPhone: e.target.value }))} placeholder="+351 9xx xxx xxx" />
+                                    </div>
+                                    <div className="avail-field">
+                                        <label>Email</label>
+                                        <input type="email" value={bookingForm.customerEmail} onChange={(e) => setBookingForm((f) => ({ ...f, customerEmail: e.target.value }))} placeholder="email@exemplo.com" />
+                                    </div>
+
+                                    <div className="avail-row-fields">
+                                        {/* Quantity Dropdown for Jetskis */}
+                                        {isJetski && (
+                                            <div className="avail-field">
+                                                <label>Qtd. Jetskis</label>
+                                                <select value={bookingForm.quantity} onChange={(e) => setBookingForm(f => ({ ...f, quantity: parseInt(e.target.value) }))}>
+                                                    {qtyRange.map(q => <option key={q} value={q}>{q}</option>)}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        <div className="avail-field">
+                                            <label>Nº de pessoas</label>
+                                            {paxRange ? (
+                                                <select value={bookingForm.pax} onChange={(e) => setBookingForm(f => ({ ...f, pax: parseInt(e.target.value) }))}>
+                                                    {paxRange.map(p => <option key={p} value={p}>{p}</option>)}
+                                                </select>
+                                            ) : (
+                                                <input type="number" min={selected.service.minPax ?? 1} max={Math.min(selected.service.maxPax ?? selected.slot.available, selected.slot.available)} value={bookingForm.pax} onChange={(e) => setBookingForm((f) => ({ ...f, pax: parseInt(e.target.value) || 1 }))} />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {selected.service.price && (
+                                        <div className="avail-total">
+                                            Total: <strong>{(selected.service.price * bookingForm.pax).toFixed(2)}€</strong>
+                                        </div>
+                                    )}
+                                    <button className="avail-btn-primary" onClick={handleBook} disabled={submitting || !bookingForm.customerName}>
+                                        <Plus size={14} /> {submitting ? "A criar..." : "Criar Reserva"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
