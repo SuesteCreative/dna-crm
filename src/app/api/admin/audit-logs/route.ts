@@ -23,7 +23,13 @@ export async function GET(req: Request) {
     const where: any = {};
     if (moduleFilter) where.module = { startsWith: moduleFilter };
     if (actionFilter) where.action = actionFilter;
-    if (userSearch) where.userName = { contains: userSearch, mode: "insensitive" };
+    if (userSearch) {
+        where.OR = [
+            { userName: { contains: userSearch, mode: "insensitive" } },
+            { targetName: { contains: userSearch, mode: "insensitive" } },
+            { targetId: { contains: userSearch } },
+        ];
+    }
 
     if (startDate || endDate) {
         where.createdAt = {};
