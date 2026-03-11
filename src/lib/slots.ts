@@ -35,7 +35,10 @@ export function generateSlots(
     const open = timeToMinutes(openTime);
     const close = timeToMinutes(closeTime);
     const { durationMinutes, slotGapMinutes } = config;
-    const step = durationMinutes + slotGapMinutes;
+
+    // If we want slots every 30 mins regardless of duration, 
+    // we use (duration + gap). For 1h (60min) to be every 30min, gap is -30.
+    const step = Math.max(1, durationMinutes + slotGapMinutes);
     const lastStart = close - durationMinutes;
 
     const slots: string[] = [];
