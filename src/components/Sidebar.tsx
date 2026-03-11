@@ -93,9 +93,11 @@ export function Sidebar() {
     return (
         <>
             {/* Mobile menu trigger */}
-            <button className="mobile-trigger" onClick={() => setIsMobileOpen(true)}>
-                <Menu size={24} />
-            </button>
+            {!isMobileOpen && (
+                <button className="mobile-trigger" onClick={() => setIsMobileOpen(true)}>
+                    <Menu size={24} />
+                </button>
+            )}
 
             {/* Mobile menu backdrop */}
             <div
