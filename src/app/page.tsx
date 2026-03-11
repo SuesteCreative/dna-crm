@@ -12,6 +12,7 @@ import {
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { exportToExcel, exportToPDF } from "@/lib/export";
+import { CountrySelector } from "@/components/CountrySelector";
 
 interface Booking {
   id: string;
@@ -39,6 +40,8 @@ interface Booking {
   originalActivityDate?: string | null;
   originalActivityTime?: string | null;
   partnerId?: string | null;
+  country?: string | null;
+  bookingFee?: number | null;
 }
 
 interface Service {
@@ -67,7 +70,7 @@ interface SlotInfo {
 }
 
 const defaultForm = {
-  customerName: "", customerEmail: "", customerPhone: "", countryCode: "351",
+  customerName: "", customerEmail: "", customerPhone: "", countryCode: "+351",
   activityDate: "", activityTime: "", pax: 1, quantity: 1, totalPrice: "",
   serviceId: "", activityType: "", discountAmount: "", discountType: "%",
   forPartnerId: "", bookingFee: "",
@@ -251,7 +254,13 @@ export default function Dashboard() {
   const groupBookings = (data: Booking[]) => {
     const groups: Record<string, Record<string, Booking[]>> = {};
 
-    data.forEach(b => {
+    const sorted = [...data].sort((a, b) => {
+      const da = a.activityDate + "T" + (a.activityTime || "00:00");
+      const db = b.activityDate + "T" + (b.activityTime || "00:00");
+      return db.localeCompare(da);
+    });
+
+    sorted.forEach(b => {
       const date = new Date(b.activityDate);
       const year = date.getFullYear().toString();
       const monthDisplay = format(date, "MMMM", { locale: pt });
@@ -495,11 +504,13 @@ export default function Dashboard() {
     const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
     const unitPrice = svc.price ?? null;
     setCreateUnitPrice(unitPrice);
-    // Pax-priced services (e.g. sofa, banana): qty is always 1, price = unitPrice × pax
+
+    // Default values
     const isPaxPriced = svc.minPax != null;
-    const initPax = isPaxPriced ? (svc.minPax ?? 2) : formData.pax;
+    const initPax = svc.minPax ?? formData.pax;
     const initQty = isPaxPriced ? 1 : formData.quantity;
-    const priceMultiplier = isPaxPriced ? initPax : initQty;
+    const multiplier = isPaxPriced ? initPax : initQty;
+
     const newForm = {
       ...formData,
       serviceId: svc.id,
@@ -507,11 +518,12 @@ export default function Dashboard() {
       activityTime: svc.durationMinutes ? "" : formData.activityTime,
       pax: initPax,
       quantity: initQty,
-      totalPrice: recalcPrice(unitPrice, priceMultiplier, formData.discountAmount, formData.discountType, formData.bookingFee),
+      totalPrice: recalcPrice(unitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee),
     };
+
     setFormData(newForm);
     if (svc.durationMinutes && formData.activityDate) {
-      fetchSlots(svc.id, formData.activityDate, 1);
+      fetchSlots(svc.id, formData.activityDate, initQty);
     } else {
       setSlots([]);
     }
@@ -617,6 +629,8 @@ export default function Dashboard() {
       activityType: b.activityType || "",
       status: b.status,
       notes: b.notes || "",
+      countryCode: b.country || "Other",
+      bookingFee: b.bookingFee?.toString() || "",
       discountAmount: "",
       discountType: "%",
     });
@@ -896,7 +910,7 @@ export default function Dashboard() {
                                   acc[d].push(b);
                                   return acc;
                                 }, {})
-                              ).sort(([a], [b]) => a.localeCompare(b)).map(([dayKey, dayBookings]) => {
+                              ).sort(([a], [b]) => b.localeCompare(a)).map(([dayKey, dayBookings]) => {
                                 const dayDate = new Date(dayKey + "T12:00:00");
                                 const dayStr = format(dayDate, "EEEE, d 'de' MMMM", { locale: pt });
                                 const dKey = `${mKey}-${dayKey}`;
@@ -948,7 +962,7 @@ export default function Dashboard() {
               <div className="form-grid">
                 <div className="field-section-label">Atividade</div>
 
-                <div className="field full">
+                <div className="field">
                   <label>Atividade / Serviço</label>
                   <select
                     className="field-select"
@@ -968,7 +982,7 @@ export default function Dashboard() {
                   </select>
                 </div>
 
-                <div className="field full">
+                <div className="field">
                   <label>Data da Atividade *</label>
                   <input type="date" value={formData.activityDate} min={isPartner ? todayStr : undefined} onChange={e => {
                     const d = e.target.value;
@@ -997,8 +1011,7 @@ export default function Dashboard() {
                       const p = parseInt(e.target.value) || 1;
                       const svc = services.find(s => s.id === formData.serviceId);
                       const multiplier = svc?.minPax != null ? p : formData.quantity;
-                      const newPrice = recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee);
-                      setFormData({ ...formData, pax: p, totalPrice: newPrice });
+                      setFormData({ ...formData, pax: p, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
                     }}
                     required
                   />
@@ -1117,14 +1130,17 @@ export default function Dashboard() {
                   <input value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} />
                 </div>
                 <div className="field">
-                  <label>País / Stats</label>
-                  <input placeholder="Ex: PT, UK, Other..." value={formData.countryCode} onChange={e => setFormData({ ...formData, countryCode: e.target.value })} />
+                  <CountrySelector
+                    label="País / Stats"
+                    value={formData.countryCode}
+                    onChange={val => setFormData({ ...formData, countryCode: val })}
+                  />
                 </div>
 
                 <div className="field-section-label" style={{ marginTop: 8 }}>Reserva</div>
 
                 {!isPartner && partners.length > 0 && (
-                  <div className="field full">
+                  <div className="field">
                     <label>Reserva em nome de parceiro (opcional)</label>
                     <select
                       className="field-select"
@@ -1139,7 +1155,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                <div className="field full">
+                <div className="field">
                   <label>Comissão paga ao parceiro (Booking Fee)</label>
                   <div className="booking-fee-wrap">
                     <input
@@ -1212,14 +1228,16 @@ export default function Dashboard() {
 
               <div className="drawer-section-label">Atividade</div>
               <div className="form-grid">
-                <div className="field full">
+                <div className="field">
                   <label>Tipo de atividade</label>
                   <select className="field-select" value={editForm.activityType} onChange={e => {
                     const val = e.target.value;
                     const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === val);
                     const unitPrice = svc?.price ?? null;
                     setEditUnitPrice(unitPrice);
-                    const newPrice = recalcPrice(unitPrice, editForm.quantity, editForm.discountAmount, editForm.discountType);
+                    const isPaxPriced = svc?.minPax != null;
+                    const multiplier = isPaxPriced ? editForm.pax : editForm.quantity;
+                    const newPrice = recalcPrice(unitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
                     setEditForm({ ...editForm, activityType: val, totalPrice: newPrice || editForm.totalPrice });
                   }}>
                     <option value="">— Livre —</option>
@@ -1238,23 +1256,39 @@ export default function Dashboard() {
                   <label>Data</label>
                   <input type="date" value={editForm.activityDate} onChange={e => setEditForm({ ...editForm, activityDate: e.target.value })} />
                 </div>
+
                 <div className="field">
-                  <label>Hora</label>
-                  <input type="time" value={editForm.activityTime} onChange={e => setEditForm({ ...editForm, activityTime: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label>Pax</label>
-                  <input type="number" min="1" value={editForm.pax} onChange={e => setEditForm({ ...editForm, pax: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label>Qtd (unidades)</label>
+                  <label>Quantidade (unidades)</label>
                   <input type="number" min="1" value={editForm.quantity} onChange={e => {
                     const qty = parseInt(e.target.value) || 1;
-                    const newPrice = recalcPrice(editUnitPrice, qty, editForm.discountAmount, editForm.discountType);
+                    const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                    const multiplier = svc?.minPax != null ? editForm.pax : qty;
+                    const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
                     setEditForm({ ...editForm, quantity: qty, totalPrice: newPrice || editForm.totalPrice });
                   }} />
                 </div>
-                <div className="field full discount-row">
+                <div className="field">
+                  <label>Pax</label>
+                  <input type="number" min="1" value={editForm.pax} onChange={e => {
+                    const pax = parseInt(e.target.value) || 1;
+                    const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                    const multiplier = svc?.minPax != null ? pax : editForm.quantity;
+                    const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                    setEditForm({ ...editForm, pax, totalPrice: newPrice || editForm.totalPrice });
+                  }} />
+                </div>
+
+                <div className="field price-display-row">
+                  <label>Preço real (€)</label>
+                  <div className="price-display-wrap">
+                    <input type="number" step="0.01" value={editForm.totalPrice} onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })} />
+                    {editUnitPrice != null && (
+                      <span className="price-base-hint">{editUnitPrice}€ unid.</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="field discount-row">
                   <label>Desconto</label>
                   <div className="discount-wrap">
                     <input
@@ -1262,32 +1296,34 @@ export default function Dashboard() {
                       value={editForm.discountAmount || ""}
                       onChange={e => {
                         const discAmt = e.target.value;
-                        const newPrice = recalcPrice(editUnitPrice, editForm.quantity, discAmt, editForm.discountType);
+                        const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+                        const newPrice = recalcPrice(editUnitPrice, multiplier, discAmt, editForm.discountType, editForm.bookingFee);
                         setEditForm({ ...editForm, discountAmount: discAmt, totalPrice: newPrice || editForm.totalPrice });
                       }}
                     />
                     <div className="discount-type-toggle">
                       <button type="button" className={(editForm.discountType || "%") === "%" ? "active" : ""} onClick={() => {
-                        const newPrice = recalcPrice(editUnitPrice, editForm.quantity, editForm.discountAmount, "%");
+                        const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+                        const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, "%", editForm.bookingFee);
                         setEditForm({ ...editForm, discountType: "%", totalPrice: newPrice || editForm.totalPrice });
                       }}>%</button>
                       <button type="button" className={editForm.discountType === "€" ? "active" : ""} onClick={() => {
-                        const newPrice = recalcPrice(editUnitPrice, editForm.quantity, editForm.discountAmount, "€");
+                        const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+                        const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, "€", editForm.bookingFee);
                         setEditForm({ ...editForm, discountType: "€", totalPrice: newPrice || editForm.totalPrice });
                       }}>€</button>
                     </div>
                   </div>
                 </div>
-                <div className="field price-display-row">
-                  <label>Preço real (€)</label>
-                  <div className="price-display-wrap">
-                    <input type="number" step="0.01" value={editForm.totalPrice} onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })} />
-                    {editUnitPrice != null && (
-                      <span className="price-base-hint">{editUnitPrice}€ × {editForm.quantity} unid.</span>
-                    )}
-                  </div>
+
+                <div className="field">
+                  <label>Hora</label>
+                  <input type="time" value={editForm.activityTime} onChange={e => setEditForm({ ...editForm, activityTime: e.target.value })} />
                 </div>
-                <div className="field full">
+                <div className="field">
                   <label>Estado</label>
                   <select className="field-select" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
                     <option value="CONFIRMED">Confirmada</option>
@@ -1299,7 +1335,7 @@ export default function Dashboard() {
 
               <div className="drawer-section-label" style={{ marginTop: 16 }}>Cliente</div>
               <div className="form-grid">
-                <div className="field full">
+                <div className="field">
                   <label>Nome</label>
                   <input value={editForm.customerName} onChange={e => setEditForm({ ...editForm, customerName: e.target.value })} />
                 </div>
@@ -1311,9 +1347,37 @@ export default function Dashboard() {
                   <label>Telefone</label>
                   <input value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: e.target.value })} />
                 </div>
+                <div className="field">
+                  <CountrySelector
+                    label="País / Stats"
+                    value={editForm.countryCode}
+                    onChange={val => setEditForm({ ...editForm, countryCode: val })}
+                  />
+                </div>
                 <div className="field full">
                   <label>Notas</label>
                   <textarea rows={2} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="drawer-section-label" style={{ marginTop: 16 }}>Reserva</div>
+              <div className="form-grid">
+                <div className="field full">
+                  <label>Comissão paga ao parceiro (Booking Fee)</label>
+                  <div className="booking-fee-wrap">
+                    <input
+                      type="number" step="0.01" placeholder="0.00"
+                      value={editForm.bookingFee}
+                      onChange={e => {
+                        const fee = e.target.value;
+                        const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+                        const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, fee);
+                        setEditForm({ ...editForm, bookingFee: fee, totalPrice: newPrice || editForm.totalPrice });
+                      }}
+                    />
+                    <span className="fee-hint">O preço total será ajustado (Preço - Comissão)</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -51,6 +51,8 @@ export async function PATCH(req: NextRequest) {
                 activityType: fields.activityType || null,
                 status: fields.status || undefined,
                 notes: fields.notes || null,
+                country: fields.countryCode === undefined ? undefined : (fields.countryCode || "Other"),
+                bookingFee: fields.bookingFee !== undefined ? parseFloat(fields.bookingFee) || 0 : undefined,
                 isEdited: true,
                 ...(fields.status === "CANCELLED" && {
                     gcalEventIds: null,
@@ -63,6 +65,8 @@ export async function PATCH(req: NextRequest) {
                     originalTotalPrice: current.totalPrice,
                     originalActivityDate: current.activityDate,
                     originalActivityTime: current.activityTime,
+                    // casting the current.country/bookingFee to their types would be safer
+                    // but we just pass what we already have for defaults
                 }),
             },
         });

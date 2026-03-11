@@ -144,6 +144,7 @@ export async function POST(req: Request) {
                 activityType: activityType || null,
                 partnerId: isPartner ? (sessionPartnerId || null) : adminPartnerId,
                 country: countryCode || "Other",
+                bookingFee: parseFloat(bookingFee || 0),
             },
         });
 
