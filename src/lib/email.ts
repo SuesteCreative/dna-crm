@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import QRCode from 'qrcode';
+import { logAudit } from './audit';
 
 const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
@@ -7,7 +8,15 @@ export async function sendBookingQRCode(booking: any) {
     const resendApiKey = process.env.RESEND_API_KEY;
 
     if (!resendApiKey || resendApiKey === 'missing') {
-        console.error("RESEND_API_KEY is missing. Cannot send QR code email.");
+        const msg = "RESEND_API_KEY is missing. Cannot send QR code email.";
+        console.error(msg);
+        await logAudit({
+            userId: "system",
+            action: "EMAIL_ERROR",
+            module: "BOOKING",
+            targetId: booking.id,
+            details: msg
+        });
         return;
     }
 
@@ -32,7 +41,7 @@ export async function sendBookingQRCode(booking: any) {
 
         // Send Email
         const { data, error } = await resend.emails.send({
-            from: 'Desportos Náuticos Alvor <onboarding@resend.dev>', // Should be a verified domain in production
+            from: 'Desportos Náuticos Alvor <onboarding@resend.dev>',
             to: booking.customerEmail,
             subject: `Reserva Confirmada - ${booking.customerName}`,
             html: `
@@ -78,11 +87,35 @@ export async function sendBookingQRCode(booking: any) {
         });
 
         if (error) {
-            console.error(`Resend error for booking ${booking.id}:`, error);
+            const errorMsg = `Resend error for booking ${booking.id}: ${JSON.stringify(error)}`;
+            console.error(errorMsg);
+            await logAudit({
+                userId: "system",
+                action: "EMAIL_ERROR",
+                module: "BOOKING",
+                targetId: booking.id,
+                details: errorMsg
+            });
         } else {
             console.log(`QR code email sent successfully to ${booking.customerEmail} for booking ${booking.id}`);
+            await logAudit({
+                userId: "system",
+                action: "EMAIL_SENT",
+                module: "BOOKING",
+                targetId: booking.id,
+                targetName: booking.customerName,
+                details: `Email sent to ${booking.customerEmail}`
+            });
         }
-    } catch (err) {
-        console.error(`Failed to generate/send QR code for booking ${booking.id}:`, err);
+    } catch (err: any) {
+        const catchMsg = `Failed to generate/send QR code for booking ${booking.id}: ${err.message}`;
+        console.error(catchMsg);
+        await logAudit({
+            userId: "system",
+            action: "EMAIL_ERROR",
+            module: "BOOKING",
+            targetId: booking.id,
+            details: catchMsg
+        });
     }
 }
