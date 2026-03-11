@@ -13,6 +13,7 @@ export default function ScannerPage() {
     const [isStarted, setIsStarted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const scannerRef = useRef<Html5Qrcode | null>(null);
+    const [scanLock, setScanLock] = useState(false);
 
     const startScanner = async (mode: "environment" | "user") => {
         if (!scannerRef.current) return;
@@ -61,17 +62,27 @@ export default function ScannerPage() {
     };
 
     function onScanSuccess(decodedText: string) {
+        if (scanLock) return;
+
         try {
+            // Check if it's a DNA CRM check-in URL
             if (decodedText.includes("/check-in/")) {
-                const id = decodedText.split("/check-in/")[1].split("?")[0].split("&")[0];
+                setScanLock(true);
+                const parts = decodedText.split("/check-in/");
+                const id = parts[1].split(/[?&#]/)[0]; // Better ID extraction
+
                 if (id) {
-                    if (scannerRef.current) {
-                        scannerRef.current.stop().then(() => {
-                            router.push(`/check-in/${id}`);
-                        }).catch(() => {
-                            router.push(`/check-in/${id}`);
+                    // Using window.location.href for a hard redirect 
+                    // This is safer when dealing with camera hardware unmounting
+                    if (scannerRef.current && scannerRef.current.isScanning) {
+                        scannerRef.current.stop().finally(() => {
+                            window.location.href = `/check-in/${id}`;
                         });
+                    } else {
+                        window.location.href = `/check-in/${id}`;
                     }
+                } else {
+                    setScanLock(false);
                 }
             } else {
                 setError("QR Code inválido. Certifique-se que está a ler um código DNA CRM.");
@@ -79,6 +90,7 @@ export default function ScannerPage() {
             }
         } catch (err) {
             console.error("Scan processing error:", err);
+            setScanLock(false);
         }
     }
 

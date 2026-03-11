@@ -128,8 +128,8 @@ export default function CheckInPage() {
                             <div className="info-details">
                                 <label>Horário</label>
                                 <p>
-                                    {new Date(booking.activityDate).toLocaleDateString("pt-PT")}<br />
-                                    {booking.activityTime || "A confirmar"}
+                                    {booking?.activityDate ? new Date(booking.activityDate).toLocaleDateString("pt-PT") : '—'}<br />
+                                    {booking?.activityTime || "A confirmar"}
                                 </p>
                             </div>
                         </div>
@@ -148,8 +148,8 @@ export default function CheckInPage() {
                         <CreditCard size={18} className="info-icon" />
                         <div className="info-details">
                             <label>Valor da Reserva</label>
-                            <p className="price-text">{booking.totalPrice?.toFixed(2)}€</p>
-                            <p className="source-text">Origem: {booking.source} {booking.shopifyId ? `(Shopify: ${booking.shopifyId})` : ''}</p>
+                            <p className="price-text">{(booking?.totalPrice || 0).toFixed(2)}€</p>
+                            <p className="source-text">Origem: {booking?.source || 'MANUAL'} {booking?.shopifyId ? `(Shopify: ${booking.shopifyId})` : ''}</p>
                         </div>
                     </div>
                 </div>
