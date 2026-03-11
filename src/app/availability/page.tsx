@@ -99,10 +99,29 @@ export default function AvailabilityPage() {
         }
     }, [selected, isSofa, isBanana]);
 
+    // Keep pax in range [quantity, quantity * 2] for jetskis
+    useEffect(() => {
+        if (isJetski) {
+            setBookingForm(f => {
+                const min = f.quantity;
+                const max = f.quantity * 2;
+                if (f.pax < min || f.pax > max) {
+                    return { ...f, pax: min };
+                }
+                return f;
+            });
+        }
+    }, [bookingForm.quantity, isJetski]);
+
     const handleBook = async () => {
         if (!selected) return;
         setSubmitting(true);
         setError(null);
+
+        // Price logic: Jetskis are per quantity (mota), others are per pax
+        const qty = isJetski ? bookingForm.quantity : bookingForm.pax;
+        const finalPrice = selected.service.price ? selected.service.price * qty : 0;
+
         try {
             const res = await fetch("/api/bookings/create", {
                 method: "POST",
@@ -116,9 +135,9 @@ export default function AvailabilityPage() {
                     pax: bookingForm.pax,
                     serviceId: selected.service.id,
                     activityType: selected.service.name + (selected.service.variant ? ` — ${selected.service.variant}` : ""),
-                    totalPrice: selected.service.price ? selected.service.price * bookingForm.pax : 0,
+                    totalPrice: finalPrice,
                     quantity: bookingForm.quantity,
-                    partnerId: partnerId || undefined, // Attach partner ID if available
+                    partnerId: partnerId || undefined,
                     userName: user?.fullName ?? "Partner User",
                 }),
             });
@@ -137,12 +156,31 @@ export default function AvailabilityPage() {
         }
     };
 
+    const variantWeights: Record<string, number> = {
+        "1 hour": 100,
+        "30 minutes": 80,
+        "20 minutes": 60,
+        "15 minutes": 40,
+        "10 minutes": 20
+    };
+
     const grouped = data?.services.reduce<Record<string, ServiceAvail[]>>((acc, svc) => {
         const cat = svc.category ?? "Outros";
         if (!acc[cat]) acc[cat] = [];
         acc[cat].push(svc);
+        // Sort variants within category
+        acc[cat].sort((a, b) => {
+            const wa = variantWeights[a.variant ?? ""] ?? 0;
+            const wb = variantWeights[b.variant ?? ""] ?? 0;
+            if (wa || wb) return wb - wa;
+            return a.name.localeCompare(b.name);
+        });
         return acc;
     }, {}) ?? {};
+
+    const totalPriceDisplay = selected?.service.price
+        ? (selected.service.price * (isJetski ? bookingForm.quantity : bookingForm.pax)).toFixed(2)
+        : "0.00";
 
     return (
         <div className="avail-page">
@@ -275,7 +313,7 @@ export default function AvailabilityPage() {
 
                                     {selected.service.price && (
                                         <div className="avail-total">
-                                            Total: <strong>{(selected.service.price * bookingForm.pax).toFixed(2)}€</strong>
+                                            Total: <strong>{totalPriceDisplay}€</strong>
                                         </div>
                                     )}
                                     <button className="avail-btn-primary" onClick={handleBook} disabled={submitting || !bookingForm.customerName}>
