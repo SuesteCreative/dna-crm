@@ -430,8 +430,15 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `d261dce` | **Responsiveness & Mobile Optimization**: Mobile-First Sidebar, Adaptive Concessão Grid, Responsive Statistics, Mobile Modals/Forms, Layout adjustments across all modules |
 | `59486ea` | **Security**: Removed `_CRM_V1_SNAPSHOT.zip` from entire git history (filter-branch, force push), rotated exposed GCP service account key, added `*.zip` to `.gitignore` |
 | `QR-01` | **QR Check-in System**: Integrated automated QR email delivery, Data URI embedding (zero-file maintenance), and professional in-CRM scanner. |
+| `QR-02` | **Payment Breakthrough & Partner Attribution**: Price breakdown (Paid vs Pending), real partner names in check-in, and UX improvements (Close button). |
 
 ### Feature Details (Recent)
+
+#### Payment Breakthrough & Partner Attribution (2026-03-11)
+- **Price Breakdown**: Automated calculation of Amount Paid (Sinal) vs Pending (Na Praia) displayed in both confirmation emails and the staff check-in view.
+- **Partner Visibility**: Replaced generic "PARTNER" labels with actual partner names (e.g., "Hotel Alvor") for better attribution and transparency.
+- **Booking Edit v2**: Redesigned the Edit Drawer with a 2-column layout, fixing z-index issues, adding partner selection, and enabling real-time price recalculation.
+- **Staff UX**: Added a close button (X) to the check-in result screen for a faster "scan-verify-repeat" workflow.
 
 #### QR Check-in System (2026-03-10)
 - **Automated Delivery**: Confirmation emails now include an embedded QR code (Data URI format) for zero-maintenance file tracking.
