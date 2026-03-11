@@ -1015,31 +1015,100 @@ export default function Dashboard() {
                   }} required />
                 </div>
 
-                <div className="field">
-                  <label>Quantidade (unidades)</label>
-                  <input type="number" min="1" value={formData.quantity} onChange={e => {
-                    const qty = parseInt(e.target.value) || 1;
-                    const svc = services.find(s => s.id === formData.serviceId);
-                    const multiplier = svc?.minPax != null ? formData.pax : qty;
-                    setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
-                    if (formData.serviceId && formData.activityDate) fetchSlots(formData.serviceId, formData.activityDate, qty);
-                  }} />
-                </div>
-                <div className="field">
-                  <label>Nº Pessoas *</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.pax}
-                    onChange={e => {
-                      const p = parseInt(e.target.value) || 1;
-                      const svc = services.find(s => s.id === formData.serviceId);
-                      const multiplier = svc?.minPax != null ? p : formData.quantity;
-                      setFormData({ ...formData, pax: p, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
-                    }}
-                    required
-                  />
-                </div>
+                {(() => {
+                  const svc = services.find(s => s.id === formData.serviceId);
+                  const isJetski = svc?.category === "Jetski" || svc?.name.toLowerCase().includes("jetski");
+                  const isSofa = svc?.name.toLowerCase().includes("sofa");
+                  const isBanana = svc?.name.toLowerCase().includes("banana");
+
+                  if (isJetski) {
+                    const qtyOptions = [1, 2, 3];
+                    const minPax = formData.quantity;
+                    const maxPax = formData.quantity * 2;
+                    const paxOptions = Array.from({ length: maxPax - minPax + 1 }, (_, i) => minPax + i);
+
+                    return (
+                      <>
+                        <div className="field">
+                          <label>Quantidade (Motos)</label>
+                          <select className="field-select" value={formData.quantity} onChange={e => {
+                            const qty = parseInt(e.target.value);
+                            setFormData({
+                              ...formData,
+                              quantity: qty,
+                              pax: Math.max(qty, Math.min(formData.pax, qty * 2)),
+                              totalPrice: recalcPrice(createUnitPrice, qty, formData.discountAmount, formData.discountType, formData.bookingFee)
+                            });
+                          }}>
+                            {qtyOptions.map(q => <option key={q} value={q}>{q}</option>)}
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Nº Pessoas</label>
+                          <select className="field-select" value={formData.pax} onChange={e => {
+                            const p = parseInt(e.target.value);
+                            setFormData({ ...formData, pax: p });
+                          }}>
+                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  if (isSofa || isBanana) {
+                    const maxPax = isSofa ? 6 : 8;
+                    const paxOptions = Array.from({ length: maxPax - 1 }, (_, i) => 2 + i);
+                    return (
+                      <>
+                        <div className="field">
+                          <label>Quantidade (Sinal único)</label>
+                          <input type="number" value="1" disabled style={{ opacity: 0.6, cursor: "not-allowed" }} />
+                        </div>
+                        <div className="field">
+                          <label>Nº Pessoas</label>
+                          <select className="field-select" value={formData.pax} onChange={e => {
+                            const p = parseInt(e.target.value);
+                            // Sofa/Banana adjust price per pax
+                            setFormData({ ...formData, quantity: 1, pax: p, totalPrice: recalcPrice(createUnitPrice, p, formData.discountAmount, formData.discountType, formData.bookingFee) });
+                          }}>
+                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  // Default for other services (uses onFocus select for easier mobile entry)
+                  return (
+                    <>
+                      <div className="field">
+                        <label>Quantidade (unidades)</label>
+                        <input type="number" min="1" value={formData.quantity} onFocus={e => e.target.select()} onChange={e => {
+                          const qty = parseInt(e.target.value) || 1;
+                          const multiplier = svc?.minPax != null ? formData.pax : qty;
+                          setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
+                          if (formData.serviceId && formData.activityDate) fetchSlots(formData.serviceId, formData.activityDate, qty);
+                        }} />
+                      </div>
+                      <div className="field">
+                        <label>Nº Pessoas *</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={formData.pax}
+                          onFocus={e => e.target.select()}
+                          onChange={e => {
+                            const p = parseInt(e.target.value) || 1;
+                            const multiplier = svc?.minPax != null ? p : formData.quantity;
+                            setFormData({ ...formData, pax: p, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
+                          }}
+                          required
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
 
                 <div className="field">
                   <label>Preço Total (€)</label>
@@ -1281,26 +1350,94 @@ export default function Dashboard() {
                   <input type="date" value={editForm.activityDate} onChange={e => setEditForm({ ...editForm, activityDate: e.target.value })} />
                 </div>
 
-                <div className="field">
-                  <label>Quantidade (unidades)</label>
-                  <input type="number" min="1" value={editForm.quantity} onChange={e => {
-                    const qty = parseInt(e.target.value) || 1;
-                    const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
-                    const multiplier = svc?.minPax != null ? editForm.pax : qty;
-                    const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
-                    setEditForm({ ...editForm, quantity: qty, totalPrice: newPrice || editForm.totalPrice });
-                  }} />
-                </div>
-                <div className="field">
-                  <label>Pax</label>
-                  <input type="number" min="1" value={editForm.pax} onChange={e => {
-                    const pax = parseInt(e.target.value) || 1;
-                    const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
-                    const multiplier = svc?.minPax != null ? pax : editForm.quantity;
-                    const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
-                    setEditForm({ ...editForm, pax, totalPrice: newPrice || editForm.totalPrice });
-                  }} />
-                </div>
+                {(() => {
+                  const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                  const isJetski = svc?.category === "Jetski" || svc?.name.toLowerCase().includes("jetski");
+                  const isSofa = svc?.name.toLowerCase().includes("sofa");
+                  const isBanana = svc?.name.toLowerCase().includes("banana");
+
+                  if (isJetski) {
+                    const qtyOptions = [1, 2, 3];
+                    const minPax = editForm.quantity || 1;
+                    const maxPax = (editForm.quantity || 1) * 2;
+                    const paxOptions = Array.from({ length: maxPax - minPax + 1 }, (_, i) => minPax + i);
+
+                    return (
+                      <>
+                        <div className="field">
+                          <label>Quantidade (Motos)</label>
+                          <select className="field-select" value={editForm.quantity} onChange={e => {
+                            const qty = parseInt(e.target.value);
+                            const newPrice = recalcPrice(editUnitPrice, qty, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                            setEditForm({
+                              ...editForm,
+                              quantity: qty,
+                              pax: Math.max(qty, Math.min(editForm.pax, qty * 2)),
+                              totalPrice: newPrice || editForm.totalPrice
+                            });
+                          }}>
+                            {qtyOptions.map(q => <option key={q} value={q}>{q}</option>)}
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Nº Pessoas</label>
+                          <select className="field-select" value={editForm.pax} onChange={e => {
+                            const p = parseInt(e.target.value);
+                            setEditForm({ ...editForm, pax: p });
+                          }}>
+                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  if (isSofa || isBanana) {
+                    const maxPax = isSofa ? 6 : 8;
+                    const paxOptions = Array.from({ length: maxPax - 1 }, (_, i) => 2 + i);
+                    return (
+                      <>
+                        <div className="field">
+                          <label>Quantidade (Sinal único)</label>
+                          <input type="number" value="1" disabled style={{ opacity: 0.6, cursor: "not-allowed" }} />
+                        </div>
+                        <div className="field">
+                          <label>Nº Pessoas</label>
+                          <select className="field-select" value={editForm.pax} onChange={e => {
+                            const p = parseInt(e.target.value);
+                            const newPrice = recalcPrice(editUnitPrice, p, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                            setEditForm({ ...editForm, quantity: 1, pax: p, totalPrice: newPrice || editForm.totalPrice });
+                          }}>
+                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <div className="field">
+                        <label>Quantidade (unidades)</label>
+                        <input type="number" min="1" value={editForm.quantity} onFocus={e => e.target.select()} onChange={e => {
+                          const qty = parseInt(e.target.value) || 1;
+                          const multiplier = svc?.minPax != null ? editForm.pax : qty;
+                          const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                          setEditForm({ ...editForm, quantity: qty, totalPrice: newPrice || editForm.totalPrice });
+                        }} />
+                      </div>
+                      <div className="field">
+                        <label>Pax</label>
+                        <input type="number" min="1" value={editForm.pax} onFocus={e => e.target.select()} onChange={e => {
+                          const pax = parseInt(e.target.value) || 1;
+                          const multiplier = svc?.minPax != null ? pax : editForm.quantity;
+                          const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                          setEditForm({ ...editForm, pax, totalPrice: newPrice || editForm.totalPrice });
+                        }} />
+                      </div>
+                    </>
+                  );
+                })()}
 
                 <div className="field price-display-row">
                   <label>Preço real (€)</label>
