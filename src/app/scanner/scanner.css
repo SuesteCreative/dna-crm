@@ -4,23 +4,23 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 40px 20px;
+    padding: 20px 20px 40px;
     font-family: 'Inter', sans-serif;
     color: #f1f5f9;
 }
 
 .scanner-header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
 }
 
 .scanner-header .header-icon {
     color: #3b82f6;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .scanner-header h1 {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
     margin: 0;
 }
@@ -28,46 +28,109 @@
 .scanner-header p {
     color: #94a3b8;
     font-size: 14px;
-    margin-top: 6px;
+    margin-top: 4px;
+}
+
+.scanner-main {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .scanner-wrapper {
     width: 100%;
-    max-width: 400px;
+    aspect-ratio: 1;
     background: #111827;
-    border-radius: 24px;
+    border-radius: 20px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.05);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    margin-bottom: 30px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #reader {
+    width: 100% !important;
+    height: 100% !important;
     border: none !important;
 }
 
-#reader__status_span {
-    display: none;
+#reader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
 }
 
-#reader__dashboard_section_csr button {
-    background: #3b82f6 !important;
-    color: white !important;
-    border: none !important;
-    padding: 10px 20px !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    margin: 10px 0 !important;
+.scanner-loader {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: #111827;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
 }
 
-#reader__camera_selection {
-    background: #1e293b !important;
-    color: white !important;
-    border: 1px solid #334155 !important;
-    padding: 8px !important;
-    border-radius: 8px !important;
-    margin-bottom: 10px !important;
+.scanner-loader .spin {
+    color: #3b82f6;
+    animation: spin 1s linear infinite;
+}
+
+.scanner-loader span {
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.scanner-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-flip {
+    width: 100%;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: white;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s;
+}
+
+.btn-flip:hover:not(:disabled) {
+    background: #334155;
+    border-color: #475569;
+}
+
+.btn-flip:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.camera-status {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
 }
 
 .scanner-error {
@@ -103,10 +166,7 @@
 .scanner-instructions {
     width: 100%;
     max-width: 400px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 .step {
@@ -116,6 +176,7 @@
     background: rgba(255, 255, 255, 0.03);
     padding: 12px 18px;
     border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .step-num {
@@ -139,24 +200,28 @@
 }
 
 .btn-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     background: transparent;
-    border: 1px solid #334155;
+    border: none;
     color: #94a3b8;
-    padding: 12px 24px;
-    border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    font-size: 15px;
 }
 
 .btn-back:hover {
-    background: rgba(255, 255, 255, 0.05);
     color: white;
-    border-color: #475569;
 }
 
 @media (max-width: 480px) {
     .scanner-container {
         padding: 20px;
+    }
+
+    .scanner-header h1 {
+        font-size: 20px;
     }
 }
