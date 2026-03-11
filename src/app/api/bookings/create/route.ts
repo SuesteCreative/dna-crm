@@ -78,12 +78,19 @@ export async function POST(req: Request) {
                     select: { activityTime: true, quantity: true, serviceId: true },
                 });
 
+                // Fetch all services to know their durations
+                const allServices = await prisma.service.findMany({ select: { id: true, durationMinutes: true } });
+
                 const slotStart = timeToMinutes(activityTime);
                 let usedCapacity = 0;
                 for (const b of existingBookings) {
                     if (!b.activityTime) continue;
                     const bStart = timeToMinutes(b.activityTime);
-                    if (timesOverlap(slotStart, service.durationMinutes, bStart, service.durationMinutes)) {
+
+                    const bService = allServices.find(s => s.id === b.serviceId);
+                    const bDuration = bService?.durationMinutes ?? service.durationMinutes;
+
+                    if (timesOverlap(slotStart, service.durationMinutes, bStart, bDuration)) {
                         usedCapacity += b.quantity ?? 1;
                     }
                 }

@@ -67,14 +67,19 @@ export async function GET(req: NextRequest) {
         const slots = slotTimes.map((slotTime) => {
             const slotStart = timeToMinutes(slotTime);
 
-            // Count pax/quantity already booked in overlapping slots
+            // Count units already booked in overlapping slots
             let used = 0;
             for (const bk of relevantBookings) {
                 if (!bk.activityTime) continue;
                 const bkStart = timeToMinutes(bk.activityTime);
-                const bkDuration = svc.durationMinutes!;
+
+                // Find the actual duration of the booked service
+                const bkService = services.find(s => s.id === bk.serviceId);
+                const bkDuration = bkService?.durationMinutes ?? svc.durationMinutes!;
+
                 if (timesOverlap(slotStart, svc.durationMinutes!, bkStart, bkDuration)) {
-                    used += (bk.pax ?? 1);
+                    // For shared equipment groups, we use quantity. Fallback to 1 if not set.
+                    used += bk.quantity || (bk.pax ? Math.ceil(bk.pax / (svc.maxPax || 2)) : 1);
                 }
             }
 
