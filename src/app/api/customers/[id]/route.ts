@@ -62,7 +62,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
     const prisma = await getPrisma();
     try {
-        await prisma.customer.delete({ where: { id: params.id } });
+        await prisma.customer.update({ where: { id: params.id }, data: { deletedAt: new Date() } });
         return NextResponse.json({ ok: true });
     } catch {
         return NextResponse.json({ error: "Not found" }, { status: 404 });

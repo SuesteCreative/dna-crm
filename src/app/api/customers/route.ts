@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const field = validFields.includes(sortField) ? sortField : "createdAt";
     const order = sortOrder === "asc" ? "asc" : "desc";
 
-    const where: any = {};
+    const where: any = { deletedAt: null };
     if (search) {
         where.OR = [
             { name: { contains: search, mode: "insensitive" } },

@@ -41,16 +41,16 @@ export async function DELETE(req: Request) {
             }
         }
 
-        await prisma.booking.delete({ where: { id } });
+        await prisma.booking.update({ where: { id }, data: { deletedAt: new Date() } });
 
         await logAudit({
             userId,
-            action: "DELETE",
+            action: "SOFT_DELETE",
             module: "DASHBOARD",
             targetId: id,
             targetName: booking.customerName || undefined,
             details: {
-                message: "Reserva eliminada permanentemente.",
+                message: "Reserva marcada como eliminada (soft-delete).",
                 ...booking,
                 partnerName: (booking as any).partner?.name || "N/A"
             },

@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     try {
         const prisma = await getPrisma();
 
-        let where: Record<string, any> = {};
+        let where: Record<string, any> = { deletedAt: null };
         const clerk = await clerkClient();
         const clerkUser = await clerk.users.getUser(userId);
         const metadata = clerkUser.publicMetadata as any;

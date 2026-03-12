@@ -19,9 +19,10 @@ export async function ensureCustomer(data: {
         const customer = await prisma.customer.upsert({
             where: { email },
             update: {
-                name, // Update name if it changed
+                name,
                 phone: phone || undefined,
                 country: country || undefined,
+                deletedAt: null, // Restore if previously soft-deleted
             },
             create: {
                 name,
