@@ -407,7 +407,7 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
               </div>
 
               <button type="button" className="btn-add-act" onClick={addActivity}>
-                + Adicionar Outra Atividade
+                <Plus size={16} /> Adicionar Outra Atividade
               </button>
 
               <div className="form-grid customer-fields">
@@ -516,16 +516,17 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
             <div className="drawer-body">
               {editError && <div className="form-error"><AlertCircle size={14} />{editError}</div>}
 
-              <div className="drawer-section-label">Atividades</div>
               <div className="activities-list">
                 {editForm.activities?.map((act: any, idx: number) => {
                   const svc = services.find(s => s.id === act.serviceId);
                   return (
-                    <div key={idx} className="activity-card-edit" style={{ border: "1px solid #eee", padding: "12px", borderRadius: "8px", marginBottom: "12px", background: "#fcfcfc" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                        <span style={{ fontWeight: "bold", fontSize: "0.9em" }}>Item #{idx + 1}</span>
+                    <div key={idx} className="activity-card-edit">
+                      <div className="activity-card-hdr">
+                        <span className="activity-num">Item #{idx + 1}</span>
                         {editForm.activities.length > 1 && (
-                          <button className="btn-remove-act" onClick={() => removeEditActivity(idx)}><X size={14} /></button>
+                          <button className="btn-remove-act" onClick={() => removeEditActivity(idx)}>
+                            <Trash2 size={14} /> Remover
+                          </button>
                         )}
                       </div>
                       
@@ -597,8 +598,8 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                       </div>
 
                       {svc?.durationMinutes && (
-                        <div className="field full" style={{ marginTop: "12px" }}>
-                          <label>Horários Disponíveis</label>
+                        <div className="field full">
+                          <label>Horários Disponíveis {act.activityTime && <span className="slot-selected-label">— {act.activityTime}</span>}</label>
                           {act.slotsLoading ? (
                             <div className="slots-loading"><div className="loader-sm" /></div>
                           ) : act.slotsClosed ? (
@@ -626,7 +627,7 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                     </div>
                   );
                 })}
-                <button type="button" className="btn-add-activity" onClick={addEditActivity} style={{ width: "100%", marginTop: "8px" }}>
+                <button type="button" className="btn-add-activity" onClick={addEditActivity}>
                   <Plus size={14} /> Adicionar Outra Atividade
                 </button>
               </div>
