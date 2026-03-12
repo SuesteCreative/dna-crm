@@ -348,7 +348,7 @@ export default function Dashboard() {
   const isFuture = (b: Booking) => new Date(b.activityDate) >= tomorrow;
   
   const isNoShow = (b: Booking) =>
-    new Date(b.activityDate) < todayStart && b.status !== "CANCELLED" && !b.showedUp;
+    new Date(b.activityDate) < todayStart && b.status !== "CANCELLED" && b.showedUp === false;
 
   const anyTodayInGroup = (bookings: Booking[]) => bookings.some(isToday);
   const anyFutureInGroup = (bookings: Booking[]) => bookings.some(isFuture);

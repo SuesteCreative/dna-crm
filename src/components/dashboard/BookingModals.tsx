@@ -422,14 +422,14 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                 <div className="field">
                   <label>Preço Total da Reserva (€)</label>
                   <div className="total-calc-wrap">
-                    <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
-                    <button type="button" className="btn-auto-calc" onClick={() => {
-                        const total = formData.activities.reduce((sum: number, a: any) => sum + parseFloat(a.totalPrice || 0), 0);
-                        const disc = parseFloat(formData.discountAmount) || 0;
-                        let final = total;
-                        if (disc > 0) final = formData.discountType === "%" ? total * (1 - disc/100) : total - disc;
-                        setFormData({ ...formData, totalPrice: Math.max(0, final).toFixed(2) });
-                    }}>Auto-Soma Items</button>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      value={formData.totalPrice} 
+                      readOnly 
+                      className="field-readonly"
+                      title="Calculado automaticamente"
+                    />
                   </div>
                 </div>
 
@@ -691,14 +691,14 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                 <div className="field">
                   <label>Preço Total da Reserva (€)</label>
                   <div className="total-calc-wrap">
-                    <input type="number" step="0.01" value={editForm.totalPrice} onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })} />
-                    <button type="button" className="btn-auto-calc" onClick={() => {
-                        const total = (editForm.activities || []).reduce((sum: number, a: any) => sum + parseFloat(a.totalPrice || 0), 0);
-                        const disc = parseFloat(editForm.discountAmount) || 0;
-                        let final = total;
-                        if (disc > 0) final = editForm.discountType === "%" ? total * (1 - disc/100) : total - disc;
-                        setEditForm({ ...editForm, totalPrice: Math.max(0, final).toFixed(2) });
-                    }}>Auto-Soma Items</button>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      value={editForm.totalPrice} 
+                      readOnly 
+                      className="field-readonly"
+                      title="Calculado automaticamente"
+                    />
                   </div>
                 </div>
 
