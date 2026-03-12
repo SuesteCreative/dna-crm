@@ -30,13 +30,41 @@ export async function GET(req: NextRequest) {
         orderBy: [{ category: "asc" }, { name: "asc" }],
     });
 
-    // All bookings for this date (confirmed/pending, not cancelled/no-show)
+    // All bookings for this date (confirmed/pending), including their sub-activities
     const bookings = await prisma.booking.findMany({
         where: {
             activityDate: { gte: new Date(date + "T00:00:00Z"), lte: new Date(date + "T23:59:59Z") },
             status: { in: ["CONFIRMED", "PENDING"] },
         },
+        include: { activities: true },
     });
+
+    // Flatten into a unified list of "usage units" — each entry has serviceId, activityTime, quantity
+    // For multi-activity bookings use the BookingActivity rows; for single/Shopify use the parent.
+    type UsageUnit = { serviceId: string | null; activityTime: string | null; quantity: number };
+    const usageUnits: UsageUnit[] = [];
+    for (const bk of bookings) {
+        if (bk.activities.length > 0) {
+            // Multi-activity booking — each activity contributes independently
+            for (const act of bk.activities) {
+                const actDate = new Date(act.activityDate);
+                const actDateStr = actDate.toISOString().slice(0, 10);
+                if (actDateStr !== date) continue; // activity on a different date
+                usageUnits.push({
+                    serviceId: act.serviceId,
+                    activityTime: act.activityTime,
+                    quantity: act.quantity ?? 1,
+                });
+            }
+        } else {
+            // Single-activity / Shopify booking — use the parent record
+            usageUnits.push({
+                serviceId: bk.serviceId,
+                activityTime: bk.activityTime,
+                quantity: bk.quantity ?? 1,
+            });
+        }
+    }
 
     // Build capacity-group usage map: groupKey -> Map<slotTime, usedCapacity>
     const groupUsage = new Map<string, Map<string, number>>();
@@ -56,30 +84,25 @@ export async function GET(req: NextRequest) {
         if (!groupUsage.has(groupKey)) {
             groupUsage.set(groupKey, new Map());
         }
-        const usage = groupUsage.get(groupKey)!;
 
-        // Calculate usage per slot from bookings
-        const relevantBookings = bookings.filter((b) =>
-            b.serviceId === svc.id ||
-            (svc.capacityGroup && services.find((s) => s.id === b.serviceId)?.capacityGroup === svc.capacityGroup)
+        // Filter usage units relevant to this service / capacity group
+        const relevantUnits = usageUnits.filter((u) =>
+            u.serviceId === svc.id ||
+            (svc.capacityGroup && services.find((s) => s.id === u.serviceId)?.capacityGroup === svc.capacityGroup)
         );
 
         const slots = slotTimes.map((slotTime) => {
             const slotStart = timeToMinutes(slotTime);
 
-            // Count units already booked in overlapping slots
             let used = 0;
-            for (const bk of relevantBookings) {
-                if (!bk.activityTime) continue;
-                const bkStart = timeToMinutes(bk.activityTime);
-
-                // Find the actual duration of the booked service
-                const bkService = services.find(s => s.id === bk.serviceId);
+            for (const u of relevantUnits) {
+                if (!u.activityTime) continue;
+                const bkStart = timeToMinutes(u.activityTime);
+                const bkService = services.find(s => s.id === u.serviceId);
                 const bkDuration = bkService?.durationMinutes ?? svc.durationMinutes!;
 
                 if (timesOverlap(slotStart, svc.durationMinutes!, bkStart, bkDuration)) {
-                    // For shared equipment groups, we use quantity. Fallback to 1 if not set.
-                    used += bk.quantity || (bk.pax ? Math.ceil(bk.pax / (svc.maxPax || 2)) : 1);
+                    used += u.quantity;
                 }
             }
 
