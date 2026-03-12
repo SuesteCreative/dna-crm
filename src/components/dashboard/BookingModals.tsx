@@ -308,7 +308,7 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                               <input type="number" min="1" value={act.quantity} onChange={e => {
                                 const qty = parseInt(e.target.value) || 1;
                                 const multiplier = svc?.minPax != null ? act.pax : qty;
-                                updateActivity(idx, { quantity: qty, totalPrice: recalcPrice(act.createUnitPrice, multiplier, act.discountAmount, act.discountType, "0") });
+                                updateActivity(idx, { quantity: qty, totalPrice: (act.createUnitPrice || 0) * multiplier });
                                 if (act.serviceId && act.activityDate) fetchSlotsForActivity(idx, act.serviceId, act.activityDate, qty);
                               }} />
                             </div>
@@ -317,7 +317,7 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                               <input type="number" min="1" value={act.pax} onChange={e => {
                                 const p = parseInt(e.target.value) || 1;
                                 const multiplier = svc?.minPax != null ? p : act.quantity;
-                                updateActivity(idx, { pax: p, totalPrice: recalcPrice(act.createUnitPrice, multiplier, act.discountAmount, act.discountType, "0") });
+                                updateActivity(idx, { pax: p, totalPrice: (act.createUnitPrice || 0) * multiplier });
                               }} required />
                             </div>
                           </>
@@ -329,33 +329,6 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                         <input type="number" step="0.01" value={act.totalPrice} onChange={e => updateActivity(idx, { totalPrice: e.target.value })} />
                       </div>
 
-                      <div className="field discount-row">
-                        <label>Desconto</label>
-                        <div className="discount-wrap">
-                          <input
-                            type="number" min="0" step="0.01" placeholder="0"
-                            value={act.discountAmount}
-                            onChange={e => {
-                              const discAmt = e.target.value;
-                              const svc = services.find(s => s.id === act.serviceId);
-                              const multiplier = svc?.minPax != null ? act.pax : act.quantity;
-                              updateActivity(idx, { discountAmount: discAmt, totalPrice: recalcPrice(act.createUnitPrice, multiplier, discAmt, act.discountType, "0") });
-                            }}
-                          />
-                          <div className="discount-type-toggle">
-                            <button type="button" className={act.discountType === "%" ? "active" : ""} onClick={() => {
-                              const svc = services.find(s => s.id === act.serviceId);
-                              const multiplier = svc?.minPax != null ? act.pax : act.quantity;
-                              updateActivity(idx, { discountType: "%", totalPrice: recalcPrice(act.createUnitPrice, multiplier, act.discountAmount, "%", "0") });
-                            }}>%</button>
-                            <button type="button" className={act.discountType === "€" ? "active" : ""} onClick={() => {
-                              const svc = services.find(s => s.id === act.serviceId);
-                              const multiplier = svc?.minPax != null ? act.pax : act.quantity;
-                              updateActivity(idx, { discountType: "€", totalPrice: recalcPrice(act.createUnitPrice, multiplier, act.discountAmount, "€", "0") });
-                            }}>€</button>
-                          </div>
-                        </div>
-                      </div>
 
                       {(() => {
                         const svc = services.find(s => s.id === act.serviceId);
@@ -452,8 +425,42 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                     <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
                     <button type="button" className="btn-auto-calc" onClick={() => {
                         const total = formData.activities.reduce((sum: number, a: any) => sum + parseFloat(a.totalPrice || 0), 0);
-                        setFormData({ ...formData, totalPrice: total.toFixed(2) });
+                        const disc = parseFloat(formData.discountAmount) || 0;
+                        let final = total;
+                        if (disc > 0) final = formData.discountType === "%" ? total * (1 - disc/100) : total - disc;
+                        setFormData({ ...formData, totalPrice: Math.max(0, final).toFixed(2) });
                     }}>Auto-Soma Items</button>
+                  </div>
+                </div>
+
+                <div className="field discount-row-main">
+                  <label>Desconto Global</label>
+                  <div className="discount-wrap">
+                    <input
+                      type="number" min="0" step="0.01" placeholder="0"
+                      value={formData.discountAmount}
+                      onChange={e => setFormData({ ...formData, discountAmount: e.target.value })}
+                    />
+                    <div className="discount-type-toggle">
+                      <button type="button" className={formData.discountType === "%" ? "active" : ""} onClick={() => setFormData({ ...formData, discountType: "%" })}>%</button>
+                      <button type="button" className={formData.discountType === "€" ? "active" : ""} onClick={() => setFormData({ ...formData, discountType: "€" })}>€</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label>Comissão (Booking Fee)</label>
+                  <div className="booking-fee-wrap">
+                    <input
+                      type="number" step="0.01" placeholder="0.00"
+                      value={formData.bookingFee}
+                      onChange={e => setFormData({ ...formData, bookingFee: e.target.value })}
+                    />
+                    {(isPartner || formData.forPartnerId) && (
+                      <button type="button" className="btn-quick-fee" onClick={applyQuickCommission} title="Aplicar comissão automática">
+                        <Zap size={14} /> Quick Apply
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -663,13 +670,9 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                 </div>
               </div>
 
-              <div className="field full" style={{ marginTop: "12px" }}>
-                 <label>Notas Internas</label>
-                 <textarea rows={2} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
-              </div>
-
               <div className="drawer-section-label" style={{ marginTop: 16 }}>Reserva</div>
               <div className="form-grid">
+
                 {!isPartner && partners.length > 0 && (
                   <div className="field">
                     <label>Parceiro</label>
@@ -686,26 +689,53 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                   </div>
                 )}
                 <div className="field">
-                  <label>Comissão (Booking Fee)</label>
-                    <div className="booking-fee-wrap">
-                      <input
-                        type="number" step="0.01" placeholder="0.00"
-                        value={editForm.bookingFee}
-                        onChange={e => {
-                          const fee = e.target.value;
-                          const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
-                          const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
-                          const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, fee);
-                          setEditForm({ ...editForm, bookingFee: fee, totalPrice: newPrice || editForm.totalPrice });
-                        }}
-                      />
-                      {(isPartner || editForm.forPartnerId || editTarget.partnerId) && (
-                        <button type="button" className="btn-quick-fee" onClick={applyEditQuickCommission} title="Aplicar comissão automática">
-                          <Zap size={14} /> Quick Apply
-                        </button>
-                      )}
-                      <span className="fee-hint">O preço total será ajustado (Preço - Comissão)</span>
+                  <label>Preço Total da Reserva (€)</label>
+                  <div className="total-calc-wrap">
+                    <input type="number" step="0.01" value={editForm.totalPrice} onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })} />
+                    <button type="button" className="btn-auto-calc" onClick={() => {
+                        const total = (editForm.activities || []).reduce((sum: number, a: any) => sum + parseFloat(a.totalPrice || 0), 0);
+                        const disc = parseFloat(editForm.discountAmount) || 0;
+                        let final = total;
+                        if (disc > 0) final = editForm.discountType === "%" ? total * (1 - disc/100) : total - disc;
+                        setEditForm({ ...editForm, totalPrice: Math.max(0, final).toFixed(2) });
+                    }}>Auto-Soma Items</button>
+                  </div>
+                </div>
+
+                <div className="field discount-row-main">
+                  <label>Desconto Global</label>
+                  <div className="discount-wrap">
+                    <input
+                      type="number" min="0" step="0.01" placeholder="0"
+                      value={editForm.discountAmount}
+                      onChange={e => setEditForm({ ...editForm, discountAmount: e.target.value })}
+                    />
+                    <div className="discount-type-toggle">
+                      <button type="button" className={editForm.discountType === "%" ? "active" : ""} onClick={() => setEditForm({ ...editForm, discountType: "%" })}>%</button>
+                      <button type="button" className={editForm.discountType === "€" ? "active" : ""} onClick={() => setEditForm({ ...editForm, discountType: "€" })}>€</button>
                     </div>
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label>Comissão (Booking Fee)</label>
+                  <div className="booking-fee-wrap">
+                    <input
+                      type="number" step="0.01" placeholder="0.00"
+                      value={editForm.bookingFee}
+                      onChange={e => setEditForm({ ...editForm, bookingFee: e.target.value })}
+                    />
+                    {(isPartner || editForm.forPartnerId || editTarget.partnerId) && (
+                      <button type="button" className="btn-quick-fee" onClick={applyEditQuickCommission} title="Aplicar comissão automática">
+                        <Zap size={14} /> Quick Apply
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="field full" style={{ marginTop: 8 }}>
+                  <label>Notas Internas / Observações</label>
+                  <textarea rows={2} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
                 </div>
               </div>
             </div>

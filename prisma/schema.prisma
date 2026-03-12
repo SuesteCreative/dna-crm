@@ -97,6 +97,8 @@ model Booking {
   gcalEventIds         String?
   discountCodes        String?
   postalCode           String?
+  discountAmount       Float?
+  discountType         String?   @default("%")
   bookingFee           Float?    @default(0)
   partner              Partner?  @relation(fields: [partnerId], references: [id])
   customer             Customer? @relation(fields: [customerId], references: [id])

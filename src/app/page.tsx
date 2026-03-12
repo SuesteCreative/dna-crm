@@ -23,15 +23,16 @@ import { BookingModals } from "@/components/dashboard/BookingModals";
 
 const defaultActivity = {
   serviceId: "", activityDate: "", activityTime: "", pax: 1, quantity: 1,
-  activityType: "", discountAmount: "", discountType: "%",
+  activityType: "",
   createUnitPrice: null as number | null,
   slots: [] as SlotInfo[], slotsLoading: false, slotsClosed: false,
   totalPrice: 0
 };
 
 const defaultForm = {
-  customerName: "", customerEmail: "", customerPhone: "", countryCode: "+351",
-  totalPrice: "", notes: "", forPartnerId: "", bookingFee: "",
+  customerName: "", customerEmail: "", customerPhone: "", countryCode: "PT",
+  totalPrice: "", notes: "", forPartnerId: "", bookingFee: "0",
+  discountAmount: "0", discountType: "%",
   activities: [{ ...defaultActivity }],
 };
 
@@ -98,6 +99,66 @@ export default function Dashboard() {
       fetchPartners();
     }
   }, [isSignedIn]);
+
+  // AUTO-CALC TOTAL PRICE
+  useEffect(() => {
+    const sum = formData.activities.reduce((acc, act) => acc + (parseFloat(act.totalPrice as any) || 0), 0);
+    const disc = parseFloat(formData.discountAmount) || 0;
+    let final = sum;
+    if (disc > 0) {
+      final = formData.discountType === "%" ? sum * (1 - disc / 100) : sum - disc;
+    }
+    setFormData(prev => ({ ...prev, totalPrice: Math.max(0, final).toFixed(2) }));
+  }, [formData.activities, formData.discountAmount, formData.discountType]);
+
+  // AUTO-CALC BOOKING FEE
+  useEffect(() => {
+    const pId = isPartner ? partnerId : formData.forPartnerId;
+    const partner = partners.find(p => p.id === pId);
+    if (!partner) {
+      setFormData(prev => ({ ...prev, bookingFee: "0" }));
+      return;
+    }
+    const totalRaw = formData.activities.reduce((acc, act) => acc + (parseFloat(act.totalPrice as any) || 0), 0);
+    const disc = parseFloat(formData.discountAmount) || 0;
+    let net = totalRaw;
+    if (disc > 0) {
+      net = formData.discountType === "%" ? totalRaw * (1 - disc / 100) : totalRaw - disc;
+    }
+    const fee = net * (partner.commission / 100);
+    setFormData(prev => ({ ...prev, bookingFee: fee.toFixed(2) }));
+  }, [formData.activities, formData.discountAmount, formData.discountType, formData.forPartnerId, partners, isPartner, partnerId]);
+
+  // AUTO-CALC EDIT FORM TOTAL PRICE
+  useEffect(() => {
+    if (!editTarget) return;
+    const sum = (editForm.activities || []).reduce((acc: number, act: any) => acc + (parseFloat(act.totalPrice as any) || 0), 0);
+    const disc = parseFloat(editForm.discountAmount) || 0;
+    let final = sum;
+    if (disc > 0) {
+      final = editForm.discountType === "%" ? sum * (1 - disc / 100) : sum - disc;
+    }
+    setEditForm(prev => ({ ...prev, totalPrice: Math.max(0, final).toFixed(2) }));
+  }, [editForm.activities, editForm.discountAmount, editForm.discountType, editTarget]);
+
+  // AUTO-CALC EDIT FORM BOOKING FEE
+  useEffect(() => {
+    if (!editTarget) return;
+    const pId = isPartner ? partnerId : (editForm.forPartnerId || editTarget.partnerId);
+    const partner = partners.find(p => p.id === pId);
+    if (!partner) {
+      setEditForm(prev => ({ ...prev, bookingFee: "0" }));
+      return;
+    }
+    const totalRaw = (editForm.activities || []).reduce((acc: number, act: any) => acc + (parseFloat(act.totalPrice as any) || 0), 0);
+    const disc = parseFloat(editForm.discountAmount) || 0;
+    let net = totalRaw;
+    if (disc > 0) {
+      net = editForm.discountType === "%" ? totalRaw * (1 - disc / 100) : totalRaw - disc;
+    }
+    const fee = net * (partner.commission / 100);
+    setEditForm(prev => ({ ...prev, bookingFee: fee.toFixed(2) }));
+  }, [editForm.activities, editForm.discountAmount, editForm.discountType, editForm.forPartnerId, editTarget, partners, isPartner, partnerId]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -302,51 +363,34 @@ export default function Dashboard() {
   const currentMonthKey = _cmRaw.charAt(0).toUpperCase() + _cmRaw.slice(1);
 
   const applyQuickCommission = () => {
+    // Now handled by useEffect automatically, but keeping the button logic if manual override needed
     const pId = isPartner ? partnerId : formData.forPartnerId;
     const partner = partners.find(p => p.id === pId);
     if (!partner) return;
-
-    let totalCalculatedFee = 0;
-    formData.activities.forEach((act: any) => {
-      const svc = services.find(s => s.id === act.serviceId);
-      const multiplier = svc?.minPax != null ? act.pax : act.quantity;
-      const unitPrice = act.createUnitPrice || 0;
-      const base = unitPrice * multiplier;
-      const d = parseFloat(act.discountAmount) || 0;
-      let discounted = base;
-      if (d > 0) {
-        discounted = act.discountType === "%" ? base * (1 - d / 100) : base - d;
-      }
-      totalCalculatedFee += discounted * (partner.commission / 100);
-    });
-
-    const feeStr = totalCalculatedFee.toFixed(2);
-    setFormData({
-      ...formData,
-      bookingFee: feeStr,
-      // We don't automatically adjust totalPrice here because recolcPrice 
-      // for the whole booking would need to know which unit price it was based on.
-      // The user can use "Auto-Soma Items" in the UI.
-    });
+    const totalRaw = formData.activities.reduce((acc, act) => acc + (parseFloat(act.totalPrice as any) || 0), 0);
+    const disc = parseFloat(formData.discountAmount) || 0;
+    let net = totalRaw;
+    if (disc > 0) {
+      net = formData.discountType === "%" ? totalRaw * (1 - disc / 100) : totalRaw - disc;
+    }
+    setFormData({ ...formData, bookingFee: (net * (partner.commission / 100)).toFixed(2) });
   };
 
   const applyEditQuickCommission = () => {
     const pId = isPartner ? partnerId : (editForm.forPartnerId || editTarget?.partnerId);
     const partner = partners.find(p => p.id === pId);
     if (!partner) return;
-    const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
-    const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
-    const base = (editUnitPrice || 0) * multiplier;
-    const d = parseFloat(editForm.discountAmount) || 0;
-    let discounted = base;
-    if (d > 0) {
-      discounted = editForm.discountType === "%" ? base * (1 - d / 100) : base - d;
+
+    const totalRaw = (editForm.activities || []).reduce((acc: number, act: any) => acc + (parseFloat(act.totalPrice as any) || 0), 0);
+    const disc = parseFloat(editForm.discountAmount) || 0;
+    let net = totalRaw;
+    if (disc > 0) {
+      net = editForm.discountType === "%" ? totalRaw * (1 - disc / 100) : totalRaw - disc;
     }
-    const calculatedFee = (discounted * (partner.commission / 100)).toFixed(2);
+    const calculatedFee = (net * (partner.commission / 100)).toFixed(2);
     setEditForm({
       ...editForm,
-      bookingFee: calculatedFee,
-      totalPrice: recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, calculatedFee)
+      bookingFee: calculatedFee
     });
   };
 
@@ -373,7 +417,7 @@ export default function Dashboard() {
           pax: initPax,
           quantity: initQty,
           createUnitPrice: unitPrice,
-          totalPrice: recalcPrice(unitPrice, multiplier, current.discountAmount, current.discountType, "0") as any, // initial price for this act
+          totalPrice: (unitPrice * multiplier) as any, // initial price for this act
         };
         if (svc.durationMinutes && current.activityDate) {
           fetchSlotsForActivity(index, svc.id, current.activityDate, initQty);
@@ -398,6 +442,11 @@ export default function Dashboard() {
         payload.overrideReason = reason;
         payload.userName = user?.fullName || "Staff";
       }
+      // Use fallback unit price to avoid null in payload if needed
+      payload.activities = payload.activities.map((a: any) => ({
+        ...a,
+        createUnitPrice: a.createUnitPrice || 0
+      }));
       const res = await fetch("/api/bookings/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -438,8 +487,10 @@ export default function Dashboard() {
       unitPrice = svcByType?.price ?? null;
     }
     setEditUnitPrice(unitPrice);
+    
     const d = new Date(b.activityDate);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    
     const activities = b.activities && b.activities.length > 0 
       ? b.activities.map(a => {
           const svc = a.serviceId ? services.find(s => s.id === a.serviceId) : null;
@@ -452,9 +503,7 @@ export default function Dashboard() {
             quantity: a.quantity || 1,
             activityType: a.activityType || "",
             totalPrice: a.totalPrice || 0,
-            createUnitPrice: svc?.price ?? null, // for quick commission/recalc
-            discountAmount: "",
-            discountType: "%",
+            createUnitPrice: svc?.price ?? 0, 
             slots: [] as SlotInfo[],
             slotsLoading: false,
             slotsClosed: false
@@ -468,9 +517,7 @@ export default function Dashboard() {
           quantity: b.quantity || 1,
           activityType: b.activityType || "",
           totalPrice: b.totalPrice || 0,
-          createUnitPrice: unitPrice,
-          discountAmount: "",
-          discountType: "%",
+          createUnitPrice: unitPrice || 0,
           slots: [] as SlotInfo[],
           slotsLoading: false,
           slotsClosed: false
@@ -480,26 +527,15 @@ export default function Dashboard() {
       customerName: b.customerName,
       customerEmail: b.customerEmail || "",
       customerPhone: b.customerPhone || "",
-      activityDate: dateStr,
-      activityTime: b.activityTime || "",
-      pax: b.pax,
-      quantity: b.quantity ?? 1,
-      totalPrice: b.totalPrice ?? "",
-      activityType: b.activityType || "",
-      status: b.status,
+      countryCode: b.country || "PT",
+      totalPrice: b.totalPrice?.toString() || "0",
       notes: b.notes || "",
-      countryCode: b.country || "Other",
-      bookingFee: b.bookingFee?.toString() || "",
       forPartnerId: b.partnerId || "",
-      discountAmount: "",
+      bookingFee: b.bookingFee?.toString() || "0",
+      discountAmount: "0",
       discountType: "%",
       activities
     });
-
-    if (activities.length === 1) {
-      const targetSvcId = activities[0].serviceId;
-      if (targetSvcId) fetchSlots(targetSvcId, activities[0].activityDate, activities[0].quantity, b.id);
-    }
   };
 
   const handleEditSave = async (override = false, reason = "") => {

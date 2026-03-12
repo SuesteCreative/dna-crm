@@ -39,6 +39,8 @@ export async function POST(req: Request) {
             forPartnerId,
             countryCode,
             bookingFee,
+            discountAmount,
+            discountType,
             activities: activitiesData,
         } = data;
 
@@ -132,6 +134,12 @@ export async function POST(req: Request) {
 
         // Use info from first activity for root Booking fields (compatibility/sorting)
         const firstAct = activities[0];
+        const rawSum = activities.reduce((sum: number, a: any) => sum + (parseFloat(a.totalPrice as any) || 0), 0);
+        const discAmt = parseFloat(discountAmount || 0);
+        let calculatedTotal = rawSum;
+        if (discAmt > 0) {
+            calculatedTotal = (discountType === "%") ? rawSum * (1 - discAmt / 100) : rawSum - discAmt;
+        }
 
         const booking = await prisma.booking.create({
             data: {
@@ -142,7 +150,7 @@ export async function POST(req: Request) {
                 activityTime: firstAct.activityTime || null,
                 pax: parseInt(firstAct.pax as any) || 1,
                 quantity: parseInt(firstAct.quantity as any) || parseInt(firstAct.pax as any) || 1,
-                totalPrice: parseFloat(totalPrice || 0),
+                totalPrice: parseFloat(totalPrice || 0) > 0 ? parseFloat(totalPrice || 0) : Math.max(0, calculatedTotal),
                 notes: notes || null,
                 createdById: userId,
                 source: isPartner || adminPartnerId ? "PARTNER" : "MANUAL",
@@ -151,6 +159,8 @@ export async function POST(req: Request) {
                 activityType: firstAct.activityType || null,
                 partnerId: isPartner ? (sessionPartnerId || null) : adminPartnerId,
                 country: countryCode || "Other",
+                discountAmount: parseFloat(discountAmount || 0),
+                discountType: discountType || "%",
                 bookingFee: parseFloat(bookingFee || 0),
                 customerId,
                 activities: {

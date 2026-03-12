@@ -16,12 +16,36 @@ export async function PATCH(req: NextRequest) {
         }
 
         const prisma = await getPrisma();
-        const booking = await prisma.booking.update({
+        const current = await prisma.booking.findUnique({
             where: { id },
-            data: { showedUp },
+            include: { activities: true }
         });
 
-        return NextResponse.json({ success: true, showedUp: booking.showedUp });
+        if (!current) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+
+        let updateData: any = { showedUp };
+        
+        // If marking as present and total is 0, try to fix it from activities
+        if (showedUp && (!current.totalPrice || current.totalPrice === 0) && (current as any).activities.length > 0) {
+            const sum = (current as any).activities.reduce((acc: number, act: any) => acc + (act.totalPrice || 0), 0);
+            if (sum > 0) {
+                const discAmt = (current as any).discountAmount || 0;
+                const discType = (current as any).discountType || "%";
+                let discounted = sum;
+                if (discAmt > 0) {
+                    discounted = (discType === "%") ? sum * (1 - discAmt / 100) : sum - discAmt;
+                }
+                updateData.totalPrice = Math.max(0, discounted);
+            }
+        }
+
+        const booking = await prisma.booking.update({
+            where: { id },
+            data: updateData,
+            include: { activities: true }
+        });
+
+        return NextResponse.json({ success: true, showedUp: booking.showedUp, totalPrice: booking.totalPrice });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

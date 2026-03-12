@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest) {
     try {
         const prisma = await getPrisma();
         const data = await req.json();
-        const { id, override, overrideReason, userName, activities: reqActivities, ...fields } = data;
+        const { id, override, overrideReason, userName, activities: reqActivities, forPartnerId, discountAmount, discountType, ...fields } = data;
 
         if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
@@ -163,6 +163,13 @@ export async function PATCH(req: NextRequest) {
 
         // Determine primary date/time/service for the top-level row (usually from first activity)
         const primaryAct = activitiesToProcess[0];
+        const rawSum = activitiesToProcess.reduce((sum: number, a: any) => sum + (parseFloat(a.totalPrice) || 0), 0);
+        const discAmt = parseFloat(discountAmount || (current as any).discountAmount || 0);
+        const discType = discountType || (current as any).discountType || "%";
+        let calculatedTotal = rawSum;
+        if (discAmt > 0) {
+            calculatedTotal = (discType === "%") ? rawSum * (1 - discAmt / 100) : rawSum - discAmt;
+        }
 
         const updatedBooking = await prisma.$transaction(async (tx) => {
             // Delete removed activities
@@ -183,12 +190,16 @@ export async function PATCH(req: NextRequest) {
                     activityTime: primaryAct?.activityTime || null,
                     pax: primaryAct?.pax ? parseInt(primaryAct.pax) : undefined,
                     quantity: primaryAct?.quantity ? parseInt(primaryAct.quantity) : undefined,
-                    totalPrice: fields.totalPrice !== undefined ? parseFloat(fields.totalPrice) : undefined,
+                    totalPrice: fields.totalPrice !== undefined ? (parseFloat(fields.totalPrice) > 0 ? parseFloat(fields.totalPrice) : calculatedTotal) : undefined,
                     activityType: primaryAct?.activityType || null,
                     status: fields.status || undefined,
                     notes: fields.notes || null,
                     country: fields.countryCode === undefined ? undefined : (fields.countryCode || "Other"),
                     bookingFee: fields.bookingFee !== undefined ? parseFloat(fields.bookingFee) || 0 : undefined,
+                    partnerId: forPartnerId === undefined ? undefined : (forPartnerId || null),
+                    source: forPartnerId === undefined ? undefined : (forPartnerId ? "PARTNER" : "MANUAL"),
+                    discountAmount: discountAmount !== undefined ? parseFloat(discountAmount) || 0 : undefined,
+                    discountType: discountType || undefined,
                     isEdited: true,
                     customerId,
                     ...(captureOriginals && {
