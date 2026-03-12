@@ -218,6 +218,9 @@ export async function POST(req: Request) {
         }
 
         // GCAL SYNC FOR EACH ACTIVITY
+        // Track calendars already assigned in this booking to avoid double-booking
+        // the same physical resource (e.g. two jetski activities → two different jetski calendars)
+        const usedCalendarIds = new Set<string>();
         for (const act of booking.activities) {
             if (act.serviceId && act.activityTime && act.activityDate) {
                 try {
@@ -228,7 +231,9 @@ export async function POST(req: Request) {
                             orderBy: { order: "asc" },
                         });
                         const requestedQty = act.quantity || act.pax || 1;
-                        const toBook = staffList.slice(0, requestedQty);
+                        // Skip calendars already booked by an earlier activity in this booking
+                        const available = staffList.filter(s => !usedCalendarIds.has(s.calendarId));
+                        const toBook = available.slice(0, requestedQty);
                         if (toBook.length > 0) {
                             const dateStr = new Date(act.activityDate).toISOString().split("T")[0];
                             const { startISO, endISO } = toGcalTimes(dateStr, act.activityTime, svc.durationMinutes);
@@ -240,6 +245,7 @@ export async function POST(req: Request) {
                                 if (eventId) {
                                     eventIds.push(eventId);
                                     calendarIds.push(staff.calendarId);
+                                    usedCalendarIds.add(staff.calendarId);
                                 }
                             }
                             if (eventIds.length > 0) {
