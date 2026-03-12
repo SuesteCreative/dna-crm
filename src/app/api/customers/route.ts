@@ -19,7 +19,14 @@ export async function GET(req: NextRequest) {
     const optedOut = searchParams.get("optedOut");
     const page = parseInt(searchParams.get("page") ?? "1");
     const limit = parseInt(searchParams.get("limit") ?? "50");
+    const sortField = searchParams.get("sortField") ?? "createdAt";
+    const sortOrder = searchParams.get("sortOrder") ?? "desc";
     const skip = (page - 1) * limit;
+
+    // Validate sortField
+    const validFields = ["name", "email", "country", "source", "createdAt"];
+    const field = validFields.includes(sortField) ? sortField : "createdAt";
+    const order = sortOrder === "asc" ? "asc" : "desc";
 
     const where: any = {};
     if (search) {
@@ -35,11 +42,16 @@ export async function GET(req: NextRequest) {
 
     const prisma = await getPrisma();
     const [customers, total] = await Promise.all([
-        prisma.customer.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: limit }),
+        prisma.customer.findMany({ 
+            where, 
+            orderBy: { [field]: order }, 
+            skip, 
+            take: limit 
+        }),
         prisma.customer.count({ where }),
     ]);
 
-    return NextResponse.json({ customers, total, page, limit });
+    return NextResponse.json({ customers, total, page, limit, sortField: field, sortOrder: order });
 }
 
 export async function POST(req: NextRequest) {

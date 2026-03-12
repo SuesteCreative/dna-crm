@@ -447,6 +447,7 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 #### Real-time Sync & Automation (2026-03-12)
 - **GCal Push Notifications**: Implemented Google Calendar Watch API (Webhooks). Local availability cache now updates instantly when calendar changes occur externally.
 - **Server-Side Search**: Moved dashboard booking search to the backend (Prisma) with a 400ms debounce. Drastically improves dashboard performance for high booking volumes.
+- **Customer Database Sorting**: Implemented interactive multi-column sorting (Name, Email, Country, Source, Date) in the Customer Hub. Handles toggling ASC/DESC on the server side across paginated results.
 - **Enhanced Audit Trail**: Booking updates now log full "Before/After" diffs. Attendance toggles (showedUp) are now audited with timestamps.
 - **Automated Follow-ups**: 
     - New high-converting email template thanking customers and requesting Google reviews.

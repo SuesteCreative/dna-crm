@@ -177,6 +177,24 @@
 }
 
 .cust-table th:hover { color: var(--text); }
+.cust-table th.sortable { cursor: pointer; }
+.cust-table th.sortable:hover { color: var(--text); }
+
+.sort-icon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.sort-icon.inactive {
+    opacity: 0.1;
+}
+
+.sort-icon.active {
+    opacity: 1;
+    color: var(--blue);
+}
 
 .cust-table td {
     padding: 0.65rem 1rem;

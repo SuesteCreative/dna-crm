@@ -4,7 +4,8 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
     Users, Search, Plus, Download, Upload, RefreshCcw,
-    Pencil, Trash2, CheckCircle, X, ChevronLeft, ChevronRight, MailX
+    Pencil, Trash2, CheckCircle, X, ChevronLeft, ChevronRight, MailX,
+    ArrowUp, ArrowDown
 } from "lucide-react";
 import "./customers.css";
 
@@ -39,6 +40,8 @@ export default function CustomersPage() {
     const [search, setSearch] = useState("");
     const [countryFilter, setCountryFilter] = useState("");
     const [optedFilter, setOptedFilter] = useState("");
+    const [sortField, setSortField] = useState("createdAt");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [loading, setLoading] = useState(false);
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -81,9 +84,14 @@ export default function CustomersPage() {
         if (role !== "ADMIN" && role !== "SUPER_ADMIN") { router.push("/"); return; }
     }, [isLoaded, role]);
 
-    const fetchCustomers = useCallback(async (p = page) => {
+    const fetchCustomers = useCallback(async (p = page, sf = sortField, so = sortOrder) => {
         setLoading(true);
-        const params = new URLSearchParams({ page: String(p), limit: String(LIMIT) });
+        const params = new URLSearchParams({ 
+            page: String(p), 
+            limit: String(LIMIT),
+            sortField: sf,
+            sortOrder: so
+        });
         if (search) params.set("search", search);
         if (countryFilter) params.set("country", countryFilter);
         if (optedFilter) params.set("optedOut", optedFilter);
@@ -92,7 +100,7 @@ export default function CustomersPage() {
         setCustomers(data.customers ?? []);
         setTotal(data.total ?? 0);
         setLoading(false);
-    }, [page, search, countryFilter, optedFilter]);
+    }, [page, search, countryFilter, optedFilter, sortField, sortOrder]);
 
     const fetchStats = useCallback(async () => {
         const [all, opted] = await Promise.all([
@@ -116,9 +124,28 @@ export default function CustomersPage() {
         if (searchTimer.current) clearTimeout(searchTimer.current);
         searchTimer.current = setTimeout(() => {
             setPage(1);
-            fetchCustomers(1);
+            fetchCustomers(1, sortField, sortOrder);
         }, 300);
     }, [search, countryFilter, optedFilter]);
+
+    const handleSort = (field: string) => {
+        let nextOrder: "asc" | "desc" = "desc";
+        if (sortField === field) {
+            nextOrder = sortOrder === "desc" ? "asc" : "desc";
+        } else {
+            // Default directions
+            if (field === "name" || field === "email" || field === "country") nextOrder = "asc";
+        }
+        setSortField(field);
+        setSortOrder(nextOrder);
+        setPage(1);
+        fetchCustomers(1, field, nextOrder);
+    };
+
+    const renderSortIcon = (field: string) => {
+        if (sortField !== field) return <ArrowDown size={14} className="sort-icon inactive" />;
+        return sortOrder === "asc" ? <ArrowUp size={14} className="sort-icon active" /> : <ArrowDown size={14} className="sort-icon active" />;
+    };
 
     const openAdd = () => {
         setEditing(null);
@@ -283,13 +310,13 @@ export default function CustomersPage() {
                 <table className="cust-table">
                     <thead>
                         <tr>
-                            <th>Nome</th>
-                            <th>Email</th>
+                            <th onClick={() => handleSort("name")} className="sortable">Nome {renderSortIcon("name")}</th>
+                            <th onClick={() => handleSort("email")} className="sortable">Email {renderSortIcon("email")}</th>
                             <th>Telefone</th>
-                            <th>País</th>
-                            <th>Origem</th>
+                            <th onClick={() => handleSort("country")} className="sortable">País {renderSortIcon("country")}</th>
+                            <th onClick={() => handleSort("source")} className="sortable">Origem {renderSortIcon("source")}</th>
                             <th>Marketing</th>
-                            <th>Registado</th>
+                            <th onClick={() => handleSort("createdAt")} className="sortable">Registado {renderSortIcon("createdAt")}</th>
                             <th></th>
                         </tr>
                     </thead>
