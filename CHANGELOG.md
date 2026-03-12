@@ -221,6 +221,11 @@ src/
 - `isEdited` (Boolean) + original values: `originalActivityType`, `originalPax`, `originalQuantity`, `originalTotalPrice`, `originalActivityDate`, `originalActivityTime`
 - `gcalEventIds` (JSON string array), `gcalCalendarIds` (JSON string array)
 - `followUpSent` (Boolean, default false)
+- `activities` — Linked to `BookingActivity[]` (one-to-many)
+
+**BookingActivity**
+- `id`, `bookingId`, `serviceId`, `activityType`, `activityDate`, `activityTime`, `pax`, `quantity`, `totalPrice`
+- `gcalCalendarIds`, `gcalEventIds`, `createdAt`, `updatedAt`
 
 **Service**
 - `id`, `shopifyHandle`, `name`, `variant`, `sku` (unique), `price`, `imageUrl`, `category`, `isActive`
@@ -441,8 +446,19 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `BKG-04` | **Security & UX**: Enhanced security for attendance toggle, improved mobile UI, and refined partner commission application. |
 | `STB-V3` | **Stable V3 Release**: Standardized activity logic, improved scanner error handling, and fixed order edit pre-filling. |
 | `ef6e8c6` | **Real-time Sync & Automation**: GCal Webhooks, Staff Audit v2, Server Search, Follow-up Email |
+| `5e4531c` | **Multi-Activity Booking System**: Support for multiple products per booking, individual capacity checks, and GCal sync per activity. |
 
 ### Feature Details (Recent)
+
+#### Multi-Activity Booking System (2026-03-12)
+- **Multi-Product Transactions**: Bookings can now contain multiple independent activities (e.g., Jetski 20min + Jetski 30min).
+- **Independent Capacity Management**: Each activity within a booking undergoes its own slot availability check across all relevant services.
+- **Enhanced GCal Synchronization**: Automated creation/update/deletion of unique Google Calendar events for every activity in a booking.
+- **Improved Dashoard UX**:
+    - **Creation**: "+ Adicionar Outra Atividade" button with smart date/time inheritance from the primary item.
+    - **Editing**: Redesigned Edit Drawer to manage (add, remove, or modify) activities individually.
+    - **Reporting**: List views and mobile cards now stack all activities within a single booking row.
+- **Stats V2**: All dashboard metrics (Revenue by Service, Top Services, Revenue by Country) now correctly aggregate data at the activity level.
 
 #### Real-time Sync & Automation (2026-03-12)
 - **GCal Push Notifications**: Implemented Google Calendar Watch API (Webhooks). Local availability cache now updates instantly when calendar changes occur externally.
@@ -519,3 +535,6 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 9. **CSS is co-located per page** — do not add global styles to `globals.css` unless truly global. Each page folder has its own `.css` file.
 
 10. **`export const dynamic = "force-dynamic"`** — required on all API routes that read from DB to prevent Next.js static caching.
+11. **Multi-Activity Stats aggregation** — many metrics now iterate over `b.activities`. When calculating per-service popularities, we count each activity individually rather than the single parent booking.
+
+12. **Attendance (showedUp) at Booking level** — Currently, attendance is toggled for the entire booking transaction (all activities together), not per individual activity item.
