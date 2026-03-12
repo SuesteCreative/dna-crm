@@ -18,7 +18,8 @@ interface DashboardHeaderProps {
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
-  isPartner, exportToExcel, exportToPDF, handleSync, syncing, handleGcalSync, gcalSyncing, setShowModal, setFormData, defaultForm, syncMsg
+  isPartner, exportToExcel, exportToPDF, handleSync, syncing, handleGcalSync, gcalSyncing, setShowModal, setFormData, defaultForm, syncMsg, 
+  setSlots, setCreateUnitPrice
 }) => {
   return (
     <>
