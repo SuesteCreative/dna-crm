@@ -202,10 +202,10 @@ export default function LogsReservasPage() {
 
                     <select className="au-select" value={moduleFilter} onChange={e => setModuleFilter(e.target.value)}>
                         <option value="">Todos os Módulos</option>
-                        <option value="DASHBOARD">Dashboard</option>
-                        <option value="BOOKING">Emails / Automatismos</option>
                         <option value="CONCESSION_ENTRY">Concessão (Lugares)</option>
                         <option value="CONCESSION_RESERVATION">Concessão (Reservas)</option>
+                        <option value="SHOPIFY">Shopify Sync</option>
+                        <option value="GCAL">GCal Sync</option>
                     </select>
 
                     <select className="au-select" value={actionFilter} onChange={e => setActionFilter(e.target.value)}>
@@ -216,6 +216,7 @@ export default function LogsReservasPage() {
                         <option value="EMAIL_ERROR">EMAIL_ERROR</option>
                         <option value="CANCEL">CANCEL</option>
                         <option value="DELETE">DELETE</option>
+                        <option value="SYNC">SYNC</option>
                     </select>
                 </div>
             </div>
@@ -279,7 +280,9 @@ export default function LogsReservasPage() {
                                             <td>
                                                 <span className={`mod-badge ${log.module.toLowerCase()}`}>
                                                     {log.module === "DASHBOARD" ? "Dashboard" :
-                                                        log.module === "BOOKING" ? "Emails" : "Concessão"}
+                                                        log.module === "BOOKING" ? "Emails" :
+                                                        log.module === "SHOPIFY" ? "Shopify" :
+                                                        log.module === "GCAL" ? "GCal" : "Concessão"}
                                                 </span>
                                             </td>
                                             <td>

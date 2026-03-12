@@ -1,0 +1,15 @@
+:root {
+  --primary-color: #0070f3;
+  --secondary-color: #ff4081;
+  --bg-color: #f0f4f8;
+  --text-color: #333;
+
+  /* Breakpoints */
+  --mobile: 768px;
+  --tablet: 1024px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}

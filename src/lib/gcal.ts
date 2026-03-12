@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { getPrisma } from "./prisma";
 
 function getAuth() {
     const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
@@ -36,7 +37,23 @@ export async function createBusyEvent(
                 transparency: "opaque", // marks as "busy"
             },
         });
-        return res.data.id ?? null;
+        
+        const eventId = res.data.id ?? null;
+        if (eventId) {
+            // Update local cache immediately
+            const prisma = await getPrisma();
+            await prisma.gcalBusySlot.create({
+                data: {
+                    calendarId,
+                    eventId,
+                    startTime: new Date(startISO),
+                    endTime: new Date(endISO),
+                    summary,
+                }
+            }).catch(e => console.warn("Cache update failed in createBusyEvent:", e));
+        }
+
+        return eventId;
     } catch (err) {
         console.error(`gcal: failed to create event on ${calendarId}:`, err);
         return null;
@@ -53,9 +70,18 @@ export async function deleteBusyEvent(
     try {
         const calendar = google.calendar({ version: "v3", auth });
         await calendar.events.delete({ calendarId, eventId });
+        
+        // Remove from local cache immediately
+        const prisma = await getPrisma();
+        await prisma.gcalBusySlot.delete({ where: { eventId } }).catch(() => {});
+
         return true;
     } catch (err: any) {
-        if (err?.code === 404 || err?.code === 410) return true; // already deleted
+        if (err?.code === 404 || err?.code === 410) {
+            const prisma = await getPrisma();
+            await prisma.gcalBusySlot.delete({ where: { eventId } }).catch(() => {});
+            return true;
+        }
         console.error(`gcal: failed to delete event ${eventId} on ${calendarId}:`, err);
         return false;
     }
@@ -85,18 +111,25 @@ export function toGcalTimes(date: string, time: string, durationMinutes: number)
     };
 }
 
+import { getCachedFreeBusy } from "./gcal-cache";
+
 // Returns a map of calendarId → busy periods for the given date
 // Used to read Meety bookings (which appear as GCal events) into CRM slot availability
 export async function getFreeBusy(
     calendarIds: string[],
-    dateStr: string // "YYYY-MM-DD"
+    dateStr: string, // "YYYY-MM-DD"
+    forceLive: boolean = false
 ): Promise<Map<string, { start: string; end: string }[]>> {
+    if (!forceLive) {
+        return await getCachedFreeBusy(calendarIds, dateStr);
+    }
+
     const auth = getAuth();
     if (!auth || calendarIds.length === 0) return new Map();
     try {
         const calendar = google.calendar({ version: "v3", auth });
-        const timeMin = new Date(`${dateStr}T00:00:00`).toISOString();
-        const timeMax = new Date(`${dateStr}T23:59:59`).toISOString();
+        const timeMin = new Date(`${dateStr}T00:00:00Z`).toISOString();
+        const timeMax = new Date(`${dateStr}T23:59:59Z`).toISOString();
         const res = await calendar.freebusy.query({
             requestBody: {
                 timeMin,

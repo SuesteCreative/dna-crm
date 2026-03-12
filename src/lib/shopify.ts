@@ -1,5 +1,7 @@
 import { getPrisma } from "./prisma";
 import { fixMojibake } from "./encoding";
+import { ensureCustomer } from "./customers";
+import { logAudit } from "./audit";
 
 export async function syncShopifyOrders(
     domain?: string,
@@ -20,10 +22,20 @@ export async function syncShopifyOrders(
     try {
         const prisma = await getPrisma();
 
-        // Paginate through ALL orders using Shopify cursor-based pagination
+        // Delta Sync: only fetch orders updated since the last sync
+        const lastBooking = await prisma.booking.findFirst({
+            orderBy: { updatedAt: 'desc' },
+            select: { updatedAt: true }
+        });
+
+        const deltaParam = lastBooking 
+            ? `&updated_at_min=${new Date(lastBooking.updatedAt.getTime() - 60000).toISOString()}` 
+            : "";
+
+        // Paginate through orders using Shopify cursor-based pagination
         const allOrders: any[] = [];
         let nextUrl: string | null =
-            `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250`;
+            `https://${SHOPIFY_STORE_DOMAIN}/admin/api/2024-04/orders.json?status=any&limit=250${deltaParam}`;
 
         while (nextUrl) {
             const response: Response = await fetch(nextUrl, {
@@ -49,7 +61,6 @@ export async function syncShopifyOrders(
         }
 
         const orders = allOrders;
-
         let upserted = 0;
         const failedOrders = [];
 
@@ -58,7 +69,7 @@ export async function syncShopifyOrders(
                 const totalQuantity = order.line_items?.reduce((s: number, li: any) => s + (li.quantity || 0), 0) || 1;
                 const firstLineItem = order.line_items?.[0];
                 const props: Record<string, string> = {};
-                // ... (existing props collection logic)
+                
                 if (firstLineItem?.properties) {
                     for (const p of firstLineItem.properties) {
                         if (p.name && p.value) {
@@ -104,7 +115,7 @@ export async function syncShopifyOrders(
                             }
                         }
                     } catch (e) {
-                        console.warn("Could not parse Meety Date & time string:", meetyDateTime);
+                        console.warn("Could not parse Meety Date & time string in sync:", meetyDateTime);
                     }
                 }
 
@@ -126,7 +137,7 @@ export async function syncShopifyOrders(
 
                 for (const key in props) {
                     const val = props[key];
-                    if (val && val.toLowerCase().includes("attending?")) {
+                    if (typeof val === "string" && val.toLowerCase().includes("attending?")) {
                         const match = val.match(/=>\s*(\d+)/);
                         if (match && match[1]) {
                             pax = parseInt(match[1], 10);
@@ -150,12 +161,19 @@ export async function syncShopifyOrders(
                     select: { isEdited: true },
                 });
 
+                const customerId = await ensureCustomer({
+                    name: customerName,
+                    email: order.customer?.email,
+                    phone: order.customer?.phone,
+                    country
+                });
+
                 if (existing) {
                     if (existing.isEdited) {
                         // Preserve all manual edits — only sync status from Shopify
                         await prisma.booking.update({
                             where: { shopifyId },
-                            data: { status, orderNumber },
+                            data: { status, orderNumber, customerId },
                         });
                     } else {
                         // Not manually edited — update all fields from Shopify
@@ -172,6 +190,7 @@ export async function syncShopifyOrders(
                                 activityDate,
                                 activityTime,
                                 country,
+                                customerId,
                             },
                         });
                     }
@@ -194,6 +213,7 @@ export async function syncShopifyOrders(
                             country,
                             createdById: "shopify-sync",
                             notes: `Shopify ${orderNumber || order.id}`,
+                            customerId,
                         },
                     });
                 }
@@ -205,8 +225,21 @@ export async function syncShopifyOrders(
             }
         }
 
-        return { success: true, count: upserted, failed: failedOrders.length, failedOrders, debugInfo };
-    } catch (error) {
-        return { success: false, error: String(error), count: 0, debugInfo };
+        await logAudit({
+            userId: "system",
+            action: "SYNC",
+            module: "SHOPIFY",
+            details: {
+                totalOrders: orders.length,
+                upserted,
+                failed: failedOrders.length,
+                domain: SHOPIFY_STORE_DOMAIN,
+            },
+        });
+
+        return { success: true, count: upserted, failed: failedOrders.length, debugInfo };
+    } catch (error: any) {
+        console.error("Shopify sync internal error:", error);
+        return { success: false, error: error.message, count: 0, debugInfo };
     }
 }

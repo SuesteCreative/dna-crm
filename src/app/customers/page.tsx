@@ -62,6 +62,10 @@ export default function CustomersPage() {
     // Sync
     const [syncing, setSyncing] = useState(false);
 
+    // Details
+    const [detailCustomer, setDetailCustomer] = useState<(Customer & { bookings: any[] }) | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+
     // Toast
     const [toast, setToast] = useState<Toast | null>(null);
 
@@ -197,6 +201,18 @@ export default function CustomersPage() {
         setModal("import");
     };
 
+    const fetchCustomerDetail = async (id: string) => {
+        setDetailLoading(true);
+        try {
+            const res = await fetch(`/api/customers/${id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setDetailCustomer(data);
+            }
+        } catch { }
+        finally { setDetailLoading(false); }
+    };
+
     const totalPages = Math.ceil(total / LIMIT);
 
     return (
@@ -285,7 +301,7 @@ export default function CustomersPage() {
                             <tr><td colSpan={8} className="cust-empty">Nenhum cliente encontrado.</td></tr>
                         )}
                         {customers.map(c => (
-                            <tr key={c.id}>
+                            <tr key={c.id} onClick={() => fetchCustomerDetail(c.id)} style={{ cursor: "pointer" }}>
                                 <td><strong>{c.name}</strong></td>
                                 <td style={{ color: "var(--muted)" }}>{c.email ?? "—"}</td>
                                 <td style={{ color: "var(--muted)" }}>{c.phone ?? "—"}</td>
@@ -302,7 +318,7 @@ export default function CustomersPage() {
                                     {new Date(c.createdAt).toLocaleDateString("pt-PT")}
                                 </td>
                                 <td>
-                                    <div className="cust-row-actions">
+                                    <div className="cust-row-actions" onClick={e => e.stopPropagation()}>
                                         <button className="cust-icon-btn" title="Editar" onClick={() => openEdit(c)}><Pencil size={13} /></button>
                                         <button className="cust-icon-btn danger" title="Eliminar" onClick={() => handleDelete(c)}><Trash2 size={13} /></button>
                                     </div>
@@ -427,6 +443,61 @@ export default function CustomersPage() {
                                         {importing ? "A importar..." : "Importar"}
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {detailCustomer && (
+                <div className="cust-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setDetailCustomer(null); }}>
+                    <div className="cust-modal detail-modal">
+                        <div className="cust-modal-hdr">
+                            <div className="cust-modal-title">Detalhes do Cliente</div>
+                            <button className="cust-modal-close" onClick={() => setDetailCustomer(null)}><X size={18} /></button>
+                        </div>
+                        <div className="detail-content">
+                            <div className="detail-header">
+                                <div className="detail-avatar">{detailCustomer.name.charAt(0)}</div>
+                                <div>
+                                    <div className="detail-name">{detailCustomer.name}</div>
+                                    <div className="detail-sub">{detailCustomer.email || "Sem email"}</div>
+                                </div>
+                            </div>
+
+                            <div className="detail-stats-grid">
+                                <div className="detail-mini-stat">
+                                    <div className="lbl">Reservas</div>
+                                    <div className="val">{detailCustomer.bookings.length}</div>
+                                </div>
+                                <div className="detail-mini-stat">
+                                    <div className="lbl">Total Gasto</div>
+                                    <div className="val">
+                                        {detailCustomer.bookings
+                                            .filter(b => b.status !== "CANCELLED")
+                                            .reduce((acc, b) => acc + (b.totalPrice || 0), 0)
+                                            .toFixed(2)}€
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <div className="detail-section-title">Histórico de Atividades</div>
+                                <div className="detail-bookings-list">
+                                    {detailCustomer.bookings.length === 0 ? (
+                                        <div className="empty-text">Sem reservas registadas.</div>
+                                    ) : (
+                                        detailCustomer.bookings.map(b => (
+                                            <div key={b.id} className={`detail-booking-item ${b.status.toLowerCase()}`}>
+                                                <div className="bk-date">
+                                                    {new Date(b.activityDate).toLocaleDateString("pt-PT")}
+                                                </div>
+                                                <div className="bk-type">{b.activityType || "Atividade"}</div>
+                                                <div className="bk-status">{b.status}</div>
+                                                <div className="bk-price">{b.totalPrice?.toFixed(2)}€</div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

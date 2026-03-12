@@ -1,0 +1,1810 @@
+"use client";
+
+export const dynamic = "force-dynamic";
+import { useUser, useAuth, RedirectToSignIn } from "@clerk/nextjs";
+import { useEffect, useState, Fragment } from "react";
+import {
+  Calendar, CalendarDays, RefreshCcw, Plus, Search,
+  CheckCircle, Clock, X, Download, FileText,
+  TrendingUp, Activity, UserCheck, UserX,
+  AlertCircle, Trash2, ChevronDown, ChevronRight, Pencil, BarChart2, Zap
+} from "lucide-react";
+import { format } from "date-fns";
+import { pt } from "date-fns/locale";
+import { exportToExcel, exportToPDF } from "@/lib/export";
+import { CountrySelector } from "@/components/CountrySelector";
+
+interface Booking {
+  id: string;
+  customerName: string;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  activityDate: string;
+  activityTime: string | null;
+  pax: number;
+  status: string;
+  source: string;
+  shopifyId?: string | null;
+  orderNumber?: string | null;
+  serviceId?: string | null;
+  totalPrice: number | null;
+  quantity?: number | null;
+  notes?: string | null;
+  activityType?: string | null;
+  showedUp?: boolean | null;
+  isEdited?: boolean | null;
+  originalActivityType?: string | null;
+  originalPax?: number | null;
+  originalQuantity?: number | null;
+  originalTotalPrice?: number | null;
+  originalActivityDate?: string | null;
+  originalActivityTime?: string | null;
+  partnerId?: string | null;
+  country?: string | null;
+  bookingFee?: number | null;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  variant: string | null;
+  sku: string | null;
+  price: number | null;
+  category: string | null;
+  durationMinutes: number | null;
+  minPax: number | null;
+  maxPax: number | null;
+}
+
+interface Partner {
+  id: string;
+  name: string;
+  commission: number;
+}
+
+interface SlotInfo {
+  time: string;
+  available: number;
+  capacity: number;
+  blocked: boolean;
+  past?: boolean;
+}
+
+const defaultForm = {
+  customerName: "", customerEmail: "", customerPhone: "", countryCode: "+351",
+  activityDate: "", activityTime: "", pax: 1, quantity: 1, totalPrice: "",
+  serviceId: "", activityType: "", discountAmount: "", discountType: "%",
+  forPartnerId: "", bookingFee: "",
+};
+
+function recalcPrice(unitPrice: number | null, qtyOrPax: number, discAmt: string, discType: string, bookingFee: string = ""): string {
+  if (unitPrice == null) return "";
+  const base = unitPrice * qtyOrPax;
+  const d = parseFloat(discAmt) || 0;
+  let discounted = base;
+  if (d > 0) {
+    discounted = discType === "%" ? base * (1 - d / 100) : base - d;
+  }
+  const fee = parseFloat(bookingFee) || 0;
+  const final = discounted - fee;
+  return Math.max(0, final).toFixed(2);
+}
+
+const PARTNER_PALETTE: { bg: string; text: string }[] = [
+  { bg: "rgba(59,130,246,.18)", text: "#3b82f6" }, // blue
+  { bg: "rgba(20,184,166,.18)", text: "#14b8a6" }, // teal
+  { bg: "rgba(168,85,247,.18)", text: "#a855f7" }, // purple
+  { bg: "rgba(245,158,11,.18)", text: "#f59e0b" }, // amber
+  { bg: "rgba(236,72,153,.18)", text: "#ec4899" }, // pink
+  { bg: "rgba(34,197,94,.18)", text: "#22c55e" }, // green
+  { bg: "rgba(249,115,22,.18)", text: "#f97316" }, // orange
+  { bg: "rgba(99,102,241,.18)", text: "#6366f1" }, // indigo
+];
+
+export default function Dashboard() {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { sessionClaims } = useAuth();
+  const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+  const partnerId = (sessionClaims as any)?.metadata?.partnerId as string | undefined;
+  const isPartner = role === "PARTNER";
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [filtered, setFiltered] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState("");
+  const [formData, setFormData] = useState(defaultForm);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [attendanceTarget, setAttendanceTarget] = useState<Booking | null>(null);
+  const [attendanceSaving, setAttendanceSaving] = useState(false);
+  const [editTarget, setEditTarget] = useState<Booking | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, any>>({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [expandedGhosts, setExpandedGhosts] = useState<Record<string, boolean>>({});
+  const toggleGhost = (id: string) => setExpandedGhosts(prev => ({ ...prev, [id]: !prev[id] }));
+  const [dayViewMonths, setDayViewMonths] = useState<Record<string, boolean>>({});
+  const toggleDayView = (key: string) => setDayViewMonths(prev => ({ ...prev, [key]: !prev[key] }));
+  const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
+  const toggleDay = (key: string) => setCollapsedDays(prev => ({ ...prev, [key]: !prev[key] }));
+  const [createUnitPrice, setCreateUnitPrice] = useState<number | null>(null);
+  const [editUnitPrice, setEditUnitPrice] = useState<number | null>(null);
+  const [slots, setSlots] = useState<SlotInfo[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsClosed, setSlotsClosed] = useState(false);
+  const [canOverride, setCanOverride] = useState(false);
+  const [overrideModal, setOverrideModal] = useState<{ time: string; available: number; capacity: number } | null>(null);
+  const [overrideType, setOverrideType] = useState<'create' | 'edit'>('create');
+  const [overrideReason, setOverrideReason] = useState("");
+  const [statsCollapsed, setStatsCollapsed] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [partnerCommission, setPartnerCommission] = useState<number | null>(null);
+
+  const applyQuickCommission = () => {
+    const pId = isPartner ? partnerId : formData.forPartnerId;
+    const partner = partners.find(p => p.id === pId);
+    if (!partner) return;
+    const svc = services.find(s => s.id === formData.serviceId);
+    const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+    const base = (createUnitPrice || 0) * multiplier;
+    const d = parseFloat(formData.discountAmount) || 0;
+    let discounted = base;
+    if (d > 0) {
+      discounted = formData.discountType === "%" ? base * (1 - d / 100) : base - d;
+    }
+    const calculatedFee = (discounted * (partner.commission / 100)).toFixed(2);
+    setFormData({
+      ...formData,
+      bookingFee: calculatedFee,
+      totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, calculatedFee)
+    });
+  };
+
+  const applyEditQuickCommission = () => {
+    const pId = isPartner ? partnerId : (editForm.forPartnerId || editTarget?.partnerId);
+    const partner = partners.find(p => p.id === pId);
+    if (!partner) return;
+    const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
+    const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+    const base = (editUnitPrice || 0) * multiplier;
+    const d = parseFloat(editForm.discountAmount) || 0;
+    let discounted = base;
+    if (d > 0) {
+      discounted = editForm.discountType === "%" ? base * (1 - d / 100) : base - d;
+    }
+    const calculatedFee = (discounted * (partner.commission / 100)).toFixed(2);
+    setEditForm({
+      ...editForm,
+      bookingFee: calculatedFee,
+      totalPrice: recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, calculatedFee)
+    });
+  };
+
+  // Auto-expand stats on desktop
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth > 1024) {
+      setStatsCollapsed(false);
+    }
+  }, []);
+
+  // Body scroll lock
+  useEffect(() => {
+    const isAnyModalOpen = showModal || !!editTarget || !!attendanceTarget || !!overrideModal;
+    document.body.classList.toggle("modal-open", isAnyModalOpen);
+    return () => document.body.classList.remove("modal-open");
+  }, [showModal, editTarget, attendanceTarget, overrideModal]);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      fetchBookings();
+      fetchServices();
+      fetchPartners();
+    }
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    const q = search.toLowerCase();
+    setFiltered(bookings.filter(b =>
+      b.customerName.toLowerCase().includes(q) ||
+      (b.customerEmail || "").toLowerCase().includes(q) ||
+      (b.activityType || "").toLowerCase().includes(q)
+    ));
+  }, [search, bookings]);
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/bookings");
+      if (!res.ok) { setBookings([]); return; }
+      const data = await res.json();
+      setBookings(Array.isArray(data) ? data : []);
+    } catch { setBookings([]); }
+    finally { setLoading(false); }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const res = await fetch("/api/services");
+      if (res.ok) {
+        const data = await res.json();
+        setServices(Array.isArray(data) ? data : []);
+      }
+    } catch { }
+  };
+
+  const fetchPartners = async () => {
+    try {
+      const res = await fetch("/api/partners");
+      if (res.ok) {
+        const data = await res.json();
+        setPartners(Array.isArray(data) ? data : []);
+      }
+    } catch { }
+  };
+
+  const fetchSlots = async (serviceId: string, date: string, quantity: number, excludeBookingId?: string) => {
+    if (!serviceId || !date) { setSlots([]); return; }
+    const svc = services.find(s => s.id === serviceId);
+    if (!svc?.durationMinutes) { setSlots([]); return; }
+    setSlotsLoading(true);
+    try {
+      const res = await fetch(`/api/slots?serviceId=${serviceId}&date=${date}&quantity=${quantity}${excludeBookingId ? `&excludeBookingId=${excludeBookingId}` : ""}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSlotsClosed(data.closed ?? false);
+        setCanOverride(data.canOverride ?? false);
+        setSlots(data.slots || []);
+      }
+    } catch { }
+    finally { setSlotsLoading(false); }
+  };
+
+  // Helper function to call the sync API
+  const syncShopifyOrders = async () => {
+    const res = await fetch("/api/shopify/sync", { method: "POST" });
+    return res.json();
+  };
+
+  const handleSync = async () => {
+    setSyncing(true); setSyncMsg(null);
+    try {
+      const data = await syncShopifyOrders();
+      if (data.success) {
+        let msg = `Sincronizado: ${data.count} importadas`;
+        if (data.failed > 0) msg += `, ${data.failed} falhas`;
+        msg += ` (${data.debugInfo.domain})`;
+        setSyncMsg(msg);
+        await fetchBookings();
+      } else {
+        setSyncMsg(`Erro: ${data.error}`);
+      }
+    } catch { setSyncMsg("Erro de ligação"); }
+    finally { setSyncing(false); setTimeout(() => setSyncMsg(null), 4000); }
+  };
+
+  const toggleGroup = (key: string) => {
+    setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Auto-collapse past years on first load
+  useEffect(() => {
+    if (bookings.length === 0) return;
+    const currentYear = new Date().getFullYear().toString();
+    setCollapsed(prev => {
+      const next = { ...prev };
+      bookings.forEach(b => {
+        const y = new Date(b.activityDate).getFullYear().toString();
+        if (y < currentYear && !(y in prev)) next[y] = true;
+      });
+      return next;
+    });
+  }, [bookings]);
+
+  const groupBookings = (data: Booking[]) => {
+    const groups: Record<string, Record<string, Booking[]>> = {};
+
+    const sorted = [...data].sort((a, b) => {
+      const da = a.activityDate + "T" + (a.activityTime || "00:00");
+      const db = b.activityDate + "T" + (b.activityTime || "00:00");
+      return db.localeCompare(da);
+    });
+
+    sorted.forEach(b => {
+      const date = new Date(b.activityDate);
+      const year = date.getFullYear().toString();
+      const monthDisplay = format(date, "MMMM", { locale: pt });
+      const monthKey = monthDisplay.charAt(0).toUpperCase() + monthDisplay.slice(1);
+
+      if (!groups[year]) groups[year] = {};
+      if (!groups[year][monthKey]) groups[year][monthKey] = [];
+      groups[year][monthKey].push(b);
+    });
+
+    return groups;
+  };
+
+  const grouped = groupBookings(filtered);
+  const years = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(todayStart);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const isToday = (b: Booking) => {
+    const d = new Date(b.activityDate);
+    return d >= todayStart && d < tomorrow;
+  };
+  const isFuture = (b: Booking) => new Date(b.activityDate) >= tomorrow;
+
+  const anyTodayInGroup = (bookings: Booking[]) => bookings.some(isToday);
+  const anyFutureInGroup = (bookings: Booking[]) => bookings.some(isFuture);
+
+  const anyTodayInYear = (year: string) =>
+    Object.values(grouped[year]).some(monthList => anyTodayInGroup(monthList));
+  const anyFutureInYear = (year: string) =>
+    Object.values(grouped[year]).some(monthList => anyFutureInGroup(monthList));
+
+  const currentYearStr = todayStart.getFullYear().toString();
+  const _cmRaw = format(todayStart, "MMMM", { locale: pt });
+  const currentMonthKey = _cmRaw.charAt(0).toUpperCase() + _cmRaw.slice(1);
+
+  const renderBookingCards = (bkgs: Booking[]) => (
+    <div className="booking-cards-mobile">
+      {bkgs.map(b => (
+        <div key={b.id} className={`booking-card ${isFuture(b) ? "is-future" : isToday(b) ? "is-today" : ""}`}>
+          <div className="card-row-top">
+            <div className="card-client">
+              <div className="cell-name">{b.customerName}</div>
+              <div className="cell-sub">{b.customerEmail || b.customerPhone || "—"}</div>
+            </div>
+            <div className="card-actions">
+              <button className="btn-edit-sm" onClick={() => openEdit(b)}>
+                <Pencil size={15} />
+              </button>
+            </div>
+          </div>
+          <div className="card-main-info">
+            <div className="card-info-item">
+              <span className="info-label">Atividade:</span>
+              <div className="info-val">
+                {b.activityType || b.notes || "—"}
+                {b.isEdited && <span className="badge-edited" style={{ marginLeft: 6 }}>Editada</span>}
+              </div>
+            </div>
+            <div className="card-grid-lite">
+              <div className="card-info-item">
+                <span className="info-label">Data/Hora:</span>
+                <span className="info-val">{new Date(b.activityDate).toLocaleDateString("pt-PT")} {b.activityTime || ""}</span>
+              </div>
+              <div className="card-info-item">
+                <span className="info-label">Pax:</span>
+                <span className="info-val">{b.pax} pax ({b.quantity || 1}x)</span>
+              </div>
+            </div>
+          </div>
+          <div className="card-footer">
+            <div className="card-badges">
+              {sourceBadge(b.source, b.orderNumber, b.partnerId)}
+              {statusBadge(b.status)}
+            </div>
+            <div className="card-price-pres">
+              <span className={`price-val ${isNoShow(b) ? "price-noshow" : ""}`}>
+                {isNoShow(b) ? "0.00€" : b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}
+              </span>
+              {b.status !== "CANCELLED" && !isPartner && (
+                <button
+                  className={b.showedUp ? "attendance-verified-sm" : "btn-attendance-sm"}
+                  title={b.showedUp ? "Clique para desmarcar presença" : "Confirmar presença"}
+                  onClick={() => setAttendanceTarget(b)}
+                >
+                  <UserCheck size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderBookingTable = (bkgs: Booking[]) => (
+    <>
+      <div className="table-wrap">
+        <table className="crm-table">
+          <thead>
+            <tr>
+              <th style={{ width: "15%" }}>Cliente</th>
+              <th style={{ width: "4%", textAlign: "center" }}>Qtd</th>
+              <th style={{ width: "20%" }}>Atividade</th>
+              <th style={{ width: "9%" }}>Data / Hora</th>
+              <th style={{ width: "5%", textAlign: "center" }}>Pax</th>
+              <th style={{ width: "11%" }}>Fonte</th>
+              <th style={{ width: "10%" }}>Status</th>
+              <th style={{ width: "7%", textAlign: "right" }}>Preço</th>
+              <th style={{ width: "4%", textAlign: "center" }}>Pres.</th>
+              <th style={{ width: "4%" }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {bkgs.map(b => (
+              <Fragment key={b.id}>
+                <tr className={isFuture(b) ? "row-future" : isToday(b) ? "row-today" : ""}>
+                  <td>
+                    <div className="cell-name">{b.customerName}</div>
+                    <div className="cell-sub">{b.customerEmail || "—"}</div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <span className="qty-badge">
+                        {b.quantity || 1}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="cell-name cell-activity-row">
+                      <span>{b.activityType || b.notes || "—"}</span>
+                      {b.isEdited && (
+                        <span className="activity-badges">
+                          <span className="badge-edited">Editada</span>
+                          <button
+                            className="btn-ghost-toggle"
+                            title={expandedGhosts[b.id] ? "Esconder original" : "Ver original"}
+                            onClick={() => toggleGhost(b.id)}
+                          >
+                            <ChevronDown size={11} className={expandedGhosts[b.id] ? "ghost-ico open" : "ghost-ico"} />
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
+                    <div className="cell-sub">{b.activityTime || "—"}</div>
+                  </td>
+                  <td><span className="pax-pill">{b.pax} pax</span></td>
+                  <td>{sourceBadge(b.source, b.orderNumber, b.partnerId)}</td>
+                  <td>{statusBadge(b.status)}</td>
+                  <td className={`price-cell${isNoShow(b) ? " price-noshow" : ""}`}>
+                    {isNoShow(b) ? "0.00€" : b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}
+                  </td>
+                  <td>
+                    {b.status !== "CANCELLED" && !isPartner ? (
+                      <button
+                        className={b.showedUp ? "attendance-verified" : "btn-attendance"}
+                        title={b.showedUp ? "Clique para desmarcar presença" : "Confirmar presença"}
+                        onClick={() => setAttendanceTarget(b)}
+                      >
+                        <UserCheck size={16} />
+                      </button>
+                    ) : null}
+                  </td>
+                  <td>
+                    <button className="btn-edit" onClick={() => openEdit(b)}>
+                      <Pencil size={15} />
+                    </button>
+                  </td>
+                </tr>
+                {b.isEdited && expandedGhosts[b.id] && (() => {
+                  const origQty = b.originalQuantity ?? b.quantity ?? 1;
+                  const origType = b.originalActivityType ?? b.activityType ?? "—";
+                  const origPax = b.originalPax ?? b.pax;
+                  const origPrice = b.originalTotalPrice;
+                  const origDate = b.originalActivityDate ? new Date(b.originalActivityDate).toLocaleDateString("pt-PT") : null;
+                  const origTime = b.originalActivityTime ?? null;
+                  const qtyChg = origQty !== (b.quantity ?? 1);
+                  const typeChg = b.originalActivityType !== null && b.originalActivityType !== b.activityType;
+                  const paxChg = b.originalPax !== null && b.originalPax !== b.pax;
+                  const priceChg = origPrice !== null && origPrice !== b.totalPrice;
+                  const curDate = new Date(b.activityDate).toLocaleDateString("pt-PT");
+                  const curTime = b.activityTime ?? null;
+                  const dateChg = origDate !== null && origDate !== curDate;
+                  const timeChg = origTime !== null && origTime !== curTime;
+                  const showDate = origDate !== null;
+                  const showTime = origTime !== null || timeChg;
+                  return (
+                    <tr className="row-ghost-original">
+                      <td />
+                      <td>
+                        <div style={{ display: "flex", justifyContent: "center" }}>
+                          <span className={`qty-badge qty-badge-ghost${qtyChg ? " ghost-struck" : ""}`}>{origQty}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="cell-activity-row">
+                          <span className={typeChg ? "ghost-text" : "ghost-muted"}>{origType}</span>
+                          <span className="ghost-label">Original</span>
+                        </div>
+                      </td>
+                      <td>
+                        {showDate && (
+                          <div className={dateChg ? "ghost-text" : "ghost-muted"}>{origDate}</div>
+                        )}
+                        {showTime && (
+                          <div className={timeChg ? "ghost-text" : "ghost-muted"}>{origTime || "—"}</div>
+                        )}
+                      </td>
+                      <td><span className={`pax-pill pax-pill-ghost${paxChg ? " ghost-struck" : ""}`}>{origPax} pax</span></td>
+                      <td /><td />
+                      <td className={`price-cell${priceChg ? " ghost-text" : " ghost-muted"}`}>
+                        {origPrice != null ? `${origPrice.toFixed(2)}€` : (b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—")}
+                      </td>
+                      <td /><td />
+                    </tr>
+                  );
+                })()}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+
+  const handleServiceSelect = (serviceId: string) => {
+    const svc = services.find(s => s.id === serviceId);
+    if (!svc) {
+      setCreateUnitPrice(null);
+      setSlots([]);
+      setFormData({ ...formData, serviceId: "", activityType: "", totalPrice: "", activityTime: "" });
+      return;
+    }
+    const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
+    const unitPrice = svc.price ?? null;
+    setCreateUnitPrice(unitPrice);
+
+    // Default values
+    const isPaxPriced = svc.minPax != null;
+    const initPax = svc.minPax ?? formData.pax;
+    const initQty = isPaxPriced ? 1 : formData.quantity;
+    const multiplier = isPaxPriced ? initPax : initQty;
+
+    const newForm = {
+      ...formData,
+      serviceId: svc.id,
+      activityType: label,
+      activityTime: svc.durationMinutes ? "" : formData.activityTime,
+      pax: initPax,
+      quantity: initQty,
+      totalPrice: recalcPrice(unitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee),
+    };
+
+    setFormData(newForm);
+    if (svc.durationMinutes && formData.activityDate) {
+      fetchSlots(svc.id, formData.activityDate, initQty);
+    } else {
+      setSlots([]);
+    }
+  };
+
+  const submitCreate = async (override = false, reason = "") => {
+    if (submitting) return;
+    if (!formData.activityTime) {
+      setFormError("Por favor, selecione um horário.");
+      return;
+    }
+    setSubmitting(true);
+    setFormError(null);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { discountAmount, discountType, ...payload } = formData;
+      const body: Record<string, any> = { ...payload };
+      if (!payload.forPartnerId) delete body.forPartnerId;
+      if (override) {
+        body.override = true;
+        body.overrideReason = reason;
+        body.userName = user?.fullName || user?.primaryEmailAddress?.emailAddress || "Staff";
+      }
+      const res = await fetch("/api/bookings/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        setShowModal(false);
+        setFormData(defaultForm);
+        setSlots([]);
+        setOverrideModal(null);
+        setOverrideReason("");
+        fetchBookings();
+      } else {
+        const d = await res.json();
+        if (d.error === "SLOT_FULL" && d.canOverride) {
+          setOverrideType("create");
+          setOverrideModal({ time: formData.activityTime, available: d.available, capacity: d.capacity });
+        } else if (d.error === "SLOT_FULL") {
+          setFormError(`Slot sem disponibilidade (${d.available}/${d.capacity} livres)`);
+        } else {
+          setFormError(d.error || "Erro ao criar reserva");
+        }
+      }
+    } catch { setFormError("Erro de ligação"); }
+    finally { setSubmitting(false); }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitCreate(false, "");
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem a certeza que deseja eliminar esta reserva?")) return;
+    try {
+      const res = await fetch(`/api/bookings/delete?id=${id}`, { method: "DELETE" });
+      if (res.ok) fetchBookings();
+      else alert("Erro ao eliminar reserva");
+    } catch { alert("Erro de ligação"); }
+  };
+
+  const handleAttendance = async (booking: Booking) => {
+    const newValue = !booking.showedUp;
+    setAttendanceSaving(true);
+    try {
+      const res = await fetch("/api/bookings/attendance", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: booking.id, showedUp: newValue }),
+      });
+      if (res.ok) {
+        setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, showedUp: newValue } : b));
+      }
+    } catch { }
+    finally {
+      setAttendanceSaving(false);
+      setAttendanceTarget(null);
+    }
+  };
+
+  const openEdit = (b: Booking) => {
+    setEditTarget(b);
+    setEditError(null);
+    // Resolve unit price for recalc
+    let unitPrice: number | null = null;
+    const svcById = b.serviceId ? services.find(s => s.id === b.serviceId) : null;
+    if (svcById?.price != null) {
+      unitPrice = svcById.price;
+    } else if (b.activityType) {
+      const svcByType = services.find(s => {
+        const labelSafe = s.variant ? `${s.name} — ${s.variant}` : s.name;
+        const labelLegacy = s.variant ? `${s.name} - ${s.variant}` : s.name;
+        return labelSafe === b.activityType || labelLegacy === b.activityType;
+      });
+      unitPrice = svcByType?.price ?? null;
+    }
+    setEditUnitPrice(unitPrice);
+    const d = new Date(b.activityDate);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    setEditForm({
+      customerName: b.customerName,
+      customerEmail: b.customerEmail || "",
+      customerPhone: b.customerPhone || "",
+      activityDate: dateStr,
+      activityTime: b.activityTime || "",
+      pax: b.pax,
+      quantity: b.quantity ?? 1,
+      totalPrice: b.totalPrice ?? "",
+      activityType: b.activityType || "",
+      status: b.status,
+      notes: b.notes || "",
+      countryCode: b.country || "Other",
+      bookingFee: b.bookingFee?.toString() || "",
+      forPartnerId: b.partnerId || "",
+      discountAmount: "",
+      discountType: "%",
+    });
+
+    const targetSvcId = svcById?.id || services.find(s => {
+      const labelSafe = s.variant ? `${s.name} — ${s.variant}` : s.name;
+      const labelLegacy = s.variant ? `${s.name} - ${s.variant}` : s.name;
+      return labelSafe === b.activityType || labelLegacy === b.activityType;
+    })?.id;
+    if (targetSvcId) {
+      fetchSlots(targetSvcId, dateStr, b.quantity ?? 1, b.id);
+    }
+  };
+
+  const handleEditSave = async (override = false, reason = "") => {
+    if (!editTarget) return;
+    setEditSaving(true); setEditError(null);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { discountAmount, discountType, ...editPayload } = editForm;
+      const res = await fetch("/api/bookings/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editTarget.id,
+          ...editPayload,
+          override,
+          overrideReason: reason,
+          userName: user?.fullName || "Staff",
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setBookings(prev => prev.map(b => b.id === updated.id ? { ...b, ...updated } : b));
+        setEditTarget(null);
+        setOverrideModal(null);
+        setOverrideReason("");
+      } else {
+        const d = await res.json();
+        if (d.error === "SLOT_FULL") {
+          if (d.canOverride) {
+            setOverrideType("edit");
+            setOverrideModal({ time: editForm.activityTime || "", available: d.available, capacity: d.capacity });
+          } else {
+            setEditError("Este horário está lotado.");
+          }
+        } else {
+          setEditError(d.error || "Erro ao guardar");
+        }
+      }
+    } catch { setEditError("Erro de ligação"); }
+    finally { setEditSaving(false); }
+  };
+
+  const handleEditDelete = async () => {
+    if (!editTarget) return;
+    if (!confirm(`Eliminar reserva de ${editTarget.customerName}?`)) return;
+    try {
+      const res = await fetch(`/api/bookings/delete?id=${editTarget.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setBookings(prev => prev.filter(b => b.id !== editTarget.id));
+        setEditTarget(null);
+      } else { alert("Erro ao eliminar reserva"); }
+    } catch { alert("Erro de ligação"); }
+  };
+
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const svcGroups: Record<string, Service[]> = {};
+  for (const s of services) {
+    const cat = s.category || "Outros";
+    if (!svcGroups[cat]) svcGroups[cat] = [];
+    svcGroups[cat].push(s);
+  }
+
+  const confirmed = bookings.filter(b => b.status === "CONFIRMED").length;
+  const isNoShow = (b: Booking) =>
+    new Date(b.activityDate) < todayStart && b.status !== "CANCELLED" && !b.showedUp;
+  const noShows = bookings.filter(isNoShow);
+  // Revenue excludes no-shows (their effective price is 0)
+  const revenue = bookings
+    .filter(b => b.status !== "CANCELLED" && !isNoShow(b))
+    .reduce((s, b) => s + (b.totalPrice || 0), 0);
+  // Projected = future/today confirmed bookings not yet counted in revenue
+  const projectedRevenue = bookings
+    .filter(b => b.status !== "CANCELLED" && (isFuture(b) || isToday(b)))
+    .reduce((s, b) => s + (b.totalPrice || 0), 0);
+  const noShowByPartner = partners
+    .map(p => ({ name: p.name, id: p.id, count: noShows.filter(b => b.partnerId === p.id).length }))
+    .filter(p => p.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+  const noShowByChannel = (["SHOPIFY", "MANUAL", "PARTNER"] as const)
+    .map(src => ({ src, count: noShows.filter(b => b.source === src).length }))
+    .filter(x => x.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const statusBadge = (s: string) => {
+    const cls: Record<string, string> = { CONFIRMED: "badge-confirmed", PENDING: "badge-pending", CANCELLED: "badge-cancelled" };
+    const lbl: Record<string, string> = { CONFIRMED: "Confirmada", PENDING: "Pendente", CANCELLED: "Cancelada" };
+    return <span className={`badge ${cls[s] || "badge-pending"}`}>{lbl[s] || s}</span>;
+  };
+
+  const partnerColorMap = new Map(
+    partners.map((p, i) => [p.id, PARTNER_PALETTE[i % PARTNER_PALETTE.length]])
+  );
+
+  const sourceBadge = (s: string, orderNumber?: string | null, partnerId?: string | null) => {
+    if (s === "PARTNER" && partnerId) {
+      const partner = partners.find(p => p.id === partnerId);
+      const color = partnerColorMap.get(partnerId) ?? PARTNER_PALETTE[0];
+      return (
+        <div className="source-stack">
+          <span className="src-badge" style={{ background: color.bg, color: color.text }}>
+            {partner?.name ?? "Parceiro"}
+          </span>
+          {orderNumber && <span className="order-no-sub">{orderNumber}</span>}
+        </div>
+      );
+    }
+    const cls: Record<string, string> = { SHOPIFY: "src-shopify", MANUAL: "src-manual", PARTNER: "src-partner" };
+    return (
+      <div className="source-stack">
+        <span className={`src-badge ${cls[s] || "src-manual"}`}>{s}</span>
+        {orderNumber && <span className="order-no-sub">{orderNumber}</span>}
+      </div>
+    );
+  };
+
+  if (!isLoaded) return (
+    <div className="loading-screen"><div className="loader" /></div>
+  );
+
+  if (!isSignedIn) return <RedirectToSignIn />;
+
+  return (
+    <main className="crm-main">
+      <header className="crm-topbar">
+        <div>
+          <h1 className="page-title">Reservas</h1>
+          <p className="page-sub">Gerencie todas as atividades e agendamentos.</p>
+        </div>
+        <div className="topbar-actions">
+          {!isPartner && (
+            <>
+              <button className="btn-ghost" onClick={() => exportToExcel(bookings, "reservas-dna")}><Download size={16} /> Excel</button>
+              <button className="btn-ghost" onClick={() => exportToPDF(bookings, "reservas-dna")}><FileText size={16} /> PDF</button>
+              <button className={`btn-outline ${syncing ? "syncing" : ""}`} onClick={handleSync} disabled={syncing}>
+                <RefreshCcw size={16} className={syncing ? "spin" : ""} />
+                {syncing ? "Sincronizando..." : "Sync Shopify"}
+              </button>
+            </>
+          )}
+          <button className="btn-primary" onClick={() => { setShowModal(true); setSlots([]); setFormData(defaultForm); setCreateUnitPrice(null); }}>
+            <Plus size={16} /> Nova Reserva
+          </button>
+        </div>
+      </header>
+
+      {syncMsg && (
+        <div className={`sync-toast ${syncMsg.startsWith("Erro") ? "error" : "success"}`}>
+          {syncMsg.startsWith("Erro") ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
+          {syncMsg}
+        </div>
+      )}
+
+      <div className="stats-accordion">
+        <div className="stats-accordion-header" onClick={() => setStatsCollapsed(!statsCollapsed)}>
+          <div className="stats-accordion-title">
+            <BarChart2 size={18} />
+            <span>Estatísticas Rápidas</span>
+          </div>
+          <div className="stats-accordion-toggle">
+            {statsCollapsed ? 'Ver Mais' : 'Ver Menos'}
+            <ChevronDown size={16} className={statsCollapsed ? '' : 'rotate-180'} />
+          </div>
+        </div>
+
+        <div className={`stats-accordion-content ${statsCollapsed ? 'collapsed' : ''}`}>
+          <section className="stats-row">
+            <div className="stat-tile blue">
+              <div className="tile-ico"><Calendar size={22} /></div>
+              <div className="tile-info"><span className="tile-val">{bookings.length}</span><span className="tile-lbl">Total de Reservas</span></div>
+              <TrendingUp size={40} className="tile-bg-ico" />
+            </div>
+            <div className="stat-tile green">
+              <div className="tile-ico"><CheckCircle size={22} /></div>
+              <div className="tile-info"><span className="tile-val">{confirmed}</span><span className="tile-lbl">Confirmadas</span></div>
+              <CheckCircle size={40} className="tile-bg-ico" />
+            </div>
+            <div className="stat-tile red">
+              <div className="tile-ico"><UserX size={22} /></div>
+              <div className="tile-info"><span className="tile-val">{noShows.length}</span><span className="tile-lbl">Não Compareceu</span></div>
+              <UserX size={40} className="tile-bg-ico" />
+            </div>
+            <div className="stat-tile teal">
+              <div className="tile-ico"><Activity size={22} /></div>
+              <div className="tile-info">
+                <span className="tile-val">{revenue.toFixed(0)}€</span>
+                <span className="tile-lbl">Receita Total</span>
+              </div>
+              <TrendingUp size={40} className="tile-bg-ico" />
+            </div>
+            <div className="stat-tile teal">
+              <div className="tile-ico"><TrendingUp size={22} /></div>
+              <div className="tile-info">
+                <span className="tile-val">{(revenue + projectedRevenue).toFixed(0)}€</span>
+                <span className="tile-lbl">Receita Projetada</span>
+                <span className="tile-note">+{projectedRevenue.toFixed(0)}€ futuro</span>
+              </div>
+              <TrendingUp size={40} className="tile-bg-ico" />
+            </div>
+          </section>
+
+          {!isPartner && (noShowByPartner.length > 0 || noShowByChannel.length > 0) && (
+            <div className="noshow-breakdown">
+              {noShowByPartner.length > 0 && (
+                <div className="noshow-card">
+                  <div className="noshow-card-title">Parceiros — Não Compareceu</div>
+                  <div className="noshow-list">
+                    {noShowByPartner.map(p => {
+                      const color = partnerColorMap.get(p.id) ?? PARTNER_PALETTE[0];
+                      return (
+                        <div key={p.id} className="noshow-row">
+                          <span className="noshow-row-name" style={{ color: color.text }}>{p.name}</span>
+                          <span className="noshow-row-count">{p.count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {noShowByChannel.length > 0 && (
+                <div className="noshow-card">
+                  <div className="noshow-card-title">Canal — Não Compareceu</div>
+                  <div className="noshow-list">
+                    {noShowByChannel.map(x => (
+                      <div key={x.src} className="noshow-row">
+                        <span className="noshow-row-name">{x.src}</span>
+                        <span className="noshow-row-count">{x.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <section className="dashboard-content">
+        <div className="table-card-header">
+          <h2>Reservas Recentes</h2>
+          <div className="search-wrap">
+            <Search size={16} className="search-icon" />
+            <input className="search-input" placeholder="Pesquisar cliente, email ou atividade..." value={search} onChange={e => setSearch(e.target.value)} />
+            {search && (
+              <button className="search-clear" onClick={() => setSearch("")}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="table-empty"><div className="loader-sm" /></div>
+        ) : years.length === 0 ? (
+          <div className="table-empty">Nenhuma reserva encontrada.</div>
+        ) : years.map(year => {
+          const yearHasFuture = anyFutureInYear(year);
+          const yearHasToday = !yearHasFuture && anyTodayInYear(year);
+          const yearClass = yearHasFuture ? "is-future" : yearHasToday ? "is-today" : "";
+          return (
+            <div key={year} className={`year-section ${yearClass}`}>
+              <div className={`year-box-hdr ${yearClass}`} onClick={() => toggleGroup(year)}>
+                <ChevronDown size={20} className={collapsed[year] ? "group-ico collapsed" : "group-ico"} />
+                <h3>Ano {year}</h3>
+              </div>
+
+              {!collapsed[year] && (
+                <div className="year-content">
+                  {Object.keys(grouped[year]).sort((a, b) => {
+                    const monthsOrder = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+                    return monthsOrder.indexOf(b) - monthsOrder.indexOf(a);
+                  }).map(month => {
+                    const mKey = `${year}-${month}`;
+                    const monthBookings = grouped[year][month];
+                    const hasFuture = anyFutureInGroup(monthBookings);
+                    const hasToday = !hasFuture && anyTodayInGroup(monthBookings);
+                    const isCurrentCalMonth = year === currentYearStr && month === currentMonthKey;
+                    const monthClass = isCurrentCalMonth ? "is-today" : hasFuture ? "is-future" : hasToday ? "is-today" : "";
+                    return (
+                      <div key={mKey} className={`month-section ${monthClass}`}>
+                        <div className={`month-box-hdr ${monthClass}`} onClick={() => toggleGroup(mKey)}>
+                          <div className="month-title">
+                            <ChevronDown size={14} className={collapsed[mKey] ? "group-ico collapsed" : "group-ico"} />
+                            {month}
+                          </div>
+                          <div className="month-hdr-right">
+                            <button
+                              className={`btn-dayview${dayViewMonths[mKey] ? " active" : ""}`}
+                              title={dayViewMonths[mKey] ? "Vista de lista" : "Vista por dia"}
+                              onClick={e => { e.stopPropagation(); toggleDayView(mKey); }}
+                            >
+                              <CalendarDays size={13} />
+                            </button>
+                            <span className="month-badge">{monthBookings.length} {monthBookings.length === 1 ? 'reserva' : 'reservas'}</span>
+                          </div>
+                        </div>
+
+                        {!collapsed[mKey] && (
+                          dayViewMonths[mKey] ? (
+                            <div className="day-groups">
+                              {Object.entries(
+                                monthBookings.reduce((acc: Record<string, Booking[]>, b) => {
+                                  const d = b.activityDate.slice(0, 10);
+                                  if (!acc[d]) acc[d] = [];
+                                  acc[d].push(b);
+                                  return acc;
+                                }, {})
+                              ).sort(([a], [b]) => b.localeCompare(a)).map(([dayKey, dayBookings]) => {
+                                const dayDate = new Date(dayKey + "T12:00:00");
+                                const dayStr = format(dayDate, "EEEE, d 'de' MMMM", { locale: pt });
+                                const dKey = `${mKey}-${dayKey}`;
+                                return (
+                                  <div key={dayKey} className="day-section">
+                                    <div className="day-hdr" style={{ cursor: "pointer" }} onClick={() => toggleDay(dKey)}>
+                                      <span className="day-hdr-title">
+                                        <ChevronDown size={12} className={collapsedDays[dKey] ? "group-ico collapsed" : "group-ico"} style={{ marginRight: 6, verticalAlign: "middle" }} />
+                                        {dayStr.charAt(0).toUpperCase() + dayStr.slice(1)}
+                                      </span>
+                                      <span className="day-badge">{dayBookings.length} {dayBookings.length === 1 ? 'reserva' : 'reservas'}</span>
+                                    </div>
+                                    {!collapsedDays[dKey] && (
+                                      <>
+                                        {renderBookingTable(dayBookings)}
+                                        {renderBookingCards(dayBookings)}
+                                      </>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <>
+                              {renderBookingTable(monthBookings)}
+                              {renderBookingCards(monthBookings)}
+                            </>
+                          )
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </section>
+
+      {showModal && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2>Nova Reserva Manual</h2>
+              <button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleCreate} className="modal-form">
+              {formError && <div className="form-error"><AlertCircle size={14} />{formError}</div>}
+              <div className="form-grid">
+                <div className="field-section-label">Atividade</div>
+
+                <div className="field">
+                  <label>Atividade / Serviço</label>
+                  <select
+                    className="field-select"
+                    value={formData.serviceId}
+                    onChange={e => handleServiceSelect(e.target.value)}
+                  >
+                    <option value="">— Selecionar atividade —</option>
+                    {Object.entries(svcGroups).map(([cat, items]) => (
+                      <optgroup key={cat} label={cat}>
+                        {items.map(svc => (
+                          <option key={svc.id} value={svc.id}>
+                            {svc.name}{svc.variant ? ` — ${svc.variant}` : ""}{svc.price ? ` (${svc.price}€)` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label>Data da Atividade *</label>
+                  <input type="date" value={formData.activityDate} min={isPartner ? todayStr : undefined} onChange={e => {
+                    const d = e.target.value;
+                    setFormData({ ...formData, activityDate: d, activityTime: "" });
+                    if (formData.serviceId) fetchSlots(formData.serviceId, d, formData.quantity);
+                  }} required />
+                </div>
+
+                {(() => {
+                  const svc = services.find(s => s.id === formData.serviceId);
+                  const isJetski = svc?.category === "Jetski" || svc?.name.toLowerCase().includes("jetski");
+                  const isSofa = svc?.name.toLowerCase().includes("sofa");
+                  const isBanana = svc?.name.toLowerCase().includes("banana");
+
+                  if (isJetski) {
+                    const qtyOptions = [1, 2, 3];
+                    const minPax = formData.quantity;
+                    const maxPax = formData.quantity * 2;
+                    const paxOptions = Array.from({ length: maxPax - minPax + 1 }, (_, i) => minPax + i);
+
+                    return (
+                      <>
+                        <div className="field">
+                          <label>Quantidade (Motos)</label>
+                          <select className="field-select" value={formData.quantity} onChange={e => {
+                            const qty = parseInt(e.target.value);
+                            setFormData({
+                              ...formData,
+                              quantity: qty,
+                              pax: Math.max(qty, Math.min(formData.pax, qty * 2)),
+                              totalPrice: recalcPrice(createUnitPrice, qty, formData.discountAmount, formData.discountType, formData.bookingFee)
+                            });
+                          }}>
+                            {qtyOptions.map(q => <option key={q} value={q}>{q}</option>)}
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Nº Pessoas</label>
+                          <select className="field-select" value={formData.pax} onChange={e => {
+                            const p = parseInt(e.target.value);
+                            setFormData({ ...formData, pax: p });
+                          }}>
+                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  if (isSofa || isBanana) {
+                    const maxPax = isSofa ? 6 : 8;
+                    const paxOptions = Array.from({ length: maxPax - 1 }, (_, i) => 2 + i);
+                    return (
+                      <>
+                        <div className="field">
+                          <label>Quantidade (Sinal único)</label>
+                          <input type="number" value="1" disabled style={{ opacity: 0.6, cursor: "not-allowed" }} />
+                        </div>
+                        <div className="field">
+                          <label>Nº Pessoas</label>
+                          <select className="field-select" value={formData.pax} onChange={e => {
+                            const p = parseInt(e.target.value);
+                            // Sofa/Banana adjust price per pax
+                            setFormData({ ...formData, quantity: 1, pax: p, totalPrice: recalcPrice(createUnitPrice, p, formData.discountAmount, formData.discountType, formData.bookingFee) });
+                          }}>
+                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  // Default for other services (uses onFocus select for easier mobile entry)
+                  return (
+                    <>
+                      <div className="field">
+                        <label>Quantidade (unidades)</label>
+                        <input type="number" min="1" value={formData.quantity} onFocus={e => e.target.select()} onChange={e => {
+                          const qty = parseInt(e.target.value) || 1;
+                          const multiplier = svc?.minPax != null ? formData.pax : qty;
+                          setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
+                          if (formData.serviceId && formData.activityDate) fetchSlots(formData.serviceId, formData.activityDate, qty);
+                        }} />
+                      </div>
+                      <div className="field">
+                        <label>Nº Pessoas *</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={formData.pax}
+                          onFocus={e => e.target.select()}
+                          onChange={e => {
+                            const p = parseInt(e.target.value) || 1;
+                            const multiplier = svc?.minPax != null ? p : formData.quantity;
+                            setFormData({ ...formData, pax: p, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
+                          }}
+                          required
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
+
+                <div className="field">
+                  <label>Preço Total (€)</label>
+                  <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
+                </div>
+
+                <div className="field discount-row">
+                  <label>Desconto</label>
+                  <div className="discount-wrap">
+                    <input
+                      type="number" min="0" step="0.01" placeholder="0"
+                      value={formData.discountAmount}
+                      onChange={e => {
+                        const discAmt = e.target.value;
+                        const svc = services.find(s => s.id === formData.serviceId);
+                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+                        setFormData({ ...formData, discountAmount: discAmt, totalPrice: recalcPrice(createUnitPrice, multiplier, discAmt, formData.discountType, formData.bookingFee) });
+                      }}
+                    />
+                    <div className="discount-type-toggle">
+                      <button type="button" className={formData.discountType === "%" ? "active" : ""} onClick={() => {
+                        const svc = services.find(s => s.id === formData.serviceId);
+                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+                        setFormData({ ...formData, discountType: "%", totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, "%", formData.bookingFee) });
+                      }}>%</button>
+                      <button type="button" className={formData.discountType === "€" ? "active" : ""} onClick={() => {
+                        const svc = services.find(s => s.id === formData.serviceId);
+                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+                        setFormData({ ...formData, discountType: "€", totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, "€", formData.bookingFee) });
+                      }}>€</button>
+                    </div>
+                  </div>
+                </div>
+
+                {(() => {
+                  const svc = services.find(s => s.id === formData.serviceId);
+                  if (svc?.durationMinutes && formData.activityDate) {
+                    return (
+                      <div className="field full slot-picker-wrap">
+                        <label>Horário {formData.activityTime && <span className="slot-selected-label">— {formData.activityTime} selecionado</span>}</label>
+                        {slotsLoading ? (
+                          <div className="slot-loading">A carregar horários...</div>
+                        ) : slotsClosed ? (
+                          <div className="slot-closed">Encerrado neste dia</div>
+                        ) : (() => {
+                          const slotGroups = [
+                            { label: "Manhã", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h < 12; }) },
+                            { label: "Tarde", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 12 && h < 17; }) },
+                            { label: "Final do dia", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 17; }) },
+                          ].filter(g => g.slots.length > 0);
+                          return (
+                            <div className="slot-groups">
+                              {slotGroups.map(group => (
+                                <div key={group.label} className="slot-group">
+                                  <div className="slot-group-label">{group.label}</div>
+                                  <div className="slot-grid">
+                                    {group.slots.map(slot => {
+                                      const isPast = !!slot.past;
+                                      const isBlocked = slot.blocked;
+                                      const isSelected = formData.activityTime === slot.time;
+                                      let cls = "slot-btn";
+                                      if (isSelected) cls += " slot-selected";
+                                      else if (isPast) cls += " slot-past";
+                                      else if (isBlocked) cls += canOverride && !isPartner ? " slot-override" : " slot-blocked";
+                                      else cls += " slot-free";
+                                      return (
+                                        <button
+                                          key={slot.time}
+                                          type="button"
+                                          className={cls}
+                                          disabled={isPast || (isBlocked && (!canOverride || isPartner))}
+                                          onClick={() => {
+                                            if (isPast || (isBlocked && (!canOverride || isPartner))) return;
+                                            setFormData({ ...formData, activityTime: slot.time });
+                                          }}
+                                          title={isPast ? "Horário já passou" : isBlocked ? `Lotado (${slot.available}/${slot.capacity} livres)` : `${slot.available}/${slot.capacity} livres`}
+                                        >
+                                          {slot.time}
+                                          {isBlocked && !isPartner && canOverride && !isPast && <span className="slot-override-tag">Override</span>}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="field">
+                      <label>Hora</label>
+                      <input type="time" value={formData.activityTime} onChange={e => setFormData({ ...formData, activityTime: e.target.value })} />
+                    </div>
+                  );
+                })()}
+
+                <div className="field-section-label" style={{ marginTop: 8 }}>Cliente</div>
+
+                <div className="field">
+                  <label>Nome do Cliente *</label>
+                  <input value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />
+                </div>
+                <div className="field">
+                  <label>Email</label>
+                  <input type="email" value={formData.customerEmail} onChange={e => setFormData({ ...formData, customerEmail: e.target.value })} />
+                </div>
+                <div className="field">
+                  <CountrySelector
+                    label="País / Indicativo"
+                    value={formData.countryCode}
+                    onChange={val => setFormData({ ...formData, countryCode: val })}
+                  />
+                </div>
+                <div className="field">
+                  <label>Telefone</label>
+                  <input value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} />
+                </div>
+
+                <div className="field-section-label" style={{ marginTop: 8 }}>Reserva</div>
+
+                {!isPartner && partners.length > 0 && (
+                  <div className="field">
+                    <label>Reserva em nome de parceiro (opcional)</label>
+                    <select
+                      className="field-select"
+                      value={formData.forPartnerId}
+                      onChange={e => setFormData({ ...formData, forPartnerId: e.target.value })}
+                    >
+                      <option value="">— Reserva direta (sem parceiro) —</option>
+                      {partners.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="field">
+                  <label>Comissão paga ao parceiro (Booking Fee)</label>
+                  <div className="booking-fee-wrap">
+                    <input
+                      type="number" step="0.01" placeholder="0.00"
+                      value={formData.bookingFee}
+                      onChange={e => {
+                        const fee = e.target.value;
+                        const svc = services.find(s => s.id === formData.serviceId);
+                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
+                        setFormData({
+                          ...formData,
+                          bookingFee: fee,
+                          totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, fee)
+                        });
+                      }}
+                    />
+                    {(isPartner || formData.forPartnerId) && (
+                      <button type="button" className="btn-quick-fee" onClick={applyQuickCommission} title="Aplicar comissão automática">
+                        <Zap size={14} /> Quick Apply
+                      </button>
+                    )}
+                    <span className="fee-hint">O preço total será ajustado (Preço - Comissão)</span>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-ghost" onClick={() => setShowModal(false)} disabled={submitting}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={submitting}>
+                  {submitting ? "A criar..." : "Criar Reserva"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {editTarget && (
+        <>
+          <div className="drawer-backdrop" onClick={() => setEditTarget(null)} />
+          <aside className="edit-drawer">
+            <div className="drawer-hdr">
+              <div>
+                <div className="drawer-title">{editTarget.customerName}</div>
+                <div className="drawer-sub">
+                  {editTarget.source === "SHOPIFY" && editTarget.orderNumber
+                    ? `Shopify ${editTarget.orderNumber}`
+                    : editTarget.source}
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setEditTarget(null)}><X size={20} /></button>
+            </div>
+
+            <div className="drawer-original">
+              <span className="drawer-original-label">Original</span>
+              <span>{(editTarget.isEdited ? editTarget.originalActivityType : editTarget.activityType) || "—"}</span>
+              <span className="attendance-dot">·</span>
+              <span>{editTarget.isEdited ? editTarget.originalPax : editTarget.pax} pax</span>
+              {(editTarget.isEdited ? editTarget.originalQuantity : editTarget.quantity) != null && <>
+                <span className="attendance-dot">·</span>
+                <span>{editTarget.isEdited ? editTarget.originalQuantity : editTarget.quantity}x</span>
+              </>}
+              <span className="attendance-dot">·</span>
+              <span>{((editTarget.isEdited ? editTarget.originalTotalPrice : editTarget.totalPrice) ?? null) != null
+                ? `${(editTarget.isEdited ? editTarget.originalTotalPrice! : editTarget.totalPrice!).toFixed(2)}€`
+                : "—"}</span>
+              {editTarget.isEdited && editTarget.originalActivityDate && <>
+                <span className="attendance-dot">·</span>
+                <span>{new Date(editTarget.originalActivityDate).toLocaleDateString("pt-PT")}</span>
+                {editTarget.originalActivityTime && <>
+                  <span className="attendance-dot">·</span>
+                  <span>{editTarget.originalActivityTime}</span>
+                </>}
+              </>}
+            </div>
+
+            <div className="drawer-body">
+              {editError && <div className="form-error"><AlertCircle size={14} />{editError}</div>}
+
+              <div className="drawer-section-label">Atividade</div>
+              <div className="form-grid">
+                <div className="field">
+                  <label>Tipo de atividade</label>
+                  <select className="field-select" value={editForm.activityType} onChange={e => {
+                    const val = e.target.value;
+                    const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === val);
+                    const unitPrice = svc?.price ?? null;
+                    setEditUnitPrice(unitPrice);
+                    const isPaxPriced = svc?.minPax != null;
+                    const multiplier = isPaxPriced ? editForm.pax : editForm.quantity;
+                    const newPrice = recalcPrice(unitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                    setEditForm({ ...editForm, activityType: val, totalPrice: newPrice || editForm.totalPrice });
+                  }}>
+                    <option value="">— Livre —</option>
+                    {Object.entries(svcGroups).map(([cat, items]) => (
+                      <optgroup key={cat} label={cat}>
+                        {items.map(svc => (
+                          <option key={svc.id} value={svc.variant ? `${svc.name} — ${svc.variant}` : svc.name}>
+                            {svc.name}{svc.variant ? ` — ${svc.variant}` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Data</label>
+                  <input type="date" value={editForm.activityDate} onChange={e => {
+                    const d = e.target.value;
+                    setEditForm({ ...editForm, activityDate: d });
+                    const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
+                    const sId = svc?.id || editTarget?.serviceId;
+                    if (sId) fetchSlots(sId, d, editForm.quantity || 1, editTarget?.id);
+                  }} />
+                </div>
+
+                {(() => {
+                  const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
+                  const isJetski = svc?.category === "Jetski" || svc?.name.toLowerCase().includes("jetski");
+                  const isSofa = svc?.name.toLowerCase().includes("sofa");
+                  const isBanana = svc?.name.toLowerCase().includes("banana");
+
+                  if (isJetski) {
+                    const qtyOptions = [1, 2, 3];
+                    const minPax = editForm.quantity || 1;
+                    const maxPax = (editForm.quantity || 1) * 2;
+                    const paxOptions = Array.from({ length: maxPax - minPax + 1 }, (_, i) => minPax + i);
+
+                    return (
+                      <>
+                        <div className="field">
+                          <label>Quantidade (Motos)</label>
+                          <select className="field-select" value={editForm.quantity} onChange={e => {
+                            const qty = parseInt(e.target.value);
+                            const newPrice = recalcPrice(editUnitPrice, qty, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                            setEditForm({
+                              ...editForm,
+                              quantity: qty,
+                              pax: Math.max(qty, Math.min(editForm.pax, qty * 2)),
+                              totalPrice: newPrice || editForm.totalPrice
+                            });
+                            const svcId = svc?.id || editTarget?.serviceId;
+                            if (svcId) fetchSlots(svcId, editForm.activityDate, qty, editTarget?.id);
+                          }}>
+                            {qtyOptions.map(q => <option key={q} value={q}>{q}</option>)}
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Nº Pessoas</label>
+                          <select className="field-select" value={editForm.pax} onChange={e => {
+                            const p = parseInt(e.target.value);
+                            setEditForm({ ...editForm, pax: p });
+                          }}>
+                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  if (isSofa || isBanana) {
+                    const maxPax = isSofa ? 6 : 8;
+                    const paxOptions = Array.from({ length: maxPax - 1 }, (_, i) => 2 + i);
+                    return (
+                      <>
+                        <div className="field">
+                          <label>Quantidade (Sinal único)</label>
+                          <input type="number" value="1" disabled style={{ opacity: 0.6, cursor: "not-allowed" }} />
+                        </div>
+                        <div className="field">
+                          <label>Nº Pessoas</label>
+                          <select className="field-select" value={editForm.pax} onChange={e => {
+                            const p = parseInt(e.target.value);
+                            const newPrice = recalcPrice(editUnitPrice, p, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                            setEditForm({ ...editForm, quantity: 1, pax: p, totalPrice: newPrice || editForm.totalPrice });
+                          }}>
+                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <div className="field">
+                        <label>Quantidade (unidades)</label>
+                        <input type="number" min="1" value={editForm.quantity} onFocus={e => e.target.select()} onChange={e => {
+                          const qty = parseInt(e.target.value) || 1;
+                          const multiplier = svc?.minPax != null ? editForm.pax : qty;
+                          const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                          setEditForm({ ...editForm, quantity: qty, totalPrice: newPrice || editForm.totalPrice });
+                          const sId = svc?.id || editTarget?.serviceId;
+                          if (sId) fetchSlots(sId, editForm.activityDate, qty, editTarget?.id);
+                        }} />
+                      </div>
+                      <div className="field">
+                        <label>Pax</label>
+                        <input type="number" min="1" value={editForm.pax} onFocus={e => e.target.select()} onChange={e => {
+                          const pax = parseInt(e.target.value) || 1;
+                          const multiplier = svc?.minPax != null ? pax : editForm.quantity;
+                          const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
+                          setEditForm({ ...editForm, pax, totalPrice: newPrice || editForm.totalPrice });
+                        }} />
+                      </div>
+                    </>
+                  );
+                })()}
+
+                <div className="field price-display-row">
+                  <label>Preço real (€)</label>
+                  <div className="price-display-wrap">
+                    <input type="number" step="0.01" value={editForm.totalPrice} onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })} />
+                    {editUnitPrice != null && (
+                      <span className="price-base-hint">{editUnitPrice}€ unid.</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="field discount-row">
+                  <label>Desconto</label>
+                  <div className="discount-wrap">
+                    <input
+                      type="number" min="0" step="0.01" placeholder="0"
+                      value={editForm.discountAmount || ""}
+                      onChange={e => {
+                        const discAmt = e.target.value;
+                        const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
+                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+                        const newPrice = recalcPrice(editUnitPrice, multiplier, discAmt, editForm.discountType, editForm.bookingFee);
+                        setEditForm({ ...editForm, discountAmount: discAmt, totalPrice: newPrice || editForm.totalPrice });
+                      }}
+                    />
+                    <div className="discount-type-toggle">
+                      <button type="button" className={(editForm.discountType || "%") === "%" ? "active" : ""} onClick={() => {
+                        const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
+                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+                        const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, "%", editForm.bookingFee);
+                        setEditForm({ ...editForm, discountType: "%", totalPrice: newPrice || editForm.totalPrice });
+                      }}>%</button>
+                      <button type="button" className={editForm.discountType === "€" ? "active" : ""} onClick={() => {
+                        const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
+                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+                        const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, "€", editForm.bookingFee);
+                        setEditForm({ ...editForm, discountType: "€", totalPrice: newPrice || editForm.totalPrice });
+                      }}>€</button>
+                    </div>
+                  </div>
+                </div>
+
+                {(() => {
+                  const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
+                  if (svc?.durationMinutes && editForm.activityDate) {
+                    return (
+                      <div className="field full slot-picker-wrap">
+                        <label>Hora {editForm.activityTime && <span className="slot-selected-label">— {editForm.activityTime} selecionada</span>}</label>
+                        {slotsLoading ? (
+                          <div className="slot-loading">A carregar horários...</div>
+                        ) : slotsClosed ? (
+                          <div className="slot-closed">Encerrado neste dia</div>
+                        ) : (() => {
+                          const slotGroups = [
+                            { label: "Manhã", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h < 12; }) },
+                            { label: "Tarde", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 12 && h < 17; }) },
+                            { label: "Final do dia", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 17; }) },
+                          ].filter(g => g.slots.length > 0);
+                          return (
+                            <div className="slot-groups">
+                              {slotGroups.map(group => (
+                                <div key={group.label} className="slot-group">
+                                  <div className="slot-group-label">{group.label}</div>
+                                  <div className="slot-grid">
+                                    {group.slots.map(slot => {
+                                      const isPast = !!slot.past;
+                                      const isBlocked = slot.blocked;
+                                      const isSelected = editForm.activityTime === slot.time;
+                                      let cls = "slot-btn";
+                                      if (isSelected) cls += " slot-selected";
+                                      else if (isPast) cls += " slot-past";
+                                      else if (isBlocked) cls += canOverride && !isPartner ? " slot-override" : " slot-blocked";
+                                      else cls += " slot-free";
+                                      return (
+                                        <button
+                                          key={slot.time}
+                                          type="button"
+                                          className={cls}
+                                          disabled={isPast || (isBlocked && (!canOverride || isPartner))}
+                                          onClick={() => {
+                                            if (isPast || (isBlocked && (!canOverride || isPartner))) return;
+                                            setEditForm({ ...editForm, activityTime: slot.time });
+                                          }}
+                                          title={isPast ? "Horário já passou" : isBlocked ? `Lotado (${slot.available}/${slot.capacity} livres)` : `${slot.available}/${slot.capacity} livres`}
+                                        >
+                                          {slot.time}
+                                          {isBlocked && !isPartner && canOverride && !isPast && <span className="slot-override-tag">Override</span>}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="field">
+                      <label>Hora</label>
+                      <input type="time" value={editForm.activityTime} onChange={e => setEditForm({ ...editForm, activityTime: e.target.value })} />
+                    </div>
+                  );
+                })()}
+                <div className="field">
+                  <label>Estado</label>
+                  <select className="field-select" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
+                    <option value="CONFIRMED">Confirmada</option>
+                    <option value="PENDING">Pendente</option>
+                    <option value="CANCELLED">Cancelada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="drawer-section-label" style={{ marginTop: 16 }}>Cliente</div>
+              <div className="form-grid">
+                <div className="field">
+                  <label>Nome</label>
+                  <input value={editForm.customerName} onChange={e => setEditForm({ ...editForm, customerName: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label>Email</label>
+                  <input type="email" value={editForm.customerEmail} onChange={e => setEditForm({ ...editForm, customerEmail: e.target.value })} />
+                </div>
+                <div className="field">
+                  <CountrySelector
+                    label="País / Indicativo"
+                    value={editForm.countryCode}
+                    onChange={val => setEditForm({ ...editForm, countryCode: val })}
+                  />
+                </div>
+                <div className="field">
+                  <label>Telefone</label>
+                  <input value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: e.target.value })} />
+                </div>
+                <div className="field full">
+                  <label>Notas</label>
+                  <textarea rows={2} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="drawer-section-label" style={{ marginTop: 16 }}>Reserva</div>
+              <div className="form-grid">
+                {!isPartner && partners.length > 0 && (
+                  <div className="field">
+                    <label>Parceiro</label>
+                    <select
+                      className="field-select"
+                      value={editForm.forPartnerId}
+                      onChange={e => setEditForm({ ...editForm, forPartnerId: e.target.value })}
+                    >
+                      <option value="">— Sem parceiro —</option>
+                      {partners.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="field">
+                  <label>Comissão (Booking Fee)</label>
+                    <div className="booking-fee-wrap">
+                      <input
+                        type="number" step="0.01" placeholder="0.00"
+                        value={editForm.bookingFee}
+                        onChange={e => {
+                          const fee = e.target.value;
+                          const svc = services.find(s => (s.variant ? `${s.name} - ${s.variant}` : s.name) === editForm.activityType);
+                          const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
+                          const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, fee);
+                          setEditForm({ ...editForm, bookingFee: fee, totalPrice: newPrice || editForm.totalPrice });
+                        }}
+                      />
+                      {(isPartner || editForm.forPartnerId || editTarget.partnerId) && (
+                        <button type="button" className="btn-quick-fee" onClick={applyEditQuickCommission} title="Aplicar comissão automática">
+                          <Zap size={14} /> Quick Apply
+                        </button>
+                      )}
+                      <span className="fee-hint">O preço total será ajustado (Preço - Comissão)</span>
+                    </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="drawer-footer">
+              <button className="btn-drawer-delete" onClick={handleEditDelete}>
+                <Trash2 size={15} /> Eliminar
+              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn-ghost" onClick={() => setEditTarget(null)}>Cancelar</button>
+                <button className="btn-primary" disabled={editSaving} onClick={() => handleEditSave()}>
+                  {editSaving ? "A guardar..." : "Guardar"}
+                </button>
+              </div>
+            </div>
+          </aside>
+        </>
+      )}
+
+      {overrideModal && (
+        <div className="modal-backdrop">
+          <div className="modal-box override-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-hdr">
+              <h2>Slot Lotado — Override</h2>
+              <button className="modal-close" onClick={() => setOverrideModal(null)}><X size={20} /></button>
+            </div>
+            <div className="override-info">
+              <p>O slot das <strong>{overrideModal.time}</strong> está lotado ({overrideModal.available}/{overrideModal.capacity} livres).</p>
+              <p>Como staff, pode forçar a reserva. Indique o motivo:</p>
+            </div>
+            <div className="field" style={{ margin: "0 0 16px" }}>
+              <label>Motivo do override *</label>
+              <textarea
+                rows={3}
+                value={overrideReason}
+                onChange={e => setOverrideReason(e.target.value)}
+                placeholder="Ex: Cliente VIP, equipamento extra disponível..."
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-ghost" onClick={() => setOverrideModal(null)}>Cancelar</button>
+              <button
+                className="btn-override-confirm"
+                disabled={!overrideReason.trim()}
+                onClick={() => {
+                  if (overrideType === 'edit') handleEditSave(true, overrideReason);
+                  else submitCreate(true, overrideReason);
+                }}
+              >
+                Confirmar Override
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {attendanceTarget && (
+        <div className="modal-backdrop" onClick={() => setAttendanceTarget(null)}>
+          <div className="modal-box attendance-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setAttendanceTarget(null)}><X size={20} /></button>
+            <div className="attendance-icon-wrap">
+              <UserCheck size={32} />
+            </div>
+            <div className="attendance-info">
+              <div className="attendance-name">{attendanceTarget.customerName}</div>
+              <div className="attendance-meta">
+                <span>{attendanceTarget.pax} pax</span>
+                <span className="attendance-dot">·</span>
+                <span>{attendanceTarget.activityType || "—"}</span>
+                <span className="attendance-dot">·</span>
+                <span className={`src-badge src-${attendanceTarget.source.toLowerCase()}`}>{attendanceTarget.source}</span>
+              </div>
+            </div>
+            <p className="attendance-question">
+              {attendanceTarget.showedUp ? "Este cliente NÃO compareceu?" : "Este cliente compareceu?"}
+            </p>
+            <div className="attendance-actions">
+              <button className="btn-ghost" onClick={() => setAttendanceTarget(null)}>Cancelar</button>
+              <button
+                className={attendanceTarget.showedUp ? "btn-attendance-unmark" : "btn-attendance-confirm"}
+                disabled={attendanceSaving}
+                onClick={() => handleAttendance(attendanceTarget)}
+              >
+                <UserCheck size={16} />
+                {attendanceSaving ? "A guardar..." : attendanceTarget.showedUp ? "Sim, desmarcar" : "Sim, compareceu"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}

@@ -5,6 +5,7 @@ import { timeToMinutes, timesOverlap } from "@/lib/slots";
 import { createBusyEvent, toGcalTimes } from "@/lib/gcal";
 import { logAudit } from "@/lib/audit";
 import { sendBookingQRCode } from "@/lib/email";
+import { ensureCustomer } from "@/lib/customers";
 
 // Deployment update: 2026-03-11 08:48
 export const dynamic = "force-dynamic";
@@ -132,6 +133,14 @@ export async function POST(req: Request) {
             }
         }
 
+        // Link to centralized customer
+        const customerId = await ensureCustomer({
+            name: customerName,
+            email: customerEmail,
+            phone: customerPhone,
+            country: countryCode,
+        });
+
         const booking = await prisma.booking.create({
             data: {
                 customerName,
@@ -150,6 +159,7 @@ export async function POST(req: Request) {
                 partnerId: isPartner ? (sessionPartnerId || null) : adminPartnerId,
                 country: countryCode || "Other",
                 bookingFee: parseFloat(bookingFee || 0),
+                customerId,
             },
             include: { partner: true },
         });

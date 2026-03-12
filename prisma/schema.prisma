@@ -49,16 +49,17 @@ model Partner {
 }
 
 model Customer {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  email     String?  @unique(map: "Customer_email_unique")
+  email     String?   @unique(map: "Customer_email_unique")
   phone     String?
   country   String?
   notes     String?
-  source    String   @default("MANUAL")
-  optedOut  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  source    String    @default("MANUAL")
+  optedOut  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
 }
 
 model Booking {
@@ -77,6 +78,7 @@ model Booking {
   activityType         String?
   partnerId            String?
   serviceId            String?
+  customerId           String?
   createdById          String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
@@ -97,6 +99,7 @@ model Booking {
   postalCode           String?
   bookingFee           Float?    @default(0)
   partner              Partner?  @relation(fields: [partnerId], references: [id])
+  customer             Customer? @relation(fields: [customerId], references: [id])
 }
 
 model Service {
@@ -266,4 +269,15 @@ model ConcessionBlock {
   concession   Concession @relation(fields: [concessionId], references: [id])
 
   @@unique([concessionId, date])
+}
+model GcalBusySlot {
+  id         String   @id @default(cuid())
+  calendarId String
+  eventId    String   @unique
+  startTime  DateTime
+  endTime    DateTime
+  summary    String?
+  updatedAt  DateTime @updatedAt
+
+  @@index([calendarId, startTime, endTime])
 }

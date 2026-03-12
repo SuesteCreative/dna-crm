@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  password  String?
+  role      String   @default("USER")
+  image     String?
+  partnerId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  partner   Partner? @relation(fields: [partnerId], references: [id])
+}
+
+model RolePermission {
+  id                String   @id @default(cuid())
+  role              String   @unique
+  dashboardAccess   Boolean  @default(false)
+  dashboardCreate   Boolean  @default(false)
+  dashboardOverride Boolean  @default(false)
+  concessionAccess  Boolean  @default(false)
+  statisticsAccess  Boolean  @default(false)
+  partnersAccess    Boolean  @default(false)
+  adminAccess       Boolean  @default(false)
+  shopifySync       Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+}
+
+model Partner {
+  id         String    @id @default(cuid())
+  name       String
+  email      String    @unique
+  phone      String?
+  address    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  commission Float     @default(10)
+  website    String?
+  bookings   Booking[]
+  users      User[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique(map: "Customer_email_unique")
+  phone     String?
+  country   String?
+  notes     String?
+  source    String   @default("MANUAL")
+  optedOut  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Booking {
+  id                   String    @id @default(cuid())
+  customerName         String
+  customerEmail        String?
+  customerPhone        String?
+  activityDate         DateTime
+  activityTime         String?
+  pax                  Int       @default(1)
+  status               String    @default("CONFIRMED")
+  source               String    @default("MANUAL")
+  shopifyId            String?   @unique
+  totalPrice           Float?
+  notes                String?
+  activityType         String?
+  partnerId            String?
+  serviceId            String?
+  createdById          String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  orderNumber          String?
+  quantity             Int?      @default(1)
+  country              String?
+  showedUp             Boolean?
+  isEdited             Boolean   @default(false)
+  originalActivityType String?
+  originalPax          Int?
+  originalQuantity     Int?
+  originalTotalPrice   Float?
+  originalActivityDate DateTime?
+  originalActivityTime String?
+  gcalCalendarIds      String?
+  gcalEventIds         String?
+  discountCodes        String?
+  postalCode           String?
+  bookingFee           Float?    @default(0)
+  partner              Partner?  @relation(fields: [partnerId], references: [id])
+}
+
+model Service {
+  id               String   @id @default(cuid())
+  shopifyHandle    String?
+  name             String
+  variant          String?
+  sku              String?  @unique
+  price            Float?
+  imageUrl         String?
+  category         String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  capacityGroup    String?
+  durationMinutes  Int?
+  slotGapMinutes   Int      @default(10)
+  unitCapacity     Int      @default(1)
+  gcalEnabled      Boolean  @default(false)
+  serviceCloseTime String?
+  maxPax           Int?
+  minPax           Int?
+}
+
+model Schedule {
+  id        String   @id @default(cuid())
+  dayOfWeek Int      @unique
+  openTime  String
+  closeTime String
+  isOpen    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GcalStaff {
+  id         String   @id @default(cuid())
+  name       String
+  calendarId String
+  serviceId  String?
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model OverrideLog {
+  id          String   @id @default(cuid())
+  bookingId   String
+  clerkUserId String
+  userName    String
+  reason      String
+  serviceId   String?
+  serviceName String?
+  slotTime    String
+  date        String
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String   @default("system")
+  userName   String   @default("System")
+  action     String
+  module     String
+  targetId   String?
+  targetName String?
+  details    String?
+  createdAt  DateTime @default(now())
+}
+
+model Concession {
+  id             String                  @id @default(cuid())
+  slug           String                  @unique
+  name           String
+  location       String
+  rows           Int
+  cols           Int
+  priceFull      Float
+  priceMorning   Float
+  priceAfternoon Float
+  priceExtraBed  Float
+  priceOneBed    Float
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  blocks         ConcessionBlock[]
+  dailyNotes     ConcessionDailyNote[]
+  entries        ConcessionEntry[]
+  reservations   ConcessionReservation[]
+  spots          ConcessionSpot[]
+}
+
+model ConcessionSpot {
+  id           String                  @id @default(cuid())
+  concessionId String
+  spotNumber   Int
+  row          Int
+  col          Int
+  isActive     Boolean                 @default(true)
+  createdAt    DateTime                @default(now())
+  entries      ConcessionEntry[]
+  reservations ConcessionReservation[]
+  concession   Concession              @relation(fields: [concessionId], references: [id])
+
+  @@unique([concessionId, spotNumber])
+}
+
+model ConcessionEntry {
+  id            String                 @id @default(cuid())
+  concessionId  String
+  spotId        String
+  date          String
+  period        String
+  clientName    String
+  clientPhone   String?
+  bedConfig     String                 @default("TWO_BEDS")
+  totalPrice    Float
+  isPaid        Boolean                @default(true)
+  notes         String?
+  reservationId String?
+  isCarryOver   Boolean                @default(false)
+  status        String                 @default("ACTIVE")
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  concession    Concession             @relation(fields: [concessionId], references: [id])
+  reservation   ConcessionReservation? @relation(fields: [reservationId], references: [id])
+  spot          ConcessionSpot         @relation(fields: [spotId], references: [id])
+}
+
+model ConcessionReservation {
+  id           String            @id @default(cuid())
+  concessionId String
+  spotId       String
+  clientName   String
+  clientPhone  String?
+  clientEmail  String?
+  startDate    String
+  endDate      String
+  period       String
+  bedConfig    String            @default("TWO_BEDS")
+  totalPrice   Float
+  isPaid       Boolean           @default(false)
+  notes        String?
+  status       String            @default("ACTIVE")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  entries      ConcessionEntry[]
+  concession   Concession        @relation(fields: [concessionId], references: [id])
+  spot         ConcessionSpot    @relation(fields: [spotId], references: [id])
+}
+
+model ConcessionDailyNote {
+  id           String     @id @default(cuid())
+  concessionId String
+  date         String
+  note         String
+  updatedAt    DateTime   @updatedAt
+  concession   Concession @relation(fields: [concessionId], references: [id])
+
+  @@unique([concessionId, date])
+}
+
+model ConcessionBlock {
+  id           String     @id @default(cuid())
+  concessionId String
+  date         String
+  reason       String?
+  createdAt    DateTime   @default(now())
+  concession   Concession @relation(fields: [concessionId], references: [id])
+
+  @@unique([concessionId, date])
+}

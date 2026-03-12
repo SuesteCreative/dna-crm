@@ -1,0 +1,442 @@
+.sched-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+}
+
+.sched-forbidden {
+    padding: 40px;
+    color: #ef4444;
+    font-size: 14px;
+}
+
+.sched-main {
+    margin-left: 240px;
+    padding: 32px 40px;
+    max-width: 1340px;
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+    .sched-main {
+        margin-left: 0;
+        padding: 24px 16px;
+    }
+}
+
+.sched-header {
+    margin-bottom: 28px;
+}
+
+.sched-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+@media (max-width: 600px) {
+    .sched-title {
+        font-size: 20px;
+    }
+}
+
+.sched-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.sched-toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    width: fit-content;
+}
+
+@media (max-width: 600px) {
+    .sched-toast {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+.sched-toast.ok {
+    background: rgba(16, 185, 129, .12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, .3);
+}
+
+.sched-toast.err {
+    background: rgba(239, 68, 68, .1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, .3);
+}
+
+.sched-section {
+    margin-bottom: 40px;
+}
+
+.sched-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+}
+
+.sched-section-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: -10px;
+    margin-bottom: 14px;
+}
+
+/* Day Cards */
+.sched-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+@media (max-width: 480px) {
+    .sched-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sched-day-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sched-day-card.closed {
+    opacity: 0.6;
+}
+
+.sched-day-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sched-day-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.sched-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.sched-toggle input {
+    display: none;
+}
+
+.toggle-track {
+    width: 32px;
+    height: 18px;
+    background: var(--border);
+    border-radius: 9px;
+    position: relative;
+    transition: background .2s;
+}
+
+.sched-toggle input:checked+.toggle-track {
+    background: #10b981;
+}
+
+.toggle-track::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: left .2s;
+}
+
+.sched-toggle input:checked+.toggle-track::after {
+    left: 16px;
+}
+
+.toggle-label {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.sched-times {
+    display: flex;
+    gap: 8px;
+}
+
+.sched-time-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sched-time-field label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.sched-time-field input {
+    width: 100%;
+    padding: 6px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+}
+
+.sched-time-field input:focus {
+    border-color: var(--blue);
+}
+
+.sched-save-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 12px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s;
+}
+
+.sched-save-btn:hover:not(:disabled) {
+    background: #2563eb;
+}
+
+.sched-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Service table */
+.svc-table-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    -webkit-overflow-scrolling: touch;
+}
+
+.svc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 500px;
+}
+
+.svc-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+}
+
+.svc-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+}
+
+.svc-table tr:last-child td {
+    border-bottom: none;
+}
+
+.svc-name {
+    font-weight: 500;
+}
+
+.svc-variant {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.svc-input {
+    padding: 6px 10px;
+    width: 70px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+}
+
+.svc-input.wide {
+    width: 120px;
+}
+
+@media (max-width: 600px) {
+    .svc-input.wide {
+        width: 100px;
+    }
+}
+
+.svc-input:focus {
+    border-color: var(--blue);
+}
+
+.svc-save-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.svc-save-btn:hover:not(:disabled) {
+    background: #2563eb;
+}
+
+.svc-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* GCal Staff section */
+.gcal-id {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: monospace;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .gcal-id {
+        max-width: 150px;
+    }
+}
+
+.gcal-delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(239, 68, 68, .1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, .3);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s;
+}
+
+.gcal-delete-btn:hover {
+    background: rgba(239, 68, 68, .2);
+}
+
+.gcal-add-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+}
+
+.gcal-add-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+}
+
+.gcal-add-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+    .gcal-add-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .gcal-field select,
+    .sched-save-btn {
+        width: 100%;
+    }
+}
+
+.gcal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gcal-field label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.gcal-field select {
+    padding: 6px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+}
+
+.gcal-field select:focus {
+    border-color: var(--blue);
+}

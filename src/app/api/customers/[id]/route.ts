@@ -4,6 +4,25 @@ import { getPrisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+    const { sessionClaims } = await auth();
+    const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    if (!adminOnly(role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const prisma = await getPrisma();
+    const customer = await prisma.customer.findUnique({
+        where: { id: params.id },
+        include: {
+            bookings: {
+                orderBy: { activityDate: "desc" },
+            },
+        },
+    });
+
+    if (!customer) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(customer);
+}
+
 function adminOnly(role: string | undefined) {
     return role === "ADMIN" || role === "SUPER_ADMIN";
 }

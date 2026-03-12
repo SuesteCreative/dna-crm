@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { getPrisma } from "@/lib/prisma";
 import { sendBookingQRCode } from "@/lib/email";
+import { ensureCustomer } from "@/lib/customers";
 
 // Deployment force update: 2026-03-11 08:50
 
@@ -137,20 +138,48 @@ export async function POST(req: NextRequest) {
         if (topic === "orders/create" || topic === "orders/updated" || topic === "orders/paid") {
             const bookingData = parseOrderToBooking(order);
 
-            const createdBooking = await prisma.booking.upsert({
-                where: { shopifyId: bookingData.shopifyId },
-                update: {
-                    status: bookingData.status,
-                    totalPrice: bookingData.totalPrice,
-                    activityDate: bookingData.activityDate,
-                    activityTime: bookingData.activityTime,
-                    activityType: bookingData.activityType,
-                    pax: bookingData.pax,
-                    quantity: bookingData.quantity,
-                    orderNumber: bookingData.orderNumber
-                },
-                create: bookingData,
+            // Ensure customer record exists
+            const customerId = await ensureCustomer({
+                name: bookingData.customerName,
+                email: bookingData.customerEmail,
+                phone: bookingData.customerPhone,
             });
+
+            // Check if booking exists and was manually edited
+            const existing = await prisma.booking.findUnique({
+                where: { shopifyId: bookingData.shopifyId },
+                select: { isEdited: true },
+            });
+
+            let createdBooking;
+            if (existing?.isEdited) {
+                // Manual edit exists — only sync status and orderNumber to prevent overwriting manual fixes
+                createdBooking = await prisma.booking.update({
+                    where: { shopifyId: bookingData.shopifyId },
+                    data: {
+                        status: bookingData.status,
+                        orderNumber: bookingData.orderNumber,
+                        customerId,
+                    },
+                });
+            } else {
+                // No manual edit or new booking — full sync/create
+                createdBooking = await prisma.booking.upsert({
+                    where: { shopifyId: bookingData.shopifyId },
+                    update: {
+                        status: bookingData.status,
+                        totalPrice: bookingData.totalPrice,
+                        activityDate: bookingData.activityDate,
+                        activityTime: bookingData.activityTime,
+                        activityType: bookingData.activityType,
+                        pax: bookingData.pax,
+                        quantity: bookingData.quantity,
+                        orderNumber: bookingData.orderNumber,
+                        customerId,
+                    },
+                    create: { ...bookingData, customerId },
+                });
+            }
 
             // Send QR code for new Shopify bookings
             if (createdBooking.customerEmail && createdBooking.status === "CONFIRMED") {

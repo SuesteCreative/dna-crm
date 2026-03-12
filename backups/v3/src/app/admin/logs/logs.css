@@ -1,0 +1,442 @@
+.logs-main {
+    margin-left: 240px;
+    padding: 40px;
+    max-width: 1600px;
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+    .logs-main {
+        margin-left: 0;
+        padding: 24px;
+    }
+}
+
+.logs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+}
+
+.logs-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.logs-sub {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 6px;
+}
+
+.logs-refresh {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logs-refresh:hover {
+    background: var(--surface2);
+    transform: translateY(-1px);
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Filters Bar */
+.logs-filters-bar {
+    background: var(--surface2);
+    padding: 16px 20px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.filters-section {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.05em;
+    margin-right: 4px;
+}
+
+.date-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-sep {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Modern Inputs & Selects */
+.au-search,
+.au-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit;
+}
+
+.au-search:hover,
+.au-select:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.au-search:focus,
+.au-select:focus {
+    border-color: var(--blue);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--blue-dim);
+}
+
+.search-input {
+    flex: 2;
+    min-width: 300px;
+}
+
+/* Style for date inputs specifically */
+input[type="date"].au-search {
+    padding: 8px 12px;
+    cursor: pointer;
+    min-width: 135px;
+}
+
+/* custom scrollbar for selects if needed, but standard should be fine */
+
+/* Table Section */
+.logs-table-wrap {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.logs-table th {
+    background: var(--surface2);
+    padding: 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--border);
+}
+
+.log-row {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.log-row:hover {
+    background: var(--surface2);
+}
+
+.log-row.active {
+    background: rgba(var(--secondary-rgb), 0.05);
+}
+
+.log-row td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.expand-cell {
+    text-align: center;
+    color: var(--muted);
+}
+
+.chevron {
+    transition: transform 0.3s ease;
+}
+
+.chevron.rotated {
+    transform: rotate(90deg);
+    color: var(--secondary);
+}
+
+.time-cell {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.time-cell .date {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.time-cell .time {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.user-pill {
+    padding: 4px 10px;
+    background: var(--surface2);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.mod-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.mod-badge.dashboard {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.mod-badge.booking {
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+}
+
+.mod-badge.concession_entry,
+.mod-badge.concession_reservation {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.action-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    font-family: monospace;
+}
+
+.action-badge.create {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.action-badge.email_sent {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.action-badge.delete,
+.action-badge.cancel,
+.action-badge.email_error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.action-badge.update {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.summary-cell {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* Details Section */
+.details-row td {
+    padding: 0 !important;
+}
+
+.details-container {
+    background: rgba(0, 0, 0, 0.15);
+    margin: 10px 16px 20px;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.detail-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.detail-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.detail-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.email-highlight {
+    color: #8b5cf6;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.detail-json {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.detail-json code {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #a5b4fc;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.loader-sm {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--secondary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Bulk Actions */
+.logs-delete-bulk {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    color: #ef4444;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logs-delete-bulk:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+}
+
+.logs-delete-bulk:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Checkboxes */
+.check-cell {
+    width: 40px;
+    text-align: center;
+    padding-right: 0 !important;
+}
+
+.log-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    accent-color: var(--secondary);
+}
+
+.log-row.selected {
+    background: rgba(239, 68, 68, 0.03) !important;
+}
+
+.log-row.selected td {
+    border-bottom-color: rgba(239, 68, 68, 0.1);
+}

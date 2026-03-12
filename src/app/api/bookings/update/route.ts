@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { deleteBusyEvent } from "@/lib/gcal";
 import { logAudit } from "@/lib/audit";
 import { timeToMinutes, timesOverlap } from "@/lib/slots";
+import { ensureCustomer } from "@/lib/customers";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +122,13 @@ export async function PATCH(req: NextRequest) {
         // Only capture originals on the very first edit
         const captureOriginals = !current.isEdited;
 
+        const customerId = await ensureCustomer({
+            name: fields.customerName || current.customerName,
+            email: fields.customerEmail || current.customerEmail,
+            phone: fields.customerPhone || current.customerPhone,
+            country: fields.countryCode || current.country
+        });
+
         const booking = await prisma.booking.update({
             where: { id },
             data: {
@@ -142,6 +150,7 @@ export async function PATCH(req: NextRequest) {
                     gcalEventIds: null,
                     gcalCalendarIds: null,
                 }),
+                customerId,
                 ...(captureOriginals && {
                     originalActivityType: current.activityType,
                     originalPax: current.pax,
