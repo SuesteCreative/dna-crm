@@ -1,0 +1,21 @@
+
+> crm-desportos-nauticos@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.3
+  - Environments: .env.production, .env
+
+   Creating an optimized production build ...
+ Ô£ô Compiled successfully
+   Linting and checking validity of types ...
+Failed to compile.
+
+./scripts/manual-sync.ts:2:25
+Type error: Cannot find module 'dotenv' or its corresponding type declarations.
+
+  1 | import { syncShopifyOrders } from "../src/lib/shopify";
+> 2 | import * as dotenv from "dotenv";
+    |                         ^
+  3 | dotenv.config();
+  4 |
+  5 | async function main() {
