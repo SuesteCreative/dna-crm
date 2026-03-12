@@ -1,6 +1,6 @@
 import React from "react";
 import { 
-  X, AlertCircle, Zap, UserCheck, Trash2 
+  X, AlertCircle, Zap, UserCheck, Trash2, Plus
 } from "lucide-react";
 import { CountrySelector } from "@/components/CountrySelector";
 import { Booking, Service, SlotInfo, Partner } from "./types";
@@ -11,21 +11,22 @@ interface BookingModalsProps {
   showModal: boolean;
   setShowModal: (show: boolean) => void;
   formData: any;
-  setFormData: (data: any) => void;
+  setFormData: (data: any | ((prev: any) => any)) => void;
   formError: string | null;
   handleCreate: (e: React.FormEvent) => void;
   submitting: boolean;
   svcGroups: Record<string, Service[]>;
-  handleServiceSelect: (id: string) => void;
+  handleServiceSelectForActivity: (index: number, id: string) => void;
+  fetchSlotsForActivity: (index: number, svcId: string, date: string, qty: number, excludeId?: string) => void;
   slots: SlotInfo[];
   slotsLoading: boolean;
   slotsClosed: boolean;
   canOverride: boolean;
   isPartner: boolean;
   todayStr: string;
-  createUnitPrice: number | null;
   applyQuickCommission: () => void;
   partners: Partner[];
+  services: Service[];
   
   // Edit Drawer
   editTarget: Booking | null;
@@ -40,7 +41,6 @@ interface BookingModalsProps {
   setEditUnitPrice: (price: number | null) => void;
   applyEditQuickCommission: () => void;
   fetchSlots: (svcId: string, date: string, qty: number, excludeId?: string) => void;
-  services: Service[];
 
   // Attendance Modal
   attendanceTarget: Booking | null;
@@ -57,246 +57,361 @@ interface BookingModalsProps {
   submitCreate: (override: boolean, reason: string) => void;
 }
 
+const defaultActivity = {
+  serviceId: "", activityDate: "", activityTime: "", pax: 1, quantity: 1,
+  activityType: "", discountAmount: "", discountType: "%",
+  createUnitPrice: null, slots: [], slotsLoading: false, slotsClosed: false,
+  totalPrice: 0
+};
+
 export const BookingModals: React.FC<BookingModalsProps> = ({
-  showModal, setShowModal, formData, setFormData, formError, handleCreate, submitting, svcGroups, handleServiceSelect, slots, slotsLoading, slotsClosed, canOverride, isPartner, todayStr, createUnitPrice, applyQuickCommission, partners,
+  showModal, setShowModal, formData, setFormData, formError, handleCreate, submitting, svcGroups, handleServiceSelectForActivity, fetchSlotsForActivity, slots, slotsLoading, slotsClosed, canOverride, isPartner, todayStr, applyQuickCommission, partners,
   editTarget, setEditTarget, editForm, setEditForm, editSaving, editError, handleEditSave, handleEditDelete, editUnitPrice, setEditUnitPrice, applyEditQuickCommission, fetchSlots, services,
   attendanceTarget, setAttendanceTarget, attendanceSaving, handleAttendance,
   overrideModal, setOverrideModal, overrideType, overrideReason, setOverrideReason, submitCreate
 }) => {
+  const addActivity = () => {
+    const first = formData.activities[0];
+    setFormData((prev: any) => ({
+      ...prev,
+      activities: [
+        ...prev.activities,
+        { 
+          ...defaultActivity, 
+          activityDate: first?.activityDate || "", 
+          activityTime: first?.activityTime || "" 
+        }
+      ]
+    }));
+  };
+
+  const removeActivity = (index: number) => {
+    if (formData.activities.length <= 1) return;
+    setFormData((prev: any) => ({
+      ...prev,
+      activities: prev.activities.filter((_: any, i: number) => i !== index)
+    }));
+  };
+
+  const updateActivity = (index: number, updates: any) => {
+    setFormData((prev: any) => {
+      const acts = [...prev.activities];
+      acts[index] = { ...acts[index], ...updates };
+      return { ...prev, activities: acts };
+    });
+  };
+
+  const addEditActivity = () => {
+    const first = editForm.activities?.[0];
+    setEditForm((prev: any) => ({
+      ...prev,
+      activities: [
+        ...(prev.activities || []),
+        {
+          ...defaultActivity,
+          activityDate: first?.activityDate || todayStr,
+          activityTime: first?.activityTime || ""
+        }
+      ]
+    }));
+  };
+
+  const removeEditActivity = (index: number) => {
+    if (editForm.activities?.length <= 1) return;
+    setEditForm((prev: any) => ({
+      ...prev,
+      activities: prev.activities.filter((_: any, i: number) => i !== index)
+    }));
+  };
+
+  const updateEditActivity = (index: number, fields: any) => {
+    setEditForm((prev: any) => {
+      const acts = [...(prev.activities || [])];
+      acts[index] = { ...acts[index], ...fields };
+      return { ...prev, activities: acts };
+    });
+  };
+
+  const handleServiceSelectForEditActivity = (index: number, serviceId: string) => {
+    const svc = services.find(s => s.id === serviceId);
+    setEditForm((prev: any) => {
+      const acts = [...(prev.activities || [])];
+      const current = acts[index];
+      if (!svc) {
+        acts[index] = { ...current, serviceId: "", activityType: "", totalPrice: 0, activityTime: "", slots: [] };
+      } else {
+        const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
+        const multiplier = svc.minPax != null ? (current.pax || svc.minPax) : (current.quantity || 1);
+        acts[index] = {
+          ...current,
+          serviceId: svc.id,
+          activityType: label,
+          activityTime: svc.durationMinutes ? "" : current.activityTime,
+          pax: svc.minPax ?? current.pax,
+          quantity: svc.minPax != null ? 1 : current.quantity,
+          createUnitPrice: svc.price ?? null,
+          totalPrice: (svc.price || 0) * multiplier
+        };
+        // Trigger slot fetch if needed
+        if (svc.durationMinutes && current.activityDate) {
+          fetchEditSlotsForActivity(index, svc.id, current.activityDate, acts[index].quantity, editTarget?.id);
+        }
+      }
+      return { ...prev, activities: acts };
+    });
+  };
+
+  const fetchEditSlotsForActivity = async (index: number, serviceId: string, date: string, quantity: number, excludeId?: string) => {
+    updateEditActivity(index, { slotsLoading: true });
+    try {
+      const res = await fetch(`/api/slots?serviceId=${serviceId}&date=${date}&quantity=${quantity}${excludeId ? `&excludeBookingId=${excludeId}` : ""}`);
+      if (res.ok) {
+        const data = await res.json();
+        updateEditActivity(index, {
+          slotsLoading: false,
+          slotsClosed: data.closed ?? false,
+          slots: data.slots || []
+        });
+      }
+    } catch {
+      updateEditActivity(index, { slotsLoading: false });
+    }
+  };
+
+  const handleEditSaveInternal = (override = false, reason = "") => {
+    // Total price is sum of activities
+    const total = editForm.activities?.reduce((acc: number, cur: any) => acc + (parseFloat(cur.totalPrice) || 0), 0) || 0;
+    handleEditSave(override, reason); 
+  };
+
   return (
     <>
       {showModal && (
         <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
+          <div className="modal-box multi-booking-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-hdr">
               <h2>Nova Reserva Manual</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleCreate} className="modal-form">
               {formError && <div className="form-error"><AlertCircle size={14} />{formError}</div>}
-              <div className="form-grid">
-                <div className="field-section-label">Atividade</div>
-
-                <div className="field">
-                  <label>Atividade / Serviço</label>
-                  <select
-                    className="field-select"
-                    value={formData.serviceId}
-                    onChange={e => handleServiceSelect(e.target.value)}
-                  >
-                    <option value="">— Selecionar atividade —</option>
-                    {Object.entries(svcGroups).map(([cat, items]) => (
-                      <optgroup key={cat} label={cat}>
-                        {items.map(svc => (
-                          <option key={svc.id} value={svc.id}>
-                            {svc.name}{svc.variant ? ` — ${svc.variant}` : ""}{svc.price ? ` (${svc.price}€)` : ""}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="field">
-                  <label>Data da Atividade *</label>
-                  <input type="date" value={formData.activityDate} min={isPartner ? todayStr : undefined} onChange={e => {
-                    const d = e.target.value;
-                    setFormData({ ...formData, activityDate: d, activityTime: "" });
-                    if (formData.serviceId) fetchSlots(formData.serviceId, d, formData.quantity);
-                  }} required />
-                </div>
-
-                {(() => {
-                  const svc = services.find(s => s.id === formData.serviceId);
-                  const isJetski = svc?.category === "Jetski" || svc?.name.toLowerCase().includes("jetski");
-                  const isSofa = svc?.name.toLowerCase().includes("sofa");
-                  const isBanana = svc?.name.toLowerCase().includes("banana");
-
-                  if (isJetski) {
-                    const qtyOptions = [1, 2, 3];
-                    const minPax = formData.quantity;
-                    const maxPax = formData.quantity * 2;
-                    const paxOptions = Array.from({ length: maxPax - minPax + 1 }, (_, i) => minPax + i);
-
-                    return (
-                      <>
-                        <div className="field">
-                          <label>Quantidade (Motos)</label>
-                          <select className="field-select" value={formData.quantity} onChange={e => {
-                            const qty = parseInt(e.target.value);
-                            setFormData({
-                              ...formData,
-                              quantity: qty,
-                              pax: Math.max(qty, Math.min(formData.pax, qty * 2)),
-                              totalPrice: recalcPrice(createUnitPrice, qty, formData.discountAmount, formData.discountType, formData.bookingFee)
-                            });
-                          }}>
-                            {qtyOptions.map(q => <option key={q} value={q}>{q}</option>)}
-                          </select>
-                        </div>
-                        <div className="field">
-                          <label>Nº Pessoas</label>
-                          <select className="field-select" value={formData.pax} onChange={e => {
-                            const p = parseInt(e.target.value);
-                            setFormData({ ...formData, pax: p });
-                          }}>
-                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                        </div>
-                      </>
-                    );
-                  }
-
-                  if (isSofa || isBanana) {
-                    const maxPax = isSofa ? 6 : 8;
-                    const paxOptions = Array.from({ length: maxPax - 1 }, (_, i) => 2 + i);
-                    return (
-                      <>
-                        <div className="field">
-                          <label>Quantidade (Sinal único)</label>
-                          <input type="number" value="1" disabled style={{ opacity: 0.6, cursor: "not-allowed" }} />
-                        </div>
-                        <div className="field">
-                          <label>Nº Pessoas</label>
-                          <select className="field-select" value={formData.pax} onChange={e => {
-                            const p = parseInt(e.target.value);
-                            setFormData({ ...formData, quantity: 1, pax: p, totalPrice: recalcPrice(createUnitPrice, p, formData.discountAmount, formData.discountType, formData.bookingFee) });
-                          }}>
-                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                        </div>
-                      </>
-                    );
-                  }
-
-                  return (
-                    <>
-                      <div className="field">
-                        <label>Quantidade (unidades)</label>
-                        <input type="number" min="1" value={formData.quantity} onFocus={e => e.target.select()} onChange={e => {
-                          const qty = parseInt(e.target.value) || 1;
-                          const multiplier = svc?.minPax != null ? formData.pax : qty;
-                          setFormData({ ...formData, quantity: qty, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
-                          if (formData.serviceId && formData.activityDate) fetchSlots(formData.serviceId, formData.activityDate, qty);
-                        }} />
-                      </div>
-                      <div className="field">
-                        <label>Nº Pessoas *</label>
-                        <input
-                          type="number" min="1"
-                          value={formData.pax}
-                          onFocus={e => e.target.select()}
-                          onChange={e => {
-                            const p = parseInt(e.target.value) || 1;
-                            const multiplier = svc?.minPax != null ? p : formData.quantity;
-                            setFormData({ ...formData, pax: p, totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee) });
-                          }}
-                          required
-                        />
-                      </div>
-                    </>
-                  );
-                })()}
-
-                <div className="field">
-                  <label>Preço Total (€)</label>
-                  <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
-                </div>
-
-                <div className="field discount-row">
-                  <label>Desconto</label>
-                  <div className="discount-wrap">
-                    <input
-                      type="number" min="0" step="0.01" placeholder="0"
-                      value={formData.discountAmount}
-                      onChange={e => {
-                        const discAmt = e.target.value;
-                        const svc = services.find(s => s.id === formData.serviceId);
-                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
-                        setFormData({ ...formData, discountAmount: discAmt, totalPrice: recalcPrice(createUnitPrice, multiplier, discAmt, formData.discountType, formData.bookingFee) });
-                      }}
-                    />
-                    <div className="discount-type-toggle">
-                      <button type="button" className={formData.discountType === "%" ? "active" : ""} onClick={() => {
-                        const svc = services.find(s => s.id === formData.serviceId);
-                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
-                        setFormData({ ...formData, discountType: "%", totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, "%", formData.bookingFee) });
-                      }}>%</button>
-                      <button type="button" className={formData.discountType === "€" ? "active" : ""} onClick={() => {
-                        const svc = services.find(s => s.id === formData.serviceId);
-                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
-                        setFormData({ ...formData, discountType: "€", totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, "€", formData.bookingFee) });
-                      }}>€</button>
+              
+              <div className="activities-list">
+                {formData.activities.map((act: any, idx: number) => (
+                  <div key={idx} className="activity-card">
+                    <div className="activity-card-hdr">
+                      <span className="activity-num">Atividade #{idx + 1}</span>
+                      {formData.activities.length > 1 && (
+                        <button type="button" className="btn-remove-act" onClick={() => removeActivity(idx)}>
+                          <Trash2 size={14} /> Remover
+                        </button>
+                      )}
                     </div>
-                  </div>
-                </div>
 
-                {(() => {
-                  const svc = services.find(s => s.id === formData.serviceId);
-                  if (svc?.durationMinutes && formData.activityDate) {
-                    return (
-                      <div className="field full slot-picker-wrap">
-                        <label>Horário {formData.activityTime && <span className="slot-selected-label">— {formData.activityTime} selecionado</span>}</label>
-                        {slotsLoading ? (
-                          <div className="slot-loading">A carregar horários...</div>
-                        ) : slotsClosed ? (
-                          <div className="slot-closed">Encerrado neste dia</div>
-                        ) : (() => {
-                          const slotGroups = [
-                            { label: "Manhã", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h < 12; }) },
-                            { label: "Tarde", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 12 && h < 17; }) },
-                            { label: "Final do dia", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 17; }) },
-                          ].filter(g => g.slots.length > 0);
-                          return (
-                            <div className="slot-groups">
-                              {slotGroups.map(group => (
-                                <div key={group.label} className="slot-group">
-                                  <div className="slot-group-label">{group.label}</div>
-                                  <div className="slot-grid">
-                                    {group.slots.map(slot => {
-                                      const isPast = !!slot.past;
-                                      const isBlocked = slot.blocked;
-                                      const isSelected = formData.activityTime === slot.time;
-                                      let cls = "slot-btn";
-                                      if (isSelected) cls += " slot-selected";
-                                      else if (isPast) cls += " slot-past";
-                                      else if (isBlocked) cls += canOverride && !isPartner ? " slot-override" : " slot-blocked";
-                                      else cls += " slot-free";
-                                      return (
-                                        <button
-                                          key={slot.time}
-                                          type="button"
-                                          className={cls}
-                                          disabled={isPast || (isBlocked && (!canOverride || isPartner))}
-                                          onClick={() => {
-                                            if (isPast || (isBlocked && (!canOverride || isPartner))) return;
-                                            setFormData({ ...formData, activityTime: slot.time });
-                                          }}
-                                          title={isPast ? "Horário já passou" : isBlocked ? `Lotado (${slot.available}/${slot.capacity} livres)` : `${slot.available}/${slot.capacity} livres`}
-                                        >
-                                          {slot.time}
-                                          {isBlocked && !isPartner && canOverride && !isPast && <span className="slot-override-tag">Override</span>}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
+                    <div className="form-grid">
+                      <div className="field">
+                        <label>Atividade / Serviço</label>
+                        <select
+                          className="field-select"
+                          value={act.serviceId}
+                          onChange={e => handleServiceSelectForActivity(idx, e.target.value)}
+                        >
+                          <option value="">— Selecionar atividade —</option>
+                          {Object.entries(svcGroups).map(([cat, items]) => (
+                            <optgroup key={cat} label={cat}>
+                              {items.map(svc => (
+                                <option key={svc.id} value={svc.id}>
+                                  {svc.name}{svc.variant ? ` — ${svc.variant}` : ""}{svc.price ? ` (${svc.price}€)` : ""}
+                                </option>
                               ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="field">
+                        <label>Data *</label>
+                        <input type="date" value={act.activityDate} min={isPartner ? todayStr : undefined} onChange={e => {
+                          const d = e.target.value;
+                          updateActivity(idx, { activityDate: d, activityTime: "" });
+                          if (act.serviceId) fetchSlotsForActivity(idx, act.serviceId, d, act.quantity);
+                        }} required />
+                      </div>
+
+                      {(() => {
+                        const svc = services.find(s => s.id === act.serviceId);
+                        const isJetski = svc?.category === "Jetski" || svc?.name.toLowerCase().includes("jetski");
+                        const isSofa = svc?.name.toLowerCase().includes("sofa");
+                        const isBanana = svc?.name.toLowerCase().includes("banana");
+
+                        if (isJetski) {
+                          const qtyOptions = [1, 2, 3];
+                          const minPax = act.quantity || 1;
+                          const maxPax = (act.quantity || 1) * 2;
+                          const paxOptions = Array.from({ length: maxPax - minPax + 1 }, (_, i) => minPax + i);
+
+                          return (
+                            <>
+                              <div className="field">
+                                <label>Quantidade (Motos)</label>
+                                <select className="field-select" value={act.quantity} onChange={e => {
+                                  const qty = parseInt(e.target.value);
+                                  const newPax = Math.max(qty, Math.min(act.pax, qty * 2));
+                                  updateActivity(idx, {
+                                    quantity: qty,
+                                    pax: newPax,
+                                    totalPrice: recalcPrice(act.createUnitPrice, qty, act.discountAmount, act.discountType, "0")
+                                  });
+                                  if (act.serviceId && act.activityDate) fetchSlotsForActivity(idx, act.serviceId, act.activityDate, qty);
+                                }}>
+                                  {qtyOptions.map(q => <option key={q} value={q}>{q}</option>)}
+                                </select>
+                              </div>
+                              <div className="field">
+                                <label>Nº Pessoas</label>
+                                <select className="field-select" value={act.pax} onChange={e => {
+                                  updateActivity(idx, { pax: parseInt(e.target.value) });
+                                }}>
+                                  {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                                </select>
+                              </div>
+                            </>
+                          );
+                        }
+
+                        if (isSofa || isBanana) {
+                          const maxPax = isSofa ? 6 : 8;
+                          const paxOptions = Array.from({ length: maxPax - 1 }, (_, i) => 2 + i);
+                          return (
+                            <>
+                              <div className="field">
+                                <label>Quantidade</label>
+                                <input type="number" value="1" disabled style={{ opacity: 0.6 }} />
+                              </div>
+                              <div className="field">
+                                <label>Nº Pessoas</label>
+                                <select className="field-select" value={act.pax} onChange={e => {
+                                  const p = parseInt(e.target.value);
+                                  updateActivity(idx, { quantity: 1, pax: p, totalPrice: recalcPrice(act.createUnitPrice, p, act.discountAmount, act.discountType, "0") });
+                                }}>
+                                  {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                                </select>
+                              </div>
+                            </>
+                          );
+                        }
+
+                        return (
+                          <>
+                            <div className="field">
+                              <label>Quantidade</label>
+                              <input type="number" min="1" value={act.quantity} onChange={e => {
+                                const qty = parseInt(e.target.value) || 1;
+                                const multiplier = svc?.minPax != null ? act.pax : qty;
+                                updateActivity(idx, { quantity: qty, totalPrice: recalcPrice(act.createUnitPrice, multiplier, act.discountAmount, act.discountType, "0") });
+                                if (act.serviceId && act.activityDate) fetchSlotsForActivity(idx, act.serviceId, act.activityDate, qty);
+                              }} />
+                            </div>
+                            <div className="field">
+                              <label>Nº Pessoas *</label>
+                              <input type="number" min="1" value={act.pax} onChange={e => {
+                                const p = parseInt(e.target.value) || 1;
+                                const multiplier = svc?.minPax != null ? p : act.quantity;
+                                updateActivity(idx, { pax: p, totalPrice: recalcPrice(act.createUnitPrice, multiplier, act.discountAmount, act.discountType, "0") });
+                              }} required />
+                            </div>
+                          </>
+                        );
+                      })()}
+
+                      <div className="field pricing-field">
+                        <label>Preço Item (€)</label>
+                        <input type="number" step="0.01" value={act.totalPrice} onChange={e => updateActivity(idx, { totalPrice: e.target.value })} />
+                      </div>
+
+                      <div className="field discount-row">
+                        <label>Desconto</label>
+                        <div className="discount-wrap">
+                          <input
+                            type="number" min="0" step="0.01" placeholder="0"
+                            value={act.discountAmount}
+                            onChange={e => {
+                              const discAmt = e.target.value;
+                              const svc = services.find(s => s.id === act.serviceId);
+                              const multiplier = svc?.minPax != null ? act.pax : act.quantity;
+                              updateActivity(idx, { discountAmount: discAmt, totalPrice: recalcPrice(act.createUnitPrice, multiplier, discAmt, act.discountType, "0") });
+                            }}
+                          />
+                          <div className="discount-type-toggle">
+                            <button type="button" className={act.discountType === "%" ? "active" : ""} onClick={() => {
+                              const svc = services.find(s => s.id === act.serviceId);
+                              const multiplier = svc?.minPax != null ? act.pax : act.quantity;
+                              updateActivity(idx, { discountType: "%", totalPrice: recalcPrice(act.createUnitPrice, multiplier, act.discountAmount, "%", "0") });
+                            }}>%</button>
+                            <button type="button" className={act.discountType === "€" ? "active" : ""} onClick={() => {
+                              const svc = services.find(s => s.id === act.serviceId);
+                              const multiplier = svc?.minPax != null ? act.pax : act.quantity;
+                              updateActivity(idx, { discountType: "€", totalPrice: recalcPrice(act.createUnitPrice, multiplier, act.discountAmount, "€", "0") });
+                            }}>€</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {(() => {
+                        const svc = services.find(s => s.id === act.serviceId);
+                        if (svc?.durationMinutes && act.activityDate) {
+                          return (
+                            <div className="field full slot-picker-wrap">
+                              <label>Horário {act.activityTime && <span className="slot-selected-label">— {act.activityTime} selecionado</span>}</label>
+                              {act.slotsLoading ? (
+                                <div className="slot-loading">A carregar horários...</div>
+                              ) : act.slotsClosed ? (
+                                <div className="slot-closed">Encerrado neste dia</div>
+                              ) : (() => {
+                                const slotGroups = [
+                                  { label: "Manhã", slots: act.slots.filter((s: any) => { const [h] = s.time.split(":").map(Number); return h < 12; }) },
+                                  { label: "Tarde", slots: act.slots.filter((s: any) => { const [h] = s.time.split(":").map(Number); return h >= 12 && h < 17; }) },
+                                  { label: "Final", slots: act.slots.filter((s: any) => { const [h] = s.time.split(":").map(Number); return h >= 17; }) },
+                                ].filter(g => g.slots.length > 0);
+                                return (
+                                  <div className="slot-groups">
+                                    {slotGroups.map(group => (
+                                      <div key={group.label} className="slot-grid">
+                                        {group.slots.map((slot: any) => {
+                                          const isSelected = act.activityTime === slot.time;
+                                          let cls = "slot-btn " + (isSelected ? "slot-selected" : slot.blocked ? "slot-blocked" : "slot-free");
+                                          if (slot.past) cls += " slot-past";
+                                          return (
+                                            <button
+                                              key={slot.time} type="button" className={cls}
+                                              disabled={slot.past || (slot.blocked && !canOverride)}
+                                              onClick={() => updateActivity(idx, { activityTime: slot.time })}
+                                            >
+                                              {slot.time}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
-                        })()}
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="field">
-                      <label>Hora</label>
-                      <input type="time" value={formData.activityTime} onChange={e => setFormData({ ...formData, activityTime: e.target.value })} />
+                        }
+                        return null;
+                      })()}
                     </div>
-                  );
-                })()}
+                  </div>
+                ))}
+              </div>
 
-                <div className="field-section-label" style={{ marginTop: 8 }}>Cliente</div>
+              <button type="button" className="btn-add-act" onClick={addActivity}>
+                + Adicionar Outra Atividade
+              </button>
+
+              <div className="form-grid customer-fields">
+                <div className="field-section-label">Informação do Cliente</div>
                 <div className="field">
                   <label>Nome do Cliente *</label>
                   <input value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} required />
@@ -317,49 +432,37 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                   <input value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} />
                 </div>
 
-                <div className="field-section-label" style={{ marginTop: 8 }}>Reserva</div>
-                {!isPartner && partners.length > 0 && (
-                  <div className="field">
-                    <label>Reserva em nome de parceiro (opcional)</label>
-                    <select
-                      className="field-select"
-                      value={formData.forPartnerId}
-                      onChange={e => setFormData({ ...formData, forPartnerId: e.target.value })}
-                    >
-                      <option value="">— Reserva direta (sem parceiro) —</option>
-                      {partners.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div className="field">
+                  <label>Reserva em nome de parceiro (opcional)</label>
+                  <select
+                    className="field-select"
+                    value={formData.forPartnerId}
+                    onChange={e => setFormData({ ...formData, forPartnerId: e.target.value })}
+                  >
+                    <option value="">— Reserva direta (sem parceiro) —</option>
+                    {partners.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
 
                 <div className="field">
-                  <label>Comissão paga ao parceiro (Booking Fee)</label>
-                  <div className="booking-fee-wrap">
-                    <input
-                      type="number" step="0.01" placeholder="0.00"
-                      value={formData.bookingFee}
-                      onChange={e => {
-                        const fee = e.target.value;
-                        const svc = services.find(s => s.id === formData.serviceId);
-                        const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
-                        setFormData({
-                          ...formData,
-                          bookingFee: fee,
-                          totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, fee)
-                        });
-                      }}
-                    />
-                    {(isPartner || formData.forPartnerId) && (
-                      <button type="button" className="btn-quick-fee" onClick={applyQuickCommission} title="Aplicar comissão automática">
-                        <Zap size={14} /> Quick Apply
-                      </button>
-                    )}
-                    <span className="fee-hint">O preço total será ajustado (Preço - Comissão)</span>
+                  <label>Preço Total da Reserva (€)</label>
+                  <div className="total-calc-wrap">
+                    <input type="number" step="0.01" value={formData.totalPrice} onChange={e => setFormData({ ...formData, totalPrice: e.target.value })} />
+                    <button type="button" className="btn-auto-calc" onClick={() => {
+                        const total = formData.activities.reduce((sum: number, a: any) => sum + parseFloat(a.totalPrice || 0), 0);
+                        setFormData({ ...formData, totalPrice: total.toFixed(2) });
+                    }}>Auto-Soma Items</button>
                   </div>
                 </div>
+
+                <div className="field full">
+                  <label>Notas Internas / Observações</label>
+                  <textarea rows={2} value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} />
+                </div>
               </div>
+
               <div className="modal-actions">
                 <button type="button" className="btn-ghost" onClick={() => setShowModal(false)} disabled={submitting}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={submitting}>
@@ -413,252 +516,122 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
             <div className="drawer-body">
               {editError && <div className="form-error"><AlertCircle size={14} />{editError}</div>}
 
-              <div className="drawer-section-label">Atividade</div>
-              <div className="form-grid">
-                <div className="field">
-                  <label>Tipo de atividade</label>
-                  <select className="field-select" value={editForm.activityType} onChange={e => {
-                    const val = e.target.value;
-                    const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === val);
-                    const unitPrice = svc?.price ?? null;
-                    setEditUnitPrice(unitPrice);
-                    const isPaxPriced = svc?.minPax != null;
-                    const multiplier = isPaxPriced ? editForm.pax : editForm.quantity;
-                    const newPrice = recalcPrice(unitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
-                    setEditForm({ ...editForm, activityType: val, totalPrice: newPrice || editForm.totalPrice });
-                  }}>
-                    <option value="">— Livre —</option>
-                    {Object.entries(svcGroups).map(([cat, items]) => (
-                      <optgroup key={cat} label={cat}>
-                        {items.map(svc => (
-                          <option key={svc.id} value={svc.variant ? `${svc.name} — ${svc.variant}` : svc.name}>
-                            {svc.name}{svc.variant ? ` — ${svc.variant}` : ""}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Data</label>
-                  <input type="date" value={editForm.activityDate} onChange={e => {
-                    const d = e.target.value;
-                    setEditForm({ ...editForm, activityDate: d });
-                    const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
-                    const sId = svc?.id || editTarget?.serviceId;
-                    if (sId) fetchSlots(sId, d, editForm.quantity || 1, editTarget?.id);
-                  }} />
-                </div>
-
-                {(() => {
-                  const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
-                  const isJetski = svc?.category === "Jetski" || svc?.name.toLowerCase().includes("jetski");
-                  const isSofa = svc?.name.toLowerCase().includes("sofa");
-                  const isBanana = svc?.name.toLowerCase().includes("banana");
-
-                  if (isJetski) {
-                    const qtyOptions = [1, 2, 3];
-                    const minPax = editForm.quantity || 1;
-                    const maxPax = (editForm.quantity || 1) * 2;
-                    const paxOptions = Array.from({ length: maxPax - minPax + 1 }, (_, i) => minPax + i);
-
-                    return (
-                      <>
-                        <div className="field">
-                          <label>Quantidade (Motos)</label>
-                          <select className="field-select" value={editForm.quantity} onChange={e => {
-                            const qty = parseInt(e.target.value);
-                            const newPrice = recalcPrice(editUnitPrice, qty, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
-                            setEditForm({
-                              ...editForm,
-                              quantity: qty,
-                              pax: Math.max(qty, Math.min(editForm.pax, qty * 2)),
-                              totalPrice: newPrice || editForm.totalPrice
-                            });
-                            const svcId = svc?.id || editTarget?.serviceId;
-                            if (svcId) fetchSlots(svcId, editForm.activityDate, qty, editTarget?.id);
-                          }}>
-                            {qtyOptions.map(q => <option key={q} value={q}>{q}</option>)}
-                          </select>
-                        </div>
-                        <div className="field">
-                          <label>Nº Pessoas</label>
-                          <select className="field-select" value={editForm.pax} onChange={e => {
-                            const p = parseInt(e.target.value);
-                            setEditForm({ ...editForm, pax: p });
-                          }}>
-                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                        </div>
-                      </>
-                    );
-                  }
-
-                  if (isSofa || isBanana) {
-                    const maxPax = isSofa ? 6 : 8;
-                    const paxOptions = Array.from({ length: maxPax - 1 }, (_, i) => 2 + i);
-                    return (
-                      <>
-                        <div className="field">
-                          <label>Quantidade (Sinal único)</label>
-                          <input type="number" value="1" disabled style={{ opacity: 0.6, cursor: "not-allowed" }} />
-                        </div>
-                        <div className="field">
-                          <label>Nº Pessoas</label>
-                          <select className="field-select" value={editForm.pax} onChange={e => {
-                            const p = parseInt(e.target.value);
-                            const newPrice = recalcPrice(editUnitPrice, p, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
-                            setEditForm({ ...editForm, quantity: 1, pax: p, totalPrice: newPrice || editForm.totalPrice });
-                          }}>
-                            {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                        </div>
-                      </>
-                    );
-                  }
-
+              <div className="drawer-section-label">Atividades</div>
+              <div className="activities-list">
+                {editForm.activities?.map((act: any, idx: number) => {
+                  const svc = services.find(s => s.id === act.serviceId);
                   return (
-                    <>
-                      <div className="field">
-                        <label>Quantidade (unidades)</label>
-                        <input type="number" min="1" value={editForm.quantity} onFocus={e => e.target.select()} onChange={e => {
-                          const qty = parseInt(e.target.value) || 1;
-                          const multiplier = svc?.minPax != null ? editForm.pax : qty;
-                          const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
-                          setEditForm({ ...editForm, quantity: qty, totalPrice: newPrice || editForm.totalPrice });
-                          const sId = svc?.id || editTarget?.serviceId;
-                          if (sId) fetchSlots(sId, editForm.activityDate, qty, editTarget?.id);
-                        }} />
+                    <div key={idx} className="activity-card-edit" style={{ border: "1px solid #eee", padding: "12px", borderRadius: "8px", marginBottom: "12px", background: "#fcfcfc" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                        <span style={{ fontWeight: "bold", fontSize: "0.9em" }}>Item #{idx + 1}</span>
+                        {editForm.activities.length > 1 && (
+                          <button className="btn-remove-act" onClick={() => removeEditActivity(idx)}><X size={14} /></button>
+                        )}
                       </div>
-                      <div className="field">
-                        <label>Pax</label>
-                        <input type="number" min="1" value={editForm.pax} onFocus={e => e.target.select()} onChange={e => {
-                          const pax = parseInt(e.target.value) || 1;
-                          const multiplier = svc?.minPax != null ? pax : editForm.quantity;
-                          const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, editForm.discountType, editForm.bookingFee);
-                          setEditForm({ ...editForm, pax, totalPrice: newPrice || editForm.totalPrice });
-                        }} />
+                      
+                      <div className="form-grid">
+                        <div className="field full">
+                          <label>Serviço</label>
+                          <select
+                            className="field-select"
+                            value={act.serviceId}
+                            onChange={e => handleServiceSelectForEditActivity(idx, e.target.value)}
+                          >
+                            <option value="">— Selecione Serviço —</option>
+                            {Object.entries(svcGroups).map(([group, svcs]) => (
+                              <optgroup key={group} label={group}>
+                                {svcs.map(s => (
+                                  <option key={s.id} value={s.id}>
+                                    {s.variant ? `${s.name} — ${s.variant}` : s.name}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="field">
+                          <label>Data</label>
+                          <input
+                            type="date"
+                            value={act.activityDate}
+                            onChange={e => {
+                              const newDate = e.target.value;
+                              updateEditActivity(idx, { activityDate: newDate });
+                              if (svc?.durationMinutes) fetchEditSlotsForActivity(idx, act.serviceId, newDate, act.quantity, editTarget?.id);
+                            }}
+                          />
+                        </div>
+
+                        <div className="field">
+                          {svc?.minPax != null ? (
+                            <>
+                              <label>Pax</label>
+                              <div className="pax-control">
+                                <button type="button" onClick={() => {
+                                  const val = Math.max(1, act.pax - 1);
+                                  updateEditActivity(idx, { pax: val, totalPrice: (act.createUnitPrice || 0) * val });
+                                }}>-</button>
+                                <span>{act.pax}</span>
+                                <button type="button" onClick={() => {
+                                  const val = act.pax + 1;
+                                  updateEditActivity(idx, { pax: val, totalPrice: (act.createUnitPrice || 0) * val });
+                                }}>+</button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <label>Quantidade</label>
+                              <input
+                                type="number" min="1"
+                                value={act.quantity}
+                                onChange={e => {
+                                  const val = parseInt(e.target.value) || 1;
+                                  updateEditActivity(idx, { quantity: val, totalPrice: (act.createUnitPrice || 0) * val });
+                                  if (svc?.durationMinutes) fetchEditSlotsForActivity(idx, act.serviceId, act.activityDate, val, editTarget?.id);
+                                }}
+                              />
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </>
-                  );
-                })()}
 
-                <div className="field price-display-row">
-                  <label>Preço real (€)</label>
-                  <div className="price-display-wrap">
-                    <input type="number" step="0.01" value={editForm.totalPrice} onChange={e => setEditForm({ ...editForm, totalPrice: e.target.value })} />
-                    {editUnitPrice != null && (
-                      <span className="price-base-hint">{editUnitPrice}€ unid.</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="field discount-row">
-                  <label>Desconto</label>
-                  <div className="discount-wrap">
-                    <input
-                      type="number" min="0" step="0.01" placeholder="0"
-                      value={editForm.discountAmount || ""}
-                      onChange={e => {
-                        const discAmt = e.target.value;
-                        const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
-                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
-                        const newPrice = recalcPrice(editUnitPrice, multiplier, discAmt, editForm.discountType, editForm.bookingFee);
-                        setEditForm({ ...editForm, discountAmount: discAmt, totalPrice: newPrice || editForm.totalPrice });
-                      }}
-                    />
-                    <div className="discount-type-toggle">
-                      <button type="button" className={(editForm.discountType || "%") === "%" ? "active" : ""} onClick={() => {
-                        const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
-                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
-                        const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, "%", editForm.bookingFee);
-                        setEditForm({ ...editForm, discountType: "%", totalPrice: newPrice || editForm.totalPrice });
-                      }}>%</button>
-                      <button type="button" className={editForm.discountType === "€" ? "active" : ""} onClick={() => {
-                        const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
-                        const multiplier = svc?.minPax != null ? editForm.pax : editForm.quantity;
-                        const newPrice = recalcPrice(editUnitPrice, multiplier, editForm.discountAmount, "€", editForm.bookingFee);
-                        setEditForm({ ...editForm, discountType: "€", totalPrice: newPrice || editForm.totalPrice });
-                      }}>€</button>
-                    </div>
-                  </div>
-                </div>
-
-                {(() => {
-                  const svc = services.find(s => (s.variant ? `${s.name} — ${s.variant}` : s.name) === editForm.activityType);
-                  if (svc?.durationMinutes && editForm.activityDate) {
-                    return (
-                      <div className="field full slot-picker-wrap">
-                        <label>Hora {editForm.activityTime && <span className="slot-selected-label">— {editForm.activityTime} selecionada</span>}</label>
-                        {slotsLoading ? (
-                          <div className="slot-loading">A carregar horários...</div>
-                        ) : slotsClosed ? (
-                          <div className="slot-closed">Encerrado neste dia</div>
-                        ) : (() => {
-                          const slotGroups = [
-                            { label: "Manhã", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h < 12; }) },
-                            { label: "Tarde", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 12 && h < 17; }) },
-                            { label: "Final do dia", slots: slots.filter(s => { const [h] = s.time.split(":").map(Number); return h >= 17; }) },
-                          ].filter(g => g.slots.length > 0);
-                          return (
-                            <div className="slot-groups">
-                              {slotGroups.map(group => (
-                                <div key={group.label} className="slot-group">
-                                  <div className="slot-group-label">{group.label}</div>
-                                  <div className="slot-grid">
-                                    {group.slots.map(slot => {
-                                      const isPast = !!slot.past;
-                                      const isBlocked = slot.blocked;
-                                      const isSelected = editForm.activityTime === slot.time;
-                                      let cls = "slot-btn";
-                                      if (isSelected) cls += " slot-selected";
-                                      else if (isPast) cls += " slot-past";
-                                      else if (isBlocked) cls += canOverride && !isPartner ? " slot-override" : " slot-blocked";
-                                      else cls += " slot-free";
-                                      return (
-                                        <button
-                                          key={slot.time}
-                                          type="button"
-                                          className={cls}
-                                          disabled={isPast || (isBlocked && (!canOverride || isPartner))}
-                                          onClick={() => {
-                                            if (isPast || (isBlocked && (!canOverride || isPartner))) return;
-                                            setEditForm({ ...editForm, activityTime: slot.time });
-                                          }}
-                                          title={isPast ? "Horário já passou" : isBlocked ? `Lotado (${slot.available}/${slot.capacity} livres)` : `${slot.available}/${slot.capacity} livres`}
-                                        >
-                                          {slot.time}
-                                          {isBlocked && !isPartner && canOverride && !isPast && <span className="slot-override-tag">Override</span>}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              ))}
+                      {svc?.durationMinutes && (
+                        <div className="field full" style={{ marginTop: "12px" }}>
+                          <label>Horários Disponíveis</label>
+                          {act.slotsLoading ? (
+                            <div className="slots-loading"><div className="loader-sm" /></div>
+                          ) : act.slotsClosed ? (
+                            <div className="slots-closed">Sem horários disponíveis para este dia.</div>
+                          ) : (
+                            <div className="slots-grid-sm">
+                              {act.slots?.map((slot: any) => {
+                                const isSelected = act.activityTime === slot.time;
+                                return (
+                                  <button
+                                    key={slot.time}
+                                    type="button"
+                                    className={`slot-btn ${isSelected ? "slot-selected" : slot.blocked ? "slot-blocked" : "slot-free"}`}
+                                    disabled={slot.past || (slot.blocked && (!canOverride || isPartner))}
+                                    onClick={() => updateEditActivity(idx, { activityTime: slot.time })}
+                                  >
+                                    {slot.time}
+                                  </button>
+                                );
+                              })}
                             </div>
-                          );
-                        })()}
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="field">
-                      <label>Hora</label>
-                      <input type="time" value={editForm.activityTime} onChange={e => setEditForm({ ...editForm, activityTime: e.target.value })} />
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
-                })()}
-                <div className="field">
-                  <label>Estado</label>
-                  <select className="field-select" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
-                    <option value="CONFIRMED">Confirmada</option>
-                    <option value="PENDING">Pendente</option>
-                    <option value="CANCELLED">Cancelada</option>
-                  </select>
-                </div>
+                })}
+                <button type="button" className="btn-add-activity" onClick={addEditActivity} style={{ width: "100%", marginTop: "8px" }}>
+                  <Plus size={14} /> Adicionar Outra Atividade
+                </button>
               </div>
 
-              <div className="drawer-section-label" style={{ marginTop: 16 }}>Cliente</div>
+              <div className="drawer-section-label" style={{ marginTop: 24 }}>Cliente</div>
               <div className="form-grid">
                 <div className="field">
                   <label>Nome</label>
@@ -670,7 +643,7 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                 </div>
                 <div className="field">
                   <CountrySelector
-                    label="País / Indicativo"
+                    label="País"
                     value={editForm.countryCode}
                     onChange={val => setEditForm({ ...editForm, countryCode: val })}
                   />
@@ -679,10 +652,19 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                   <label>Telefone</label>
                   <input value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: e.target.value })} />
                 </div>
-                <div className="field full">
-                  <label>Notas</label>
-                  <textarea rows={2} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
+                <div className="field">
+                  <label>Estado</label>
+                  <select className="field-select" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
+                    <option value="CONFIRMED">Confirmada</option>
+                    <option value="PENDING">Pendente</option>
+                    <option value="CANCELLED">Cancelada</option>
+                  </select>
                 </div>
+              </div>
+
+              <div className="field full" style={{ marginTop: "12px" }}>
+                 <label>Notas Internas</label>
+                 <textarea rows={2} value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} />
               </div>
 
               <div className="drawer-section-label" style={{ marginTop: 16 }}>Reserva</div>
@@ -791,7 +773,12 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
               <div className="attendance-meta">
                 <span>{attendanceTarget.pax} pax</span>
                 <span className="attendance-dot">·</span>
-                <span>{attendanceTarget.activityType || "—"}</span>
+                <span>
+                  {attendanceTarget.activities && attendanceTarget.activities.length > 0 
+                    ? attendanceTarget.activities.map((a: any) => a.activityType).join(" + ")
+                    : (attendanceTarget.activityType || "—")
+                  }
+                </span>
                 <span className="attendance-dot">·</span>
                 <span className={`src-badge src-${attendanceTarget.source.toLowerCase()}`}>{attendanceTarget.source}</span>
               </div>

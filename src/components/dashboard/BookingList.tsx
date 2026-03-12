@@ -89,13 +89,23 @@ export const BookingList: React.FC<BookingListProps> = ({
                   <div className="cell-sub">{b.customerEmail || "—"}</div>
                 </td>
                 <td>
-                  <div style={{ display: "flex", justifyContent: "center" }}>
-                    <span className="qty-badge">{b.quantity || 1}</span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                    {b.activities && b.activities.length > 0 ? (
+                      b.activities.map(a => <span key={a.id} className="qty-badge">{a.quantity || 1}</span>)
+                    ) : (
+                      <span className="qty-badge">{b.quantity || 1}</span>
+                    )}
                   </div>
                 </td>
                 <td>
                   <div className="cell-name cell-activity-row">
-                    <span>{b.activityType || b.notes || "—"}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      {b.activities && b.activities.length > 0 ? (
+                        b.activities.map(a => <span key={a.id}>{a.activityType || "—"}</span>)
+                      ) : (
+                        <span>{b.activityType || b.notes || "—"}</span>
+                      )}
+                    </div>
                     {b.isEdited && (
                       <span className="activity-badges">
                         <span className="badge-edited">Editada</span>
@@ -111,10 +121,31 @@ export const BookingList: React.FC<BookingListProps> = ({
                   </div>
                 </td>
                 <td>
-                  <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
-                  <div className="cell-sub">{b.activityTime || "—"}</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    {b.activities && b.activities.length > 0 ? (
+                      b.activities.map(a => (
+                        <div key={a.id}>
+                          <div className="cell-name">{new Date(a.activityDate).toLocaleDateString("pt-PT")}</div>
+                          <div className="cell-sub">{a.activityTime || "—"}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="cell-name">{new Date(b.activityDate).toLocaleDateString("pt-PT")}</div>
+                        <div className="cell-sub">{b.activityTime || "—"}</div>
+                      </>
+                    )}
+                  </div>
                 </td>
-                <td><span className="pax-pill">{b.pax} pax</span></td>
+                <td>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {b.activities && b.activities.length > 0 ? (
+                      b.activities.map(a => <span key={a.id} className="pax-pill">{a.pax} pax</span>)
+                    ) : (
+                      <span className="pax-pill">{b.pax} pax</span>
+                    )}
+                  </div>
+                </td>
                 <td>
                   <SourceBadge 
                     source={b.source} 
@@ -126,7 +157,20 @@ export const BookingList: React.FC<BookingListProps> = ({
                 </td>
                 <td><StatusBadge status={b.status} /></td>
                 <td className={`price-cell${isNoShow(b) ? " price-noshow" : ""}`}>
-                  {isNoShow(b) ? "0.00€" : b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}
+                  {isNoShow(b) ? (
+                    "0.00€"
+                  ) : b.activities && b.activities.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      {b.activities.map(a => <div key={a.id}>{a.totalPrice != null ? `${a.totalPrice.toFixed(2)}€` : "—"}</div>)}
+                      {b.activities.length > 1 && (
+                        <div style={{ borderTop: "1px solid #eee", marginTop: "2px", fontWeight: "bold" }}>
+                          {b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    b.totalPrice != null ? `${b.totalPrice.toFixed(2)}€` : "—"
+                  )}
                 </td>
                 <td>
                   {b.status !== "CANCELLED" && !isPartner ? (
@@ -212,20 +256,37 @@ export const BookingList: React.FC<BookingListProps> = ({
             <div className="card-info-item">
               <span className="info-label">Atividade:</span>
               <div className="info-val">
-                {b.activityType || b.notes || "—"}
-                {b.isEdited && <span className="badge-edited" style={{ marginLeft: 6 }}>Editada</span>}
+                {b.activities && b.activities.length > 0 ? (
+                   <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
+                     {b.activities.map(a => (
+                       <div key={a.id} style={{ padding: "4px", background: "rgba(0,0,0,0.02)", borderRadius: "4px" }}>
+                         <div><b>{a.activityType || "—"}</b></div>
+                         <div style={{ fontSize: "0.85em", color: "#666" }}>
+                           {new Date(a.activityDate).toLocaleDateString("pt-PT")} {a.activityTime || ""} | {a.pax} pax ({a.quantity || 1}x)
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                ) : (
+                  <>
+                    {b.activityType || b.notes || "—"}
+                    {b.isEdited && <span className="badge-edited" style={{ marginLeft: 6 }}>Editada</span>}
+                  </>
+                )}
               </div>
             </div>
-            <div className="card-grid-lite">
-              <div className="card-info-item">
-                <span className="info-label">Data/Hora:</span>
-                <span className="info-val">{new Date(b.activityDate).toLocaleDateString("pt-PT")} {b.activityTime || ""}</span>
+            {!b.activities || b.activities.length === 0 ? (
+              <div className="card-grid-lite">
+                <div className="card-info-item">
+                  <span className="info-label">Data/Hora:</span>
+                  <span className="info-val">{new Date(b.activityDate).toLocaleDateString("pt-PT")} {b.activityTime || ""}</span>
+                </div>
+                <div className="card-info-item">
+                  <span className="info-label">Pax:</span>
+                  <span className="info-val">{b.pax} pax ({b.quantity || 1}x)</span>
+                </div>
               </div>
-              <div className="card-info-item">
-                <span className="info-label">Pax:</span>
-                <span className="info-val">{b.pax} pax ({b.quantity || 1}x)</span>
-              </div>
-            </div>
+            ) : null}
           </div>
           <div className="card-footer">
             <div className="card-badges">

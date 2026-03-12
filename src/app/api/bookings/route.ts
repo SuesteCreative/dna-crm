@@ -35,12 +35,14 @@ export async function GET(req: Request) {
                     { customerEmail: { contains: search } },
                     { activityType: { contains: search } },
                     { notes: { contains: search } },
+                    { activities: { some: { activityType: { contains: search } } } },
                 ]
             };
         }
 
         const bookings = await prisma.booking.findMany({
             where,
+            include: { activities: true },
             orderBy: { activityDate: "desc" },
             take: 2000,
         });

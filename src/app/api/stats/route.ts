@@ -100,7 +100,10 @@ export async function GET(req: NextRequest) {
     }
 
     const [bookings, partners, services] = await Promise.all([
-        prisma.booking.findMany({ where: dateFilter }) as unknown as Promise<BookingRow[]>,
+        prisma.booking.findMany({ 
+            where: dateFilter,
+            include: { activities: true }
+        }) as unknown as Promise<(BookingRow & { activities: any[] })[]>,
         prisma.partner.findMany({ select: { id: true, name: true, commission: true } }),
         prisma.service.findMany({ select: { id: true, name: true, variant: true } }),
     ]);
@@ -133,11 +136,19 @@ export async function GET(req: NextRequest) {
     // Revenue by month
     const monthMap: Record<string, { revenue: number; count: number }> = {};
     for (const b of bookings) {
-        const d   = new Date(b.activityDate);
+        const d = new Date(b.activityDate);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         if (!monthMap[key]) monthMap[key] = { revenue: 0, count: 0 };
-        monthMap[key].revenue += b.totalPrice ?? 0;
-        monthMap[key].count++;
+        
+        if (b.activities && b.activities.length > 0) {
+            b.activities.forEach(act => {
+                monthMap[key].revenue += act.totalPrice ?? 0;
+                monthMap[key].count++;
+            });
+        } else {
+            monthMap[key].revenue += b.totalPrice ?? 0;
+            monthMap[key].count++;
+        }
     }
     const revenueByMonth = Object.entries(monthMap)
         .sort(([a], [b]) => a.localeCompare(b))
@@ -151,8 +162,16 @@ export async function GET(req: NextRequest) {
     for (const b of bookings) {
         const ch = b.source || "MANUAL";
         if (!channelMap[ch]) channelMap[ch] = { revenue: 0, count: 0 };
-        channelMap[ch].revenue += b.totalPrice ?? 0;
-        channelMap[ch].count++;
+        
+        if (b.activities && b.activities.length > 0) {
+            b.activities.forEach(act => {
+                channelMap[ch].revenue += act.totalPrice ?? 0;
+                channelMap[ch].count++;
+            });
+        } else {
+            channelMap[ch].revenue += b.totalPrice ?? 0;
+            channelMap[ch].count++;
+        }
     }
     const revenueByChannel = Object.entries(channelMap)
         .map(([channel, val]) => ({ channel, ...val }))
@@ -161,11 +180,19 @@ export async function GET(req: NextRequest) {
     // Top services — group by activityType (Shopify product name) with serviceId as fallback
     const svcMap: Record<string, { name: string; count: number; revenue: number }> = {};
     for (const b of bookings) {
-        const key  = b.activityType || (b.serviceId ? serviceMap[b.serviceId] : null) || "Sem serviço";
-        const name = b.activityType || (b.serviceId ? serviceMap[b.serviceId] : null) || "Sem serviço";
-        if (!svcMap[key]) svcMap[key] = { name, count: 0, revenue: 0 };
-        svcMap[key].count++;
-        svcMap[key].revenue += b.totalPrice ?? 0;
+        if (b.activities && b.activities.length > 0) {
+            b.activities.forEach(act => {
+                const name = act.activityType || (act.serviceId ? serviceMap[act.serviceId] : null) || "Sem serviço";
+                if (!svcMap[name]) svcMap[name] = { name, count: 0, revenue: 0 };
+                svcMap[name].count++;
+                svcMap[name].revenue += act.totalPrice ?? 0;
+            });
+        } else {
+            const name = b.activityType || (b.serviceId ? serviceMap[b.serviceId] : null) || "Sem serviço";
+            if (!svcMap[name]) svcMap[name] = { name, count: 0, revenue: 0 };
+            svcMap[name].count++;
+            svcMap[name].revenue += b.totalPrice ?? 0;
+        }
     }
     const topServices = Object.values(svcMap)
         .sort((a, b) => b.revenue - a.revenue)
@@ -230,9 +257,18 @@ export async function GET(req: NextRequest) {
     const countryMap: Record<string, { count: number; revenue: number }> = {};
     for (const b of bookings) {
         if (!b.country) continue;
-        if (!countryMap[b.country]) countryMap[b.country] = { count: 0, revenue: 0 };
-        countryMap[b.country].count++;
-        countryMap[b.country].revenue += b.totalPrice ?? 0;
+        const c = b.country;
+        if (!countryMap[c]) countryMap[c] = { count: 0, revenue: 0 };
+        
+        if (b.activities && b.activities.length > 0) {
+            b.activities.forEach(act => {
+                countryMap[c].count++;
+                countryMap[c].revenue += act.totalPrice ?? 0;
+            });
+        } else {
+            countryMap[c].count++;
+            countryMap[c].revenue += b.totalPrice ?? 0;
+        }
     }
     const topCountries = Object.entries(countryMap)
         .map(([country, val]) => ({ name: country, ...val }))
@@ -266,12 +302,17 @@ export async function GET(req: NextRequest) {
             commissionPct: pInfo?.commission ?? 0, commissionEarned: 0,
         };
         partnerBMap[id].count++;
-        partnerBMap[id].revenue += b.totalPrice ?? 0;
+        
+        const bookingRevenue = b.activities && b.activities.length > 0 
+            ? b.activities.reduce((sum, act) => sum + (act.totalPrice || 0), 0)
+            : (b.totalPrice ?? 0);
+            
+        partnerBMap[id].revenue += bookingRevenue;
         if (b.showedUp === false) {
             partnerBMap[id].noShowCount++;
-            partnerBMap[id].noShowRevenue += b.totalPrice ?? 0;
+            partnerBMap[id].noShowRevenue += bookingRevenue;
         } else {
-            partnerBMap[id].revenueEligible += b.totalPrice ?? 0;
+            partnerBMap[id].revenueEligible += bookingRevenue;
         }
     }
     for (const entry of Object.values(partnerBMap)) {

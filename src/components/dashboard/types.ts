@@ -26,6 +26,19 @@ export interface Booking {
   partnerId?: string | null;
   country?: string | null;
   bookingFee?: number | null;
+  activities?: BookingActivity[];
+}
+
+export interface BookingActivity {
+  id: string;
+  bookingId: string;
+  serviceId?: string | null;
+  activityType?: string | null;
+  activityDate: string;
+  activityTime: string | null;
+  pax: number;
+  quantity?: number | null;
+  totalPrice?: number | null;
 }
 
 export interface Service {

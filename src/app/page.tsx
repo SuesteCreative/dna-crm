@@ -20,11 +20,18 @@ import { DashboardSearch } from "@/components/dashboard/DashboardSearch";
 import { BookingList } from "@/components/dashboard/BookingList";
 import { BookingModals } from "@/components/dashboard/BookingModals";
 
+const defaultActivity = {
+  serviceId: "", activityDate: "", activityTime: "", pax: 1, quantity: 1,
+  activityType: "", discountAmount: "", discountType: "%",
+  createUnitPrice: null as number | null,
+  slots: [] as SlotInfo[], slotsLoading: false, slotsClosed: false,
+  totalPrice: 0
+};
+
 const defaultForm = {
   customerName: "", customerEmail: "", customerPhone: "", countryCode: "+351",
-  activityDate: "", activityTime: "", pax: 1, quantity: 1, totalPrice: "",
-  serviceId: "", activityType: "", discountAmount: "", discountType: "%",
-  forPartnerId: "", bookingFee: "",
+  totalPrice: "", notes: "", forPartnerId: "", bookingFee: "",
+  activities: [{ ...defaultActivity }],
 };
 
 export default function Dashboard() {
@@ -160,6 +167,43 @@ export default function Dashboard() {
     finally { setSlotsLoading(false); }
   };
 
+  const fetchSlotsForActivity = async (index: number, serviceId: string, date: string, quantity: number, excludeBookingId?: string) => {
+    if (!serviceId || !date) return;
+    const svc = services.find(s => s.id === serviceId);
+    if (!svc?.durationMinutes) return;
+
+    setFormData(prev => {
+      const acts = [...prev.activities];
+      if (acts[index]) acts[index] = { ...acts[index], slotsLoading: true };
+      return { ...prev, activities: acts };
+    });
+
+    try {
+      const res = await fetch(`/api/slots?serviceId=${serviceId}&date=${date}&quantity=${quantity}${excludeBookingId ? `&excludeBookingId=${excludeBookingId}` : ""}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFormData(prev => {
+          const acts = [...prev.activities];
+          if (acts[index]) {
+            acts[index] = {
+              ...acts[index],
+              slotsLoading: false,
+              slotsClosed: data.closed ?? false,
+              slots: data.slots || []
+            };
+          }
+          return { ...prev, activities: acts };
+        });
+      }
+    } catch {
+      setFormData(prev => {
+        const acts = [...prev.activities];
+        if (acts[index]) acts[index] = { ...acts[index], slotsLoading: false };
+        return { ...prev, activities: acts };
+      });
+    }
+  };
+
   const handleSync = async () => {
     setSyncing(true); setSyncMsg(null);
     try {
@@ -260,19 +304,28 @@ export default function Dashboard() {
     const pId = isPartner ? partnerId : formData.forPartnerId;
     const partner = partners.find(p => p.id === pId);
     if (!partner) return;
-    const svc = services.find(s => s.id === formData.serviceId);
-    const multiplier = svc?.minPax != null ? formData.pax : formData.quantity;
-    const base = (createUnitPrice || 0) * multiplier;
-    const d = parseFloat(formData.discountAmount) || 0;
-    let discounted = base;
-    if (d > 0) {
-      discounted = formData.discountType === "%" ? base * (1 - d / 100) : base - d;
-    }
-    const calculatedFee = (discounted * (partner.commission / 100)).toFixed(2);
+
+    let totalCalculatedFee = 0;
+    formData.activities.forEach((act: any) => {
+      const svc = services.find(s => s.id === act.serviceId);
+      const multiplier = svc?.minPax != null ? act.pax : act.quantity;
+      const unitPrice = act.createUnitPrice || 0;
+      const base = unitPrice * multiplier;
+      const d = parseFloat(act.discountAmount) || 0;
+      let discounted = base;
+      if (d > 0) {
+        discounted = act.discountType === "%" ? base * (1 - d / 100) : base - d;
+      }
+      totalCalculatedFee += discounted * (partner.commission / 100);
+    });
+
+    const feeStr = totalCalculatedFee.toFixed(2);
     setFormData({
       ...formData,
-      bookingFee: calculatedFee,
-      totalPrice: recalcPrice(createUnitPrice, multiplier, formData.discountAmount, formData.discountType, calculatedFee)
+      bookingFee: feeStr,
+      // We don't automatically adjust totalPrice here because recolcPrice 
+      // for the whole booking would need to know which unit price it was based on.
+      // The user can use "Auto-Soma Items" in the UI.
     });
   };
 
@@ -296,69 +349,69 @@ export default function Dashboard() {
     });
   };
 
-  const handleServiceSelect = (serviceId: string) => {
+  const handleServiceSelectForActivity = (index: number, serviceId: string) => {
     const svc = services.find(s => s.id === serviceId);
-    if (!svc) {
-      setCreateUnitPrice(null);
-      setSlots([]);
-      setFormData({ ...formData, serviceId: "", activityType: "", totalPrice: "", activityTime: "" });
-      return;
-    }
-    const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
-    const unitPrice = svc.price ?? null;
-    setCreateUnitPrice(unitPrice);
-    const isPaxPriced = svc.minPax != null;
-    const initPax = svc.minPax ?? formData.pax;
-    const initQty = isPaxPriced ? 1 : formData.quantity;
-    const multiplier = isPaxPriced ? initPax : initQty;
-    const newForm = {
-      ...formData,
-      serviceId: svc.id,
-      activityType: label,
-      activityTime: svc.durationMinutes ? "" : formData.activityTime,
-      pax: initPax,
-      quantity: initQty,
-      totalPrice: recalcPrice(unitPrice, multiplier, formData.discountAmount, formData.discountType, formData.bookingFee),
-    };
-    setFormData(newForm);
-    if (svc.durationMinutes && formData.activityDate) {
-      fetchSlots(svc.id, formData.activityDate, initQty);
-    } else {
-      setSlots([]);
-    }
+    setFormData(prev => {
+      const acts = [...prev.activities];
+      const current = acts[index];
+      if (!svc) {
+        acts[index] = { ...current, serviceId: "", activityType: "", totalPrice: 0, activityTime: "", slots: [] };
+      } else {
+        const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
+        const unitPrice = svc.price ?? null;
+        const isPaxPriced = svc.minPax != null;
+        const initPax = svc.minPax ?? current.pax;
+        const initQty = isPaxPriced ? 1 : current.quantity;
+        const multiplier = isPaxPriced ? initPax : initQty;
+        
+        acts[index] = {
+          ...current,
+          serviceId: svc.id,
+          activityType: label,
+          activityTime: svc.durationMinutes ? "" : current.activityTime,
+          pax: initPax,
+          quantity: initQty,
+          createUnitPrice: unitPrice,
+          totalPrice: recalcPrice(unitPrice, multiplier, current.discountAmount, current.discountType, "0") as any, // initial price for this act
+        };
+        if (svc.durationMinutes && current.activityDate) {
+          fetchSlotsForActivity(index, svc.id, current.activityDate, initQty);
+        }
+      }
+      return { ...prev, activities: acts };
+    });
   };
 
   const submitCreate = async (override = false, reason = "") => {
     if (submitting) return;
-    if (!formData.activityTime) {
-      setFormError("Por favor, selecione um horário.");
+    if (formData.activities.some(a => services.find(s => s.id === a.serviceId)?.durationMinutes && !a.activityTime)) {
+      setFormError("Por favor, selecione horários para todas as atividades.");
       return;
     }
     setSubmitting(true); setFormError(null);
     try {
-      const { discountAmount, discountType, ...payload } = formData;
-      const body: Record<string, any> = { ...payload };
-      if (!payload.forPartnerId) delete body.forPartnerId;
+      const payload: Record<string, any> = { ...formData };
+      if (!payload.forPartnerId) delete payload.forPartnerId;
       if (override) {
-        body.override = true;
-        body.overrideReason = reason;
-        body.userName = user?.fullName || "Staff";
+        payload.override = true;
+        payload.overrideReason = reason;
+        payload.userName = user?.fullName || "Staff";
       }
       const res = await fetch("/api/bookings/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
-        setShowModal(false); setFormData(defaultForm); setSlots([]); setOverrideModal(null); setOverrideReason("");
+        setShowModal(false); setFormData(defaultForm); setOverrideModal(null); setOverrideReason("");
         fetchBookings();
       } else {
         const d = await res.json();
         if (d.error === "SLOT_FULL" && d.canOverride) {
           setOverrideType("create");
-          setOverrideModal({ time: formData.activityTime, available: d.available, capacity: d.capacity });
+          setOverrideModal({ time: d.activity || "Slot", available: d.available, capacity: d.capacity });
         } else if (d.error === "SLOT_FULL") {
-          setFormError(`Slot sem disponibilidade (${d.available}/${d.capacity} livres)`);
+          setFormError(`O slot de ${d.activity} está sem disponibilidade (${d.available}/${d.capacity} livres)`);
         } else { setFormError(d.error || "Erro ao criar reserva"); }
       }
     } catch { setFormError("Erro de ligação"); }
@@ -386,6 +439,42 @@ export default function Dashboard() {
     setEditUnitPrice(unitPrice);
     const d = new Date(b.activityDate);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const activities = b.activities && b.activities.length > 0 
+      ? b.activities.map(a => {
+          const svc = a.serviceId ? services.find(s => s.id === a.serviceId) : null;
+          return {
+            id: a.id,
+            serviceId: a.serviceId || "",
+            activityDate: a.activityDate.split("T")[0],
+            activityTime: a.activityTime || "",
+            pax: a.pax,
+            quantity: a.quantity || 1,
+            activityType: a.activityType || "",
+            totalPrice: a.totalPrice || 0,
+            createUnitPrice: svc?.price ?? null, // for quick commission/recalc
+            discountAmount: "",
+            discountType: "%",
+            slots: [] as SlotInfo[],
+            slotsLoading: false,
+            slotsClosed: false
+          };
+        })
+      : [{
+          serviceId: b.serviceId || "",
+          activityDate: dateStr,
+          activityTime: b.activityTime || "",
+          pax: b.pax,
+          quantity: b.quantity || 1,
+          activityType: b.activityType || "",
+          totalPrice: b.totalPrice || 0,
+          createUnitPrice: unitPrice,
+          discountAmount: "",
+          discountType: "%",
+          slots: [] as SlotInfo[],
+          slotsLoading: false,
+          slotsClosed: false
+        }];
+
     setEditForm({
       customerName: b.customerName,
       customerEmail: b.customerEmail || "",
@@ -403,14 +492,13 @@ export default function Dashboard() {
       forPartnerId: b.partnerId || "",
       discountAmount: "",
       discountType: "%",
+      activities
     });
 
-    const targetSvcId = svcById?.id || services.find(s => {
-      const labelSafe = s.variant ? `${s.name} — ${s.variant}` : s.name;
-      const labelLegacy = s.variant ? `${s.name} - ${s.variant}` : s.name;
-      return labelSafe === b.activityType || labelLegacy === b.activityType;
-    })?.id;
-    if (targetSvcId) fetchSlots(targetSvcId, dateStr, b.quantity ?? 1, b.id);
+    if (activities.length === 1) {
+      const targetSvcId = activities[0].serviceId;
+      if (targetSvcId) fetchSlots(targetSvcId, activities[0].activityDate, activities[0].quantity, b.id);
+    }
   };
 
   const handleEditSave = async (override = false, reason = "") => {
@@ -522,9 +610,7 @@ export default function Dashboard() {
         handleGcalSync={handleGcalSync}
         gcalSyncing={gcalSyncing}
         setShowModal={setShowModal}
-        setSlots={setSlots}
         setFormData={setFormData}
-        setCreateUnitPrice={setCreateUnitPrice}
         defaultForm={defaultForm}
         syncMsg={syncMsg}
       />
@@ -592,16 +678,15 @@ export default function Dashboard() {
         handleCreate={handleCreate}
         submitting={submitting}
         svcGroups={svcGroups}
-        handleServiceSelect={handleServiceSelect}
-        slots={slots}
-        slotsLoading={slotsLoading}
-        slotsClosed={slotsClosed}
+        handleServiceSelectForActivity={handleServiceSelectForActivity}
+        fetchSlotsForActivity={fetchSlotsForActivity}
         canOverride={canOverride}
         isPartner={isPartner}
         todayStr={todayStr}
-        createUnitPrice={createUnitPrice}
         applyQuickCommission={applyQuickCommission}
         partners={partners}
+        services={services}
+        
         editTarget={editTarget}
         setEditTarget={setEditTarget}
         editForm={editForm}
@@ -614,11 +699,15 @@ export default function Dashboard() {
         setEditUnitPrice={setEditUnitPrice}
         applyEditQuickCommission={applyEditQuickCommission}
         fetchSlots={fetchSlots}
-        services={services}
+        slots={slots}
+        slotsLoading={slotsLoading}
+        slotsClosed={slotsClosed}
+
         attendanceTarget={attendanceTarget}
         setAttendanceTarget={setAttendanceTarget}
         attendanceSaving={attendanceSaving}
         handleAttendance={handleAttendance}
+
         overrideModal={overrideModal}
         setOverrideModal={setOverrideModal}
         overrideType={overrideType}

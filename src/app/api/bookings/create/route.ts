@@ -31,104 +31,93 @@ export async function POST(req: Request) {
             customerName,
             customerEmail,
             customerPhone,
-            activityDate,
-            activityTime,
-            pax,
             totalPrice,
-            serviceId,
-            activityType,
-            quantity,
+            notes,
             override,
             overrideReason,
             userName,
             forPartnerId,
             countryCode,
             bookingFee,
+            activities: activitiesData,
         } = data;
+
+        // Backward compatibility: if activities array is missing, use root fields
+        let activities = activitiesData || [];
+        if (activities.length === 0 && data.activityDate) {
+            activities = [{
+                serviceId: data.serviceId,
+                activityDate: data.activityDate,
+                activityTime: data.activityTime,
+                pax: data.pax,
+                quantity: data.quantity,
+                totalPrice: data.totalPrice,
+                activityType: data.activityType,
+            }];
+        }
+
+        if (activities.length === 0) {
+            return NextResponse.json({ error: "No activities provided" }, { status: 400 });
+        }
 
         // Admins can pass forPartnerId to book on behalf of a partner
         const adminPartnerId = !isPartner && forPartnerId ? forPartnerId : null;
 
-        // Capacity check if service + time are provided
-        if (serviceId && activityTime && activityDate) {
-            const service = await prisma.service.findUnique({ where: { id: serviceId } });
+        // CAPACITY CHECK LOOP
+        for (const act of activities) {
+            const { serviceId, activityTime, activityDate, quantity, pax } = act;
+            if (serviceId && activityTime && activityDate) {
+                const service = await prisma.service.findUnique({ where: { id: serviceId } });
 
-            if (service?.durationMinutes) {
-                // Find all services in the same capacity group (or just this service)
-                let serviceIds: string[] = [serviceId];
-                if (service.capacityGroup) {
-                    const groupServices = await prisma.service.findMany({
-                        where: { capacityGroup: service.capacityGroup },
-                        select: { id: true },
-                    });
-                    serviceIds = groupServices.map(s => s.id);
-                }
-
-                const dateObj = new Date(activityDate);
-                const startOfDay = new Date(dateObj.toISOString().split("T")[0] + "T00:00:00.000Z");
-                const endOfDay = new Date(dateObj.toISOString().split("T")[0] + "T23:59:59.999Z");
-
-                const existingBookings = await prisma.booking.findMany({
-                    where: {
-                        serviceId: { in: serviceIds },
-                        activityDate: { gte: startOfDay, lte: endOfDay },
-                        status: { not: "CANCELLED" },
-                    },
-                    select: { activityTime: true, quantity: true, serviceId: true },
-                });
-
-                // Fetch all services to know their durations
-                const allServices = await prisma.service.findMany({ select: { id: true, durationMinutes: true } });
-
-                const slotStart = timeToMinutes(activityTime);
-                let usedCapacity = 0;
-                for (const b of existingBookings) {
-                    if (!b.activityTime) continue;
-                    const bStart = timeToMinutes(b.activityTime);
-
-                    const bService = allServices.find(s => s.id === b.serviceId);
-                    const bDuration = bService?.durationMinutes ?? service.durationMinutes;
-
-                    if (timesOverlap(slotStart, service.durationMinutes, bStart, bDuration)) {
-                        usedCapacity += b.quantity ?? 1;
+                if (service?.durationMinutes) {
+                    let serviceIds: string[] = [serviceId];
+                    if (service.capacityGroup) {
+                        const groupServices = await prisma.service.findMany({
+                            where: { capacityGroup: service.capacityGroup },
+                            select: { id: true },
+                        });
+                        serviceIds = groupServices.map(s => s.id);
                     }
-                }
 
-                const requestedQty = parseInt(quantity) || parseInt(pax) || 1;
-                const totalCapacity = service.unitCapacity ?? 1;
-                const available = totalCapacity - usedCapacity;
+                    const dateObj = new Date(activityDate);
+                    const startOfDay = new Date(dateObj.toISOString().split("T")[0] + "T00:00:00.000Z");
+                    const endOfDay = new Date(dateObj.toISOString().split("T")[0] + "T23:59:59.999Z");
 
-                if (available < requestedQty) {
-                    // Partners are hard blocked
-                    if (isPartner) {
-                        return NextResponse.json(
-                            { error: "SLOT_FULL", available, capacity: totalCapacity },
-                            { status: 409 }
-                        );
-                    }
-                    // Staff: require explicit override
-                    if (!override) {
-                        return NextResponse.json(
-                            { error: "SLOT_FULL", available, capacity: totalCapacity, canOverride: true },
-                            { status: 409 }
-                        );
-                    }
-                }
-
-                // Log override if used
-                if (override && overrideReason && !isPartner) {
-                    await prisma.overrideLog.create({
-                        data: {
-                            bookingId: "pending", // will update below
-                            clerkUserId: userId,
-                            userName: userName || "Unknown",
-                            reason: overrideReason,
-                            serviceId: service.id,
-                            serviceName: service.variant ? `${service.name} - ${service.variant}` : service.name,
-                            slotTime: activityTime,
-                            date: dateObj.toISOString().split("T")[0],
+                    const existingBookings = await prisma.bookingActivity.findMany({
+                        where: {
+                            serviceId: { in: serviceIds },
+                            activityDate: { gte: startOfDay, lte: endOfDay },
+                            booking: { status: { not: "CANCELLED" } }
                         },
+                        select: { activityTime: true, quantity: true, serviceId: true },
                     });
+
+                    const allServices = await prisma.service.findMany({ select: { id: true, durationMinutes: true } });
+                    const slotStart = timeToMinutes(activityTime);
+                    let usedCapacity = 0;
+                    for (const b of existingBookings) {
+                        if (!b.activityTime) continue;
+                        const bStart = timeToMinutes(b.activityTime);
+                        const bService = allServices.find(s => s.id === b.serviceId);
+                        const bDuration = bService?.durationMinutes ?? service.durationMinutes;
+
+                        if (timesOverlap(slotStart, service.durationMinutes, bStart, bDuration)) {
+                            usedCapacity += b.quantity ?? 1;
+                        }
+                    }
+
+                    const requestedQty = parseInt(quantity as any) || parseInt(pax as any) || 1;
+                    const totalCapacity = service.unitCapacity ?? 1;
+                    const available = totalCapacity - usedCapacity;
+
+                    if (available < requestedQty) {
+                        if (isPartner) {
+                            return NextResponse.json({ error: "SLOT_FULL", activity: act.activityType, available, capacity: totalCapacity }, { status: 409 });
+                        }
+                        if (!override) {
+                            return NextResponse.json({ error: "SLOT_FULL", activity: act.activityType, available, capacity: totalCapacity, canOverride: true }, { status: 409 });
+                        }
+                    }
                 }
             }
         }
@@ -141,27 +130,42 @@ export async function POST(req: Request) {
             country: countryCode,
         });
 
+        // Use info from first activity for root Booking fields (compatibility/sorting)
+        const firstAct = activities[0];
+
         const booking = await prisma.booking.create({
             data: {
                 customerName,
                 customerEmail: customerEmail || null,
                 customerPhone: customerPhone || null,
-                activityDate: new Date(activityDate),
-                activityTime: activityTime || null,
-                pax: parseInt(pax) || 1,
-                quantity: parseInt(quantity) || parseInt(pax) || 1,
+                activityDate: new Date(firstAct.activityDate),
+                activityTime: firstAct.activityTime || null,
+                pax: parseInt(firstAct.pax as any) || 1,
+                quantity: parseInt(firstAct.quantity as any) || parseInt(firstAct.pax as any) || 1,
                 totalPrice: parseFloat(totalPrice || 0),
+                notes: notes || null,
                 createdById: userId,
                 source: isPartner || adminPartnerId ? "PARTNER" : "MANUAL",
                 status: "CONFIRMED",
-                serviceId: serviceId || null,
-                activityType: activityType || null,
+                serviceId: firstAct.serviceId || null,
+                activityType: firstAct.activityType || null,
                 partnerId: isPartner ? (sessionPartnerId || null) : adminPartnerId,
                 country: countryCode || "Other",
                 bookingFee: parseFloat(bookingFee || 0),
                 customerId,
+                activities: {
+                    create: activities.map((act: any) => ({
+                        serviceId: act.serviceId,
+                        activityType: act.activityType,
+                        activityDate: new Date(act.activityDate),
+                        activityTime: act.activityTime,
+                        pax: parseInt(act.pax as any) || 1,
+                        quantity: parseInt(act.quantity as any) || parseInt(act.pax as any) || 1,
+                        totalPrice: parseFloat(act.totalPrice || 0),
+                    }))
+                }
             },
-            include: { partner: true },
+            include: { partner: true, activities: true },
         });
 
         await logAudit({
@@ -172,74 +176,76 @@ export async function POST(req: Request) {
             targetId: booking.id,
             targetName: booking.customerName,
             details: {
-                serviceId,
-                activityDate,
-                activityTime,
-                quantity: booking.quantity,
                 totalPrice: booking.totalPrice,
-                override,
+                activitiesCount: activities.length,
                 isPartner,
                 adminPartnerId,
                 bookingFee,
             },
         });
 
-        // Generate and send QR code via email (non-blocking)
+        // Email & Override Logging (simplified for multi-activity)
         if (booking.customerEmail) {
-            sendBookingQRCode(booking).catch(err =>
-                console.error("Failed to send QR code email background:", err)
-            );
+            sendBookingQRCode(booking).catch(err => console.error("Email failed:", err));
         }
 
-        // Update override log with real booking id
-        if (override && overrideReason && !isPartner && serviceId && activityTime) {
-            await prisma.overrideLog.updateMany({
-                where: {
-                    clerkUserId: userId,
-                    bookingId: "pending",
-                    slotTime: activityTime,
-                },
-                data: { bookingId: booking.id },
-            });
+        if (override && overrideReason && !isPartner) {
+            for (const act of activities) {
+                if (!act.serviceId || !act.activityTime) continue;
+                await prisma.overrideLog.create({
+                    data: {
+                        bookingId: booking.id,
+                        clerkUserId: userId,
+                        userName: userName || "Unknown",
+                        reason: overrideReason,
+                        serviceId: act.serviceId,
+                        serviceName: act.activityType,
+                        slotTime: act.activityTime,
+                        date: new Date(act.activityDate).toISOString().split("T")[0],
+                    },
+                });
+            }
         }
 
-        // Push to Google Calendar if service has gcalEnabled
-        if (serviceId && activityTime && activityDate) {
-            try {
-                const svc = await prisma.service.findUnique({ where: { id: serviceId } });
-                if (svc?.gcalEnabled && svc.durationMinutes) {
-                    const staffList = await prisma.gcalStaff.findMany({
-                        where: { serviceId },
-                        orderBy: { order: "asc" },
-                    });
-                    const requestedQty = parseInt(quantity) || parseInt(pax) || 1;
-                    const toBook = staffList.slice(0, requestedQty);
-                    if (toBook.length > 0) {
-                        const dateStr = new Date(activityDate).toISOString().split("T")[0];
-                        const { startISO, endISO } = toGcalTimes(dateStr, activityTime, svc.durationMinutes);
-                        const summary = `CRM Booking - ${customerName}`;
-                        const eventIds: string[] = [];
-                        const calendarIds: string[] = [];
-                        for (const staff of toBook) {
-                            const eventId = await createBusyEvent(staff.calendarId, startISO, endISO, summary);
-                            if (eventId) {
-                                eventIds.push(eventId);
-                                calendarIds.push(staff.calendarId);
+        // GCAL SYNC FOR EACH ACTIVITY
+        for (const act of booking.activities) {
+            if (act.serviceId && act.activityTime && act.activityDate) {
+                try {
+                    const svc = await prisma.service.findUnique({ where: { id: act.serviceId } });
+                    if (svc?.gcalEnabled && svc.durationMinutes) {
+                        const staffList = await prisma.gcalStaff.findMany({
+                            where: { serviceId: act.serviceId },
+                            orderBy: { order: "asc" },
+                        });
+                        const requestedQty = act.quantity || act.pax || 1;
+                        const toBook = staffList.slice(0, requestedQty);
+                        if (toBook.length > 0) {
+                            const dateStr = new Date(act.activityDate).toISOString().split("T")[0];
+                            const { startISO, endISO } = toGcalTimes(dateStr, act.activityTime, svc.durationMinutes);
+                            const summary = `CRM Booking - ${customerName} (${act.activityType})`;
+                            const eventIds: string[] = [];
+                            const calendarIds: string[] = [];
+                            for (const staff of toBook) {
+                                const eventId = await createBusyEvent(staff.calendarId, startISO, endISO, summary);
+                                if (eventId) {
+                                    eventIds.push(eventId);
+                                    calendarIds.push(staff.calendarId);
+                                }
+                            }
+                            if (eventIds.length > 0) {
+                                await prisma.bookingActivity.update({
+                                    where: { id: act.id },
+                                    data: {
+                                        gcalEventIds: JSON.stringify(eventIds),
+                                        gcalCalendarIds: JSON.stringify(calendarIds),
+                                    },
+                                });
                             }
                         }
-                        if (eventIds.length > 0) {
-                            await prisma.booking.update({
-                                where: { id: booking.id },
-                                data: {
-                                    gcalEventIds: JSON.stringify(eventIds),
-                                    gcalCalendarIds: JSON.stringify(calendarIds),
-                                },
-                            });
-                        }
                     }
+                } catch (gcalErr) {
+                    console.error("GCal sync error (act):", gcalErr);
                 }
-            } catch (gcalErr) {
-                console.error("gcal push failed (non-blocking):", gcalErr);
             }
         }
 
