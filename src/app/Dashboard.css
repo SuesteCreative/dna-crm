@@ -2959,16 +2959,45 @@ body.modal-open {
 /* Glassmorphism for Multi-booking Modal */
 .multi-booking-modal {
     max-width: 650px !important;
-    background: rgba(17, 24, 39, 0.8) !important;
-    backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(17, 24, 39, 0.92) !important;
+    backdrop-filter: blur(28px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+    max-height: 90vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
 }
 
-.slots-grid-sm {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 6px;
-    margin-top: 8px;
+.multi-booking-modal::-webkit-scrollbar {
+    width: 6px;
+}
+.multi-booking-modal::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+}
+
+.activity-card, .activity-card-edit {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.2s ease;
+}
+
+.activity-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.field-readonly {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(20, 184, 166, 0.25) !important;
+    color: #2dd4bf !important;
+    font-weight: 700;
+    cursor: default;
+    user-select: none;
 }
 
 .pax-control {
