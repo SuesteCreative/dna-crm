@@ -152,8 +152,19 @@ export async function syncShopifyOrders(
 
                 const country = order.billing_address?.country_code
                     || order.billing_address?.country
+                    || order.shipping_address?.country_code
+                    || order.shipping_address?.country
                     || order.customer?.default_address?.country_code
                     || null;
+
+                const postalCode = order.billing_address?.zip
+                    || order.shipping_address?.zip
+                    || order.customer?.default_address?.zip
+                    || null;
+
+                const discountCodes = order.discount_codes?.length
+                    ? (order.discount_codes as any[]).map((d: any) => d.code).join(", ")
+                    : null;
 
                 // Check if booking exists and was manually edited
                 const existing = await prisma.booking.findUnique({
@@ -190,6 +201,8 @@ export async function syncShopifyOrders(
                                 activityDate,
                                 activityTime,
                                 country,
+                                postalCode,
+                                discountCodes,
                                 customerId,
                             },
                         });
@@ -211,6 +224,8 @@ export async function syncShopifyOrders(
                             source: "SHOPIFY",
                             totalPrice,
                             country,
+                            postalCode,
+                            discountCodes,
                             createdById: "shopify-sync",
                             notes: `Shopify ${orderNumber || order.id}`,
                             customerId,
