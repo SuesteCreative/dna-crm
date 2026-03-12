@@ -127,7 +127,7 @@ export function CountrySelector({ value, onChange, label, placeholder }: Country
     }, []);
 
     const handleSelect = (country: Country) => {
-        onChange(country.prefix);
+        onChange(country.code);
         setIsOpen(false);
         setSearch("");
     };

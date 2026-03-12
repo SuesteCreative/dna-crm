@@ -7,6 +7,7 @@ import {
     Pencil, Trash2, CheckCircle, X, ChevronLeft, ChevronRight, MailX,
     ArrowUp, ArrowDown
 } from "lucide-react";
+import { CountrySelector, COUNTRIES as COUNTRIES_DATA } from "@/components/CountrySelector";
 import "./customers.css";
 
 interface Customer {
@@ -23,10 +24,11 @@ interface Customer {
 
 interface Toast { message: string; type: "success" | "error"; }
 
-const COUNTRIES = [
-    "Portugal", "Spain", "France", "Germany", "UK", "Netherlands",
-    "Belgium", "Italy", "Brazil", "USA", "Other"
-];
+const getCountryDisplay = (val: string | null) => {
+    if (!val) return "—";
+    const found = COUNTRIES_DATA.find(c => c.code === val || c.prefix === val);
+    return found ? found.code : val;
+};
 
 export default function CustomersPage() {
     const { sessionClaims, isLoaded } = useAuth();
@@ -296,7 +298,7 @@ export default function CustomersPage() {
                 </div>
                 <select className="cust-filter-select" value={countryFilter} onChange={e => setCountryFilter(e.target.value)}>
                     <option value="">Todos os países</option>
-                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {COUNTRIES_DATA.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                 </select>
                 <select className="cust-filter-select" value={optedFilter} onChange={e => setOptedFilter(e.target.value)}>
                     <option value="">Todos</option>
@@ -332,7 +334,18 @@ export default function CustomersPage() {
                                 <td><strong>{c.name}</strong></td>
                                 <td style={{ color: "var(--muted)" }}>{c.email ?? "—"}</td>
                                 <td style={{ color: "var(--muted)" }}>{c.phone ?? "—"}</td>
-                                <td>{c.country ?? "—"}</td>
+                                 <td>
+                                    <span style={{ 
+                                        fontWeight: 600, 
+                                        fontSize: "0.75rem", 
+                                        background: "var(--surface2)", 
+                                        padding: "2px 6px", 
+                                        borderRadius: "4px",
+                                        color: "var(--blue)"
+                                    }}>
+                                        {getCountryDisplay(c.country)}
+                                    </span>
+                                </td>
                                 <td><span className="cust-source-badge">{c.source}</span></td>
                                 <td>
                                     {c.optedOut ? (
@@ -399,11 +412,11 @@ export default function CustomersPage() {
                                 <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+351 9xx xxx xxx" />
                             </div>
                             <div className="cust-field">
-                                <label>País</label>
-                                <select value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))}>
-                                    <option value="">Selecionar país</option>
-                                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
+                                <CountrySelector
+                                    label="País / Prefixo"
+                                    value={form.country}
+                                    onChange={val => setForm(f => ({ ...f, country: val }))}
+                                />
                             </div>
                             <div className="cust-field">
                                 <label>Notas</label>
