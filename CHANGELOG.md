@@ -144,6 +144,10 @@ src/
         delete/route.ts       ← DELETE booking
         update/route.ts       ← PUT update booking
         attendance/route.ts   ← POST toggle showedUp
+      cron/
+        follow-up/route.ts    ← GET: automated post-activity thank you emails
+      gcal/
+        webhook/route.ts      ← POST: Google Calendar push notifications (real-time sync)
 
       bug-report/route.ts     ← POST: sends email via Resend
 
@@ -216,6 +220,7 @@ src/
 - `orderNumber`, `quantity`, `country`, `showedUp` (Boolean?)
 - `isEdited` (Boolean) + original values: `originalActivityType`, `originalPax`, `originalQuantity`, `originalTotalPrice`, `originalActivityDate`, `originalActivityTime`
 - `gcalEventIds` (JSON string array), `gcalCalendarIds` (JSON string array)
+- `followUpSent` (Boolean, default false)
 
 **Service**
 - `id`, `shopifyHandle`, `name`, `variant`, `sku` (unique), `price`, `imageUrl`, `category`, `isActive`
@@ -229,6 +234,7 @@ src/
 
 **GcalStaff**
 - `id`, `name`, `calendarId`, `serviceId?`, `order`
+- `channelId`, `resourceId`, `expiration` (for Webhook watch)
 - Maps staff/resource to a Google Calendar
 
 **OverrideLog**
@@ -434,8 +440,18 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `BKG-03` | **Slot Logic & Partner Tools**: Meety-sync slot intervals, Quick Apply commission, Country Selector v2 (image flags + expanded list), and mobile UI fixes. |
 | `BKG-04` | **Security & UX**: Enhanced security for attendance toggle, improved mobile UI, and refined partner commission application. |
 | `STB-V3` | **Stable V3 Release**: Standardized activity logic, improved scanner error handling, and fixed order edit pre-filling. |
+| `ef6e8c6` | **Real-time Sync & Automation**: GCal Webhooks, Staff Audit v2, Server Search, Follow-up Email |
 
 ### Feature Details (Recent)
+
+#### Real-time Sync & Automation (2026-03-12)
+- **GCal Push Notifications**: Implemented Google Calendar Watch API (Webhooks). Local availability cache now updates instantly when calendar changes occur externally.
+- **Server-Side Search**: Moved dashboard booking search to the backend (Prisma) with a 400ms debounce. Drastically improves dashboard performance for high booking volumes.
+- **Enhanced Audit Trail**: Booking updates now log full "Before/After" diffs. Attendance toggles (showedUp) are now audited with timestamps.
+- **Automated Follow-ups**: 
+    - New high-converting email template thanking customers and requesting Google reviews.
+    - Automated cron route (`/api/cron/follow-up`) to process yesterday's customers.
+- **Schema Hardening**: Added `followUpSent` tracking to Bookings and Webhook metadata to `GcalStaff`.
 
 #### Stable V3 Release (2026-03-12)
 - **Order Edit Pre-filling Fix**: Standardized activity name separators to a consistent em-dash (` — `) and improved service matching logic in the Dashboard to handle legacy data during edits.
