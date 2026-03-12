@@ -614,6 +614,8 @@ export default function Dashboard() {
         setFormData={setFormData}
         defaultForm={defaultForm}
         syncMsg={syncMsg}
+        setSlots={() => {}}
+        setCreateUnitPrice={() => {}}
       />
 
       <StatsSection 
