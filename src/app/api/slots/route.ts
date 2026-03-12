@@ -3,6 +3,7 @@ import { getPrisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { generateSlots, timeToMinutes, timesOverlap } from "@/lib/slots";
 import { getFreeBusy, toGcalTimes } from "@/lib/gcal";
+import { getCachedFreeBusy } from "@/lib/gcal-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +104,8 @@ export async function GET(req: NextRequest) {
         });
         gcalStaffIds = gcalStaff.map(s => s.calendarId);
         if (gcalStaffIds.length > 0) {
-            gcalBusyMap = await getFreeBusy(gcalStaffIds, date);
+            // Using local cache for zero-latency
+            gcalBusyMap = await getCachedFreeBusy(gcalStaffIds, date);
         }
     }
 
