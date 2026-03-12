@@ -3,7 +3,10 @@ import QRCode from 'qrcode';
 import { logAudit } from './audit';
 import { getPrisma } from './prisma';
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://dna-crm.vercel.app';
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    || process.env.NEXTAUTH_URL
+    || (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : null)
+    || 'https://desportosnauticosalvor.com';
 // Updated design version: 2026-03-11 08:45
 
 export async function sendBookingQRCode(booking: any) {
@@ -178,7 +181,7 @@ export async function sendFollowUpEmail(booking: any) {
         const logoUrl = `${baseUrl}/SVG/logo-color.png`;
         const reviewUrl = "https://g.page/r/CU6X1u2zW_YGEAE/review"; // Placeholder or extracted
 
-        const { data, error } = await resend.emails.send({
+        const { error } = await resend.emails.send({
             from: 'Desportos Náuticos Alvor <nauticos@desportosnauticosalvor.com>',
             to: booking.customerEmail,
             subject: `Obrigado pela sua visita, ${booking.customerName.split(' ')[0]}!`,

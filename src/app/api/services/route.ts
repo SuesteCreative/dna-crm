@@ -23,15 +23,46 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-    const { userId } = await auth();
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { userId, sessionClaims } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     try {
         const prisma = await getPrisma();
-        const data = await req.json();
-        const service = await prisma.service.create({ data });
+        const body = await req.json();
+
+        const { name, variant, sku, shopifyHandle, price, imageUrl, category, isActive,
+                durationMinutes, slotGapMinutes, unitCapacity, capacityGroup,
+                serviceCloseTime, minPax, maxPax, gcalEnabled } = body;
+
+        if (!name?.trim()) {
+            return NextResponse.json({ error: "name is required" }, { status: 400 });
+        }
+
+        const service = await prisma.service.create({
+            data: {
+                name: name.trim(),
+                variant: variant ?? null,
+                sku: sku ?? null,
+                shopifyHandle: shopifyHandle ?? null,
+                price: parseFloat(price) || 0,
+                imageUrl: imageUrl ?? null,
+                category: category ?? null,
+                isActive: isActive ?? true,
+                durationMinutes: durationMinutes ? parseInt(durationMinutes) : null,
+                slotGapMinutes: slotGapMinutes ? parseInt(slotGapMinutes) : null,
+                unitCapacity: unitCapacity ? parseInt(unitCapacity) : 1,
+                capacityGroup: capacityGroup ?? null,
+                serviceCloseTime: serviceCloseTime ?? null,
+                minPax: minPax ? parseInt(minPax) : null,
+                maxPax: maxPax ? parseInt(maxPax) : null,
+                gcalEnabled: gcalEnabled ?? false,
+            },
+        });
         return NextResponse.json(service);
     } catch (error) {
         console.error("Failed to create service:", error);

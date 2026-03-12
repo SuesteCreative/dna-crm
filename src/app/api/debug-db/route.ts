@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { getPrisma } from "@/lib/prisma";
 
 export async function GET() {
+    const { sessionClaims } = await auth();
+    const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     try {
         const prisma = await getPrisma();
         const count = await prisma.booking.count();

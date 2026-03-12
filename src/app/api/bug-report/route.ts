@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     try {
         const resend = new Resend(resendApiKey);
         await resend.emails.send({
-            from: "DNA CRM <onboarding@resend.dev>",
+            from: "DNA CRM <sistema@desportosnauticosalvor.com>",
             to: "booking@desportosnauticosalvor.com",
             replyTo: senderEmail || undefined,
             subject: `[Bug Report] ${subject}`,
