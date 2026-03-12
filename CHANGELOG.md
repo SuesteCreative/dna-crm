@@ -448,6 +448,29 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `ef6e8c6` | **Real-time Sync & Automation**: GCal Webhooks, Staff Audit v2, Server Search, Follow-up Email |
 | `5e4531c` | **Multi-Activity Booking System**: Support for multiple products per booking, individual capacity checks, and GCal sync per activity. |
 
+### Crisis Recovery & System Stabilization (2026-03-12)
+
+**[CRITICAL] Database Deletion & Recovery**:
+- **Incident**: During an environment/script update, the database was accidentally wiped, resulting in temporary loss of all configuration and activity data.
+- **Resolution**: 
+    - Full system re-seed using `scripts/seed-precise-meety.js` to restore services and staff metadata.
+    - Successful restoration of **139 bookings** and the "Experience Algarve" partner record.
+    - Automated repair of **Orphaned Bookings** to re-link all transactions to the Customer Database.
+- **Security**: 
+    - Permanently excluded `/scripts`, `/tmp`, and `*.db` from the repository via updated `.gitignore`.
+    - Rotated and securely applied new Google Service Account credentials via `scripts/apply-rotated-key.js`.
+
+**System Logic & Automation**:
+- **Meety Mastery**: Implemented precise mirroring of Meety's interval logic. Used **negative gaps** (e.g., -30 for 1h services) to align with 30-min overlaps and added a **10-minute turnaround buffer** (except for 1h variants) to prevent overbooking overlaps.
+- **Automated Totals**: The **Total Price** field is now read-only and calculates in real-time. It automatically handles the math for: *Activities + Discounts - Commission (if applied)*.
+- **Manual Commission Hook**: Replaced auto-commission with a manual **"Calcular"** button. This gives staff control over when to apply partner fees, which are then subtracted from the final total as requested.
+- **Stats Correction**: Refined dashboard statistics to restore revenue visibility for past confirmed bookings that were previously misclassified as no-shows.
+
+**Premium UI Refinements**:
+- **Glassmorphism V2**: Overhauled Modal UI with `backdrop-filter: blur(28px)`, deep shadows, and internal scroll management (`max-height: 90vh`). This fixes the "content leaking out of modal" issue on small screens.
+- **Visual Feedback**: Added teal color coding for read-only calculated fields and improved component spacing for a high-end feel.
+- **Partner Tools**: Added "Edit Partner" functionality with a dedicated **Pencil icon** and Patch API for real-time detail updates.
+
 ### Feature Details (Recent)
 
 #### Multi-Activity Booking System (2026-03-12)
