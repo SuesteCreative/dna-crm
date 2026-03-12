@@ -108,26 +108,18 @@ export default function Dashboard() {
     if (disc > 0) {
       final = formData.discountType === "%" ? sum * (1 - disc / 100) : sum - disc;
     }
-    setFormData(prev => ({ ...prev, totalPrice: Math.max(0, final).toFixed(2) }));
-  }, [formData.activities, formData.discountAmount, formData.discountType]);
+    const fee = parseFloat(formData.bookingFee) || 0;
+    setFormData(prev => ({ ...prev, totalPrice: Math.max(0, final - fee).toFixed(2) }));
+  }, [formData.activities, formData.discountAmount, formData.discountType, formData.bookingFee]);
 
-  // AUTO-CALC BOOKING FEE
+  // AUTO-CALC BOOKING FEE (ONLY RESET IF NO PARTNER)
   useEffect(() => {
     const pId = isPartner ? partnerId : formData.forPartnerId;
     const partner = partners.find(p => p.id === pId);
     if (!partner) {
       setFormData(prev => ({ ...prev, bookingFee: "0" }));
-      return;
     }
-    const totalRaw = formData.activities.reduce((acc, act) => acc + (parseFloat(act.totalPrice as any) || 0), 0);
-    const disc = parseFloat(formData.discountAmount) || 0;
-    let net = totalRaw;
-    if (disc > 0) {
-      net = formData.discountType === "%" ? totalRaw * (1 - disc / 100) : totalRaw - disc;
-    }
-    const fee = net * (partner.commission / 100);
-    setFormData(prev => ({ ...prev, bookingFee: fee.toFixed(2) }));
-  }, [formData.activities, formData.discountAmount, formData.discountType, formData.forPartnerId, partners, isPartner, partnerId]);
+  }, [formData.forPartnerId, partners, isPartner, partnerId]);
 
   // AUTO-CALC EDIT FORM TOTAL PRICE
   useEffect(() => {
@@ -138,27 +130,19 @@ export default function Dashboard() {
     if (disc > 0) {
       final = editForm.discountType === "%" ? sum * (1 - disc / 100) : sum - disc;
     }
-    setEditForm(prev => ({ ...prev, totalPrice: Math.max(0, final).toFixed(2) }));
-  }, [editForm.activities, editForm.discountAmount, editForm.discountType, editTarget]);
+    const fee = parseFloat(editForm.bookingFee) || 0;
+    setEditForm(prev => ({ ...prev, totalPrice: Math.max(0, final - fee).toFixed(2) }));
+  }, [editForm.activities, editForm.discountAmount, editForm.discountType, editForm.bookingFee, editTarget]);
 
-  // AUTO-CALC EDIT FORM BOOKING FEE
+  // AUTO-CALC EDIT FORM BOOKING FEE (ONLY RESET IF NO PARTNER)
   useEffect(() => {
     if (!editTarget) return;
     const pId = isPartner ? partnerId : (editForm.forPartnerId || editTarget.partnerId);
     const partner = partners.find(p => p.id === pId);
     if (!partner) {
       setEditForm(prev => ({ ...prev, bookingFee: "0" }));
-      return;
     }
-    const totalRaw = (editForm.activities || []).reduce((acc: number, act: any) => acc + (parseFloat(act.totalPrice as any) || 0), 0);
-    const disc = parseFloat(editForm.discountAmount) || 0;
-    let net = totalRaw;
-    if (disc > 0) {
-      net = editForm.discountType === "%" ? totalRaw * (1 - disc / 100) : totalRaw - disc;
-    }
-    const fee = net * (partner.commission / 100);
-    setEditForm(prev => ({ ...prev, bookingFee: fee.toFixed(2) }));
-  }, [editForm.activities, editForm.discountAmount, editForm.discountType, editForm.forPartnerId, editTarget, partners, isPartner, partnerId]);
+  }, [editForm.forPartnerId, editTarget, partners, isPartner, partnerId]);
 
   useEffect(() => {
     const handler = setTimeout(() => {

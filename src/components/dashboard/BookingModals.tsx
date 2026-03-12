@@ -456,9 +456,9 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                       value={formData.bookingFee}
                       onChange={e => setFormData({ ...formData, bookingFee: e.target.value })}
                     />
-                    {(isPartner || formData.forPartnerId) && (
+                    {(isPartner || partners.length > 0) && (
                       <button type="button" className="btn-quick-fee" onClick={applyQuickCommission} title="Aplicar comissão automática">
-                        <Zap size={14} /> Quick Apply
+                        Calcular
                       </button>
                     )}
                   </div>
@@ -725,9 +725,9 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                       value={editForm.bookingFee}
                       onChange={e => setEditForm({ ...editForm, bookingFee: e.target.value })}
                     />
-                    {(isPartner || editForm.forPartnerId || editTarget.partnerId) && (
+                    {(isPartner || partners.length > 0) && (
                       <button type="button" className="btn-quick-fee" onClick={applyEditQuickCommission} title="Aplicar comissão automática">
-                        <Zap size={14} /> Quick Apply
+                        Calcular
                       </button>
                     )}
                   </div>
