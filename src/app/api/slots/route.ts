@@ -113,6 +113,9 @@ export async function GET(req: NextRequest) {
     const slotResults = slotTimes.map((slotTime) => {
         const slotStart = timeToMinutes(slotTime);
         const slotDuration = service.durationMinutes!;
+        // Buffer Logic: 10 mins before each appointment (except 1h services)
+        const hasBuffer = service.durationMinutes !== 60;
+        const bufferMins = hasBuffer ? 10 : 0;
 
         // CRM-based count (bookings in DB)
         let crmUsed = 0;
@@ -121,7 +124,13 @@ export async function GET(req: NextRequest) {
             const bookingStart = timeToMinutes(booking.activityTime);
             const bService = bookedServices.find(s => s.id === booking.serviceId);
             const bDuration = bService?.durationMinutes ?? slotDuration;
-            if (timesOverlap(slotStart, slotDuration, bookingStart, bDuration)) {
+            
+            // If the other booking has a buffer, it effectively starts 10m earlier
+            const bHasBuffer = bDuration !== 60;
+            const bEffStart = bHasBuffer ? bookingStart - 10 : bookingStart;
+            const bEffDuration = bHasBuffer ? bDuration + 10 : bDuration;
+
+            if (timesOverlap(slotStart, slotDuration, bEffStart, bEffDuration)) {
                 crmUsed += booking.quantity ?? 1;
             }
         }
@@ -132,11 +141,16 @@ export async function GET(req: NextRequest) {
             const { startISO, endISO } = toGcalTimes(date, slotTime, slotDuration);
             const slotStartMs = new Date(startISO).getTime();
             const slotEndMs = new Date(endISO).getTime();
+            
+            // Meety busy slots usually include the buffer themselves or we need to respect them
+            // If we are checking if a slot at 10:00 is free, we check [09:50, 10:30]
+            const checkStartMs = slotStartMs - (bufferMins * 60 * 1000);
+
             for (const calId of gcalStaffIds) {
                 const busy = gcalBusyMap.get(calId) ?? [];
                 const isBusy = busy.some(b =>
                     new Date(b.start).getTime() < slotEndMs &&
-                    new Date(b.end).getTime() > slotStartMs
+                    new Date(b.end).getTime() > checkStartMs
                 );
                 if (isBusy) gcalUsed++;
             }
