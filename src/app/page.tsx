@@ -417,7 +417,7 @@ export default function Dashboard() {
           pax: initPax,
           quantity: initQty,
           createUnitPrice: unitPrice,
-          totalPrice: (unitPrice * multiplier) as any, // initial price for this act
+          totalPrice: ((unitPrice || 0) * multiplier) as any, // initial price for this act
         };
         if (svc.durationMinutes && current.activityDate) {
           fetchSlotsForActivity(index, svc.id, current.activityDate, initQty);
