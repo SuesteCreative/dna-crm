@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { getPrisma } from "./prisma";
+import { getCachedFreeBusy } from "./gcal-cache";
 
 function getAuth() {
     const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
@@ -42,15 +43,23 @@ export async function createBusyEvent(
         if (eventId) {
             // Update local cache immediately
             const prisma = await getPrisma();
-            await prisma.gcalBusySlot.create({
-                data: {
+            await (prisma as any).gcalBusySlot.upsert({
+                where: { eventId },
+                update: {
+                    calendarId,
+                    startTime: new Date(startISO),
+                    endTime: new Date(endISO),
+                    summary,
+                    updatedAt: new Date(),
+                },
+                create: {
                     calendarId,
                     eventId,
                     startTime: new Date(startISO),
                     endTime: new Date(endISO),
                     summary,
                 }
-            }).catch(e => console.warn("Cache update failed in createBusyEvent:", e));
+            }).catch((e: any) => console.warn("Cache update failed in createBusyEvent:", e));
         }
 
         return eventId;
@@ -73,13 +82,13 @@ export async function deleteBusyEvent(
         
         // Remove from local cache immediately
         const prisma = await getPrisma();
-        await prisma.gcalBusySlot.delete({ where: { eventId } }).catch(() => {});
+        await (prisma as any).gcalBusySlot.delete({ where: { eventId } }).catch(() => {});
 
         return true;
     } catch (err: any) {
         if (err?.code === 404 || err?.code === 410) {
             const prisma = await getPrisma();
-            await prisma.gcalBusySlot.delete({ where: { eventId } }).catch(() => {});
+            await (prisma as any).gcalBusySlot.delete({ where: { eventId } }).catch(() => {});
             return true;
         }
         console.error(`gcal: failed to delete event ${eventId} on ${calendarId}:`, err);
@@ -110,8 +119,6 @@ export function toGcalTimes(date: string, time: string, durationMinutes: number)
         endISO: end.toISOString(),
     };
 }
-
-import { getCachedFreeBusy } from "./gcal-cache";
 
 // Returns a map of calendarId → busy periods for the given date
 // Used to read Meety bookings (which appear as GCal events) into CRM slot availability
@@ -148,4 +155,86 @@ export async function getFreeBusy(
         console.error("gcal freebusy error:", err);
         return new Map();
     }
+}
+
+// --- Push Notifications (Webhooks) ---
+
+export async function watchCalendar(calendarId: string) {
+    const auth = getAuth();
+    if (!auth) return { success: false, error: "Auth failed" };
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.CRM_URL;
+    if (!baseUrl) return { success: false, error: "NEXT_PUBLIC_APP_URL not set" };
+
+    const prisma = await getPrisma();
+    const staff = await (prisma as any).gcalStaff.findFirst({ where: { calendarId } });
+    if (!staff) return { success: false, error: "Staff not found" };
+
+    const calendar = google.calendar({ version: "v3", auth });
+    const channelId = `dna-watch-${staff.id}-${Date.now()}`;
+    const webhookUrl = `${baseUrl}/api/gcal/webhook`;
+
+    try {
+        const res = await calendar.events.watch({
+            calendarId,
+            requestBody: {
+                id: channelId,
+                type: "web_hook",
+                address: webhookUrl,
+            },
+        });
+
+        // Update DB with watch info
+        await (prisma as any).gcalStaff.update({
+            where: { id: staff.id },
+            data: {
+                channelId: res.data.id,
+                resourceId: res.data.resourceId,
+                expiration: res.data.expiration ? BigInt(res.data.expiration) : null,
+            },
+        });
+
+        return { success: true, channelId: res.data.id, expiration: res.data.expiration };
+    } catch (err: any) {
+        console.error(`gcal watch error for ${calendarId}:`, err);
+        return { success: false, error: err.message };
+    }
+}
+
+export async function stopWatch(staffId: string) {
+    const auth = getAuth();
+    if (!auth) return false;
+
+    const prisma = await getPrisma();
+    const staff = await (prisma as any).gcalStaff.findUnique({ where: { id: staffId } });
+    if (!staff || !staff.channelId || !staff.resourceId) return false;
+
+    try {
+        const calendar = google.calendar({ version: "v3", auth });
+        await calendar.channels.stop({
+            requestBody: {
+                id: staff.channelId,
+                resourceId: staff.resourceId,
+            },
+        });
+        await (prisma as any).gcalStaff.update({
+            where: { id: staffId },
+            data: { channelId: null, resourceId: null, expiration: null },
+        });
+        return true;
+    } catch (err) {
+        console.error("gcal stop watch error:", err);
+        return false;
+    }
+}
+
+export async function renewAllWatches() {
+    const prisma = await getPrisma();
+    const staff = await (prisma as any).gcalStaff.findMany();
+    const results = [];
+    for (const s of staff) {
+        const res = await watchCalendar(s.calendarId);
+        results.push({ name: s.name, ...res });
+    }
+    return results;
 }

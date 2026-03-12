@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import QRCode from 'qrcode';
 import { logAudit } from './audit';
+import { getPrisma } from './prisma';
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'https://dna-crm.vercel.app';
 // Updated design version: 2026-03-11 08:45
@@ -165,5 +166,65 @@ export async function sendBookingQRCode(booking: any) {
             targetId: booking.id,
             details: catchMsg
         });
+    }
+}
+
+export async function sendFollowUpEmail(booking: any) {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey || resendApiKey === 'missing' || !booking.customerEmail) return;
+
+    try {
+        const resend = new Resend(resendApiKey);
+        const logoUrl = `${baseUrl}/SVG/logo-color.png`;
+        const reviewUrl = "https://g.page/r/CU6X1u2zW_YGEAE/review"; // Placeholder or extracted
+
+        const { data, error } = await resend.emails.send({
+            from: 'Desportos Náuticos Alvor <nauticos@desportosnauticosalvor.com>',
+            to: booking.customerEmail,
+            subject: `Obrigado pela sua visita, ${booking.customerName.split(' ')[0]}!`,
+            html: `
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333; background-color: #fcfcfc; border: 1px solid #eee; border-radius: 16px;">
+                    <div style="text-align: center; margin-bottom: 25px; padding-top: 10px;">
+                        <img src="${logoUrl}" alt="DNA Logo" style="width: 120px; display: inline-block;" />
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #0056b3; margin-bottom: 5px; font-size: 26px;">Esperamos que se tenha divertido!</h1>
+                        <p style="font-size: 16px; color: #666; margin-top: 0;">Olá ${booking.customerName.split(' ')[0]}, foi um prazer receber-vos ontem.</p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; margin: 20px 0; border: 1px solid #f0f0f0; text-align: center;">
+                        <p style="font-size: 15px; line-height: 1.6; color: #555;">
+                            A sua opinião é muito importante para nós. Se gostou da experiência com <strong>${booking.activityType || 'as nossas atividades'}</strong>, poderia dedicar um minuto a deixar-nos um comentário?
+                        </p>
+                        
+                        <a href="${reviewUrl}" style="display: inline-block; background-color: #0056b3; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 20px; font-size: 16px;">
+                            Deixar Avaliação no Google
+                        </a>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 30px; font-size: 14px; color: #888;">
+                        <p>Até à próxima aventura!</p>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 40px 0;" />
+                    
+                    <div style="text-align: center; color: #888; font-size: 13px;">
+                        <p style="font-weight: 600; color: #555;">Desportos Náuticos Alvor</p>
+                        <p>© ${new Date().getFullYear()} Sueste Creative - CRM System</p>
+                    </div>
+                </div>
+            `,
+        });
+
+        if (!error) {
+            const prisma = await getPrisma();
+            await (prisma as any).booking.update({
+                where: { id: booking.id },
+                data: { followUpSent: true },
+            });
+        }
+    } catch (err) {
+        console.error("Follow-up email failed:", err);
     }
 }

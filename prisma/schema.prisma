@@ -100,6 +100,7 @@ model Booking {
   bookingFee           Float?    @default(0)
   partner              Partner?  @relation(fields: [partnerId], references: [id])
   customer             Customer? @relation(fields: [customerId], references: [id])
+  followUpSent         Boolean   @default(false)
 }
 
 model Service {
@@ -135,13 +136,18 @@ model Schedule {
 }
 
 model GcalStaff {
-  id         String   @id @default(cuid())
-  name       String
-  calendarId String
-  serviceId  String?
-  order      Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               String   @id @default(cuid())
+  name             String
+  calendarId       String
+  serviceId        String?
+  order            Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Webhook synchronization fields
+  resourceId String?
+  channelId  String?   @unique
+  expiration BigInt?
 }
 
 model OverrideLog {

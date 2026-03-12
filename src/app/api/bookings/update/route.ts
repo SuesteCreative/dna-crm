@@ -170,6 +170,16 @@ export async function PATCH(req: NextRequest) {
             targetName: booking.customerName,
             details: {
                 changes: fields,
+                previous: {
+                    customerName: current.customerName,
+                    activityDate: current.activityDate,
+                    activityTime: current.activityTime,
+                    pax: current.pax,
+                    quantity: current.quantity,
+                    totalPrice: current.totalPrice,
+                    status: current.status,
+                    activityType: current.activityType,
+                }
             },
         });
 

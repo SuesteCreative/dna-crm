@@ -92,26 +92,34 @@ export default function Dashboard() {
   }, [isSignedIn]);
 
   useEffect(() => {
-    const q = search.toLowerCase();
-    setFiltered(bookings.filter(b =>
-      b.customerName.toLowerCase().includes(q) ||
-      (b.customerEmail || "").toLowerCase().includes(q) ||
-      (b.activityType || "").toLowerCase().includes(q)
-    ));
-  }, [search, bookings]);
+    const handler = setTimeout(() => {
+      if (isSignedIn) fetchBookings(search);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [search, isSignedIn]);
 
   // Rest of the logic from original c:\Users\pedro\OneDrive\Desportos Náuticos de Alvor\CRM\src\app\page.tsx 
   // (fetchBookings, handleSync, etc.) 
   // I will re-paste them here, but keeping it concise where possible.
 
-  const fetchBookings = async () => {
+  const fetchBookings = async (query?: string) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/bookings");
-      if (!res.ok) { setBookings([]); return; }
+      const url = query ? `/api/bookings?search=${encodeURIComponent(query)}` : "/api/bookings";
+      const res = await fetch(url);
+      if (!res.ok) { 
+        setBookings([]);
+        setFiltered([]);
+        return; 
+      }
       const data = await res.json();
-      setBookings(Array.isArray(data) ? data : []);
-    } catch { setBookings([]); }
+      const bks = Array.isArray(data) ? data : [];
+      setBookings(bks);
+      setFiltered(bks);
+    } catch { 
+      setBookings([]); 
+      setFiltered([]);
+    }
     finally { setLoading(false); }
   };
 

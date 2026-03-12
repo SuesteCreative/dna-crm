@@ -4,9 +4,12 @@ import { getPrisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
     const { userId, sessionClaims } = await auth();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search");
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
 
@@ -24,9 +27,22 @@ export async function GET() {
             where = { partnerId: pId ?? "__none__" };
         }
 
+        if (search) {
+            where = {
+                ...where,
+                OR: [
+                    { customerName: { contains: search } },
+                    { customerEmail: { contains: search } },
+                    { activityType: { contains: search } },
+                    { notes: { contains: search } },
+                ]
+            };
+        }
+
         const bookings = await prisma.booking.findMany({
             where,
-            orderBy: { createdAt: "desc" },
+            orderBy: { activityDate: "desc" },
+            take: 2000,
         });
         return NextResponse.json(bookings);
     } catch (error) {
