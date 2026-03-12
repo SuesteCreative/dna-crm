@@ -22,8 +22,9 @@ export async function GET(req: Request) {
         const metadata = clerkUser.publicMetadata as any;
         const pId = metadata.partnerId as string | undefined;
 
-        // Force partner filter if they have a partnerId or the explicit role
-        if (role === "PARTNER" || pId) {
+        // Force partner filter if they have a partnerId or the explicit role, but NOT for admins
+        const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+        if (!isAdmin && (role === "PARTNER" || pId)) {
             where = { partnerId: pId ?? "__none__" };
         }
 
