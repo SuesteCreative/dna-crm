@@ -10,15 +10,15 @@ interface DashboardHeaderProps {
   handleGcalSync: () => void;
   gcalSyncing: boolean;
   setShowModal: (show: boolean) => void;
-  setSlots: (slots: any[]) => void;
   setFormData: (data: any) => void;
-  setCreateUnitPrice: (price: number | null) => void;
   defaultForm: any;
   syncMsg: string | null;
+  setSlots?: (slots: any[]) => void;
+  setCreateUnitPrice?: (price: number | null) => void;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
-  isPartner, exportToExcel, exportToPDF, handleSync, syncing, handleGcalSync, gcalSyncing, setShowModal, setSlots, setFormData, setCreateUnitPrice, defaultForm, syncMsg
+  isPartner, exportToExcel, exportToPDF, handleSync, syncing, handleGcalSync, gcalSyncing, setShowModal, setFormData, defaultForm, syncMsg
 }) => {
   return (
     <>
@@ -42,7 +42,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               </button>
             </>
           )}
-          <button className="btn-primary" onClick={() => { setShowModal(true); setSlots([]); setFormData(defaultForm); setCreateUnitPrice(null); }}>
+          <button className="btn-primary" onClick={() => { setShowModal(true); setFormData(defaultForm); }}>
             <Plus size={16} /> Nova Reserva
           </button>
         </div>
