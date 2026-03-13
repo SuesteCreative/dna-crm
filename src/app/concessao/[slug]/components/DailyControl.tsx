@@ -99,30 +99,23 @@ export default function DailyControl({ concession }: { concession: Concession })
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/concessions/${concession.slug}/entries?date=${date}`);
-    const data = await res.json();
-    const newEntries: Entry[] = Array.isArray(data) ? data : [];
-    setEntries(newEntries);
-    setSelectedSpot((prev) =>
-      prev ? { spot: prev.spot, entries: newEntries.filter((e) => e.spotId === prev.spot.id) } : null
-    );
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/concessions/${concession.slug}/daily-summary?date=${date}`);
+      const data = await res.json();
+      const newEntries: Entry[] = Array.isArray(data.entries) ? data.entries : [];
+      setEntries(newEntries);
+      setDailyNote(data.note ?? "");
+      setIsBlocked(data.isBlocked ?? false);
+      setBlockReason(data.blockReason ?? null);
+      setSelectedSpot((prev) =>
+        prev ? { spot: prev.spot, entries: newEntries.filter((e) => e.spotId === prev.spot.id) } : null
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [concession.slug, date]);
 
-  // Load note + block status from DB when date changes
-  const fetchDayMeta = useCallback(async () => {
-    const [noteRes, blockRes] = await Promise.all([
-      fetch(`/api/concessions/${concession.slug}/daily-note?date=${date}`),
-      fetch(`/api/concessions/${concession.slug}/blocks?date=${date}`),
-    ]);
-    const noteData = await noteRes.json();
-    const blockData = await blockRes.json();
-    setDailyNote(noteData.note ?? "");
-    setIsBlocked(blockData.blocked ?? false);
-    setBlockReason(blockData.reason ?? null);
-  }, [concession.slug, date]);
-
-  useEffect(() => { fetchEntries(); fetchDayMeta(); }, [fetchEntries, fetchDayMeta]);
+  useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
   // Weather + Marine — Open-Meteo, Alvor coords, no API key
   useEffect(() => {

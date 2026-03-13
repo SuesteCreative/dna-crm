@@ -8,7 +8,8 @@ import Reservations from "./components/Reservations";
 import type { ReservationInitData } from "./components/Reservations";
 import PriceList from "./components/PriceList";
 import CalcComponent from "./components/Calculator";
-import Statistics from "./components/Statistics";
+import dynamic from "next/dynamic";
+const Statistics = dynamic(() => import("./components/Statistics"), { ssr: false });
 import "./concessao-detail.css";
 
 interface Concession {
