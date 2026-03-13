@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import "../../../../../book.css";
+import "../../../book.css";
 
 export default function CancelPage() {
   const { slug, spotNumber } = useParams<{ slug: string; spotNumber: string }>();
