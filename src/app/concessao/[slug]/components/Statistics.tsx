@@ -1,216 +1,309 @@
 "use client";
-import { useEffect, useState } from "react";
-import { TrendingUp, CalendarDays, Armchair, Euro, BookOpen, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import "../../../statistics/statistics.css";
+import {
+  AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
-interface StatsData {
-  totalSpots: number;
-  today: {
-    date: string;
-    occupied: number;
-    free: number;
-    occupancyPct: number;
-    revenuePaid: number;
-    revenueUnpaid: number;
-    carryOvers: number;
-    periods: { morning: number; afternoon: number; fullDay: number };
-  };
-  week: {
-    days: { date: string; occupied: number; occupancyPct: number; revenuePaid: number; revenueUnpaid: number }[];
-  };
-  month: {
-    label: string;
-    revenuePaid: number;
-    revenueUnpaid: number;
-    avgOccupancy: number;
-    avgOccupancyPct: number;
-  };
-  reservations: {
-    upcoming: {
-      id: string;
-      clientName: string;
-      spotNumber: number;
-      startDate: string;
-      endDate: string;
-      period: string;
-      totalPrice: number;
-      isPaid: boolean;
-    }[];
-    count: number;
-    totalValue: number;
-  };
+const PERIODS = [
+  { value: "7d",  label: "Últimos 7 dias" },
+  { value: "30d", label: "Últimos 30 dias" },
+  { value: "90d", label: "Últimos 90 dias" },
+  { value: "1y",  label: "Último ano" },
+  { value: "all", label: "Todo o período" },
+  { value: "custom", label: "Personalizado" },
+];
+
+function fmt(n: number) {
+  return new Intl.NumberFormat("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+function fmtInt(n: number) { return new Intl.NumberFormat("pt-PT").format(n); }
+
+function ChartTooltip({ active, payload, label, currency }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="chart-tooltip">
+      <div className="tooltip-label">{label}</div>
+      {payload.map((p: any, i: number) => (
+        <div key={i} className="tooltip-row">
+          <span className="tooltip-dot" style={{ background: p.color }} />
+          <span>{p.name}: {currency ? `€${fmt(p.value)}` : fmtInt(p.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
-const PERIOD_PT: Record<string, string> = {
-  MORNING: "Manhã",
-  AFTERNOON: "Tarde",
-  FULL_DAY: "Dia Inteiro",
-};
-
-function fmt(v: number) {
-  return v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€";
-}
-
-function fmtDate(d: string) {
-  return new Date(d + "T00:00:00").toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" });
-}
-
-function fmtWeekday(d: string) {
-  return new Date(d + "T00:00:00").toLocaleDateString("pt-PT", { weekday: "short" });
+function BarRankList({ items, valueKey, valuePrefix = "", maxItems = 10 }: {
+  items: Array<{ name: string; [k: string]: any }>;
+  valueKey: string;
+  valuePrefix?: string;
+  maxItems?: number;
+}) {
+  if (!items?.length) return <p className="stats-empty">Sem dados</p>;
+  const max = Math.max(...items.slice(0, maxItems).map((i) => i[valueKey]));
+  return (
+    <div className="bar-rank-list">
+      {items.slice(0, maxItems).map((item, idx) => (
+        <div key={idx} className="bar-rank-row">
+          <div className="bar-rank-meta">
+            <span className="bar-rank-name">{item.name}</span>
+            <span className="bar-rank-val">
+              {valuePrefix}{typeof item[valueKey] === "number" && valuePrefix === "€"
+                ? fmt(item[valueKey])
+                : fmtInt(item[valueKey])}
+            </span>
+          </div>
+          <div className="bar-rank-track">
+            <div className="bar-rank-fill" style={{ width: `${max > 0 ? (item[valueKey] / max) * 100 : 0}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function Statistics({ concession }: { concession: { id: string; slug: string } }) {
-  const [data, setData] = useState<StatsData | null>(null);
+  const [period, setPeriod] = useState("all");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const themeColor = concession.slug === "tropico" ? "#f97316" : "#0ea5e9";
+  const themeGradId = `conc-grad-${concession.slug}`;
+
+  const load = useCallback(() => {
+    if (period === "custom" && (!customStart || !customEnd)) return;
     setLoading(true);
-    try {
-      const res = await fetch(`/api/concessions/${concession.slug}/stats`);
-      if (res.ok) setData(await res.json());
-    } finally {
-      setLoading(false);
-    }
-  };
+    const url = period === "custom"
+      ? `/api/concessions/${concession.slug}/stats?period=custom&startDate=${customStart}&endDate=${customEnd}`
+      : `/api/concessions/${concession.slug}/stats?period=${period}`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((d) => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [period, customStart, customEnd, concession.slug]);
 
-  useEffect(() => { load(); }, [concession.slug]);
+  useEffect(() => { load(); }, [load]);
 
-  if (loading) return <div className="stats-loading"><RefreshCw size={20} className="stats-spin" /> A carregar...</div>;
-  if (!data) return <div className="stats-loading">Erro ao carregar estatísticas.</div>;
-
-  const maxBar = Math.max(...data.week.days.map((d) => d.occupancyPct), 1);
+  const kpis = data?.kpis ?? {};
 
   return (
-    <div className="stats-page">
-
-      {/* KPI row */}
-      <div className="stats-kpis">
-        <div className="stats-kpi">
-          <div className="stats-kpi-icon"><Armchair size={20} /></div>
-          <div className="stats-kpi-body">
-            <div className="stats-kpi-value">{data.today.occupancyPct}%</div>
-            <div className="stats-kpi-label">Ocupação hoje</div>
-            <div className="stats-kpi-sub">{data.today.occupied}/{data.totalSpots} lugares</div>
-          </div>
+    <div className="crm-stats-wrap">
+      {/* Header + period selector */}
+      <div className="stats-header">
+        <div>
+          <h2 className="page-title" style={{ fontSize: "1.2rem", marginBottom: 2 }}>Estatísticas</h2>
+          <p className="page-sub">Análise de receita, ocupação e operação</p>
         </div>
-
-        <div className="stats-kpi">
-          <div className="stats-kpi-icon"><Euro size={20} /></div>
-          <div className="stats-kpi-body">
-            <div className="stats-kpi-value">{fmt(data.today.revenuePaid)}</div>
-            <div className="stats-kpi-label">Receita hoje (pago)</div>
-            <div className="stats-kpi-sub">{fmt(data.today.revenueUnpaid)} por cobrar</div>
-          </div>
-        </div>
-
-        <div className="stats-kpi">
-          <div className="stats-kpi-icon"><TrendingUp size={20} /></div>
-          <div className="stats-kpi-body">
-            <div className="stats-kpi-value">{fmt(data.month.revenuePaid)}</div>
-            <div className="stats-kpi-label">Receita {data.month.label}</div>
-            <div className="stats-kpi-sub">Média {data.month.avgOccupancyPct}% ocupação</div>
-          </div>
-        </div>
-
-        <div className="stats-kpi">
-          <div className="stats-kpi-icon"><BookOpen size={20} /></div>
-          <div className="stats-kpi-body">
-            <div className="stats-kpi-value">{data.reservations.count}</div>
-            <div className="stats-kpi-label">Reservas activas</div>
-            <div className="stats-kpi-sub">{fmt(data.reservations.totalValue)} total</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="stats-grid">
-        {/* Weekly occupancy chart */}
-        <div className="stats-card stats-card-wide">
-          <div className="stats-card-title"><CalendarDays size={15} /> Próximos 7 dias — Ocupação</div>
-          <div className="stats-bars">
-            {data.week.days.map((d) => (
-              <div key={d.date} className="stats-bar-col">
-                <div className="stats-bar-pct">{d.occupancyPct}%</div>
-                <div className="stats-bar-track">
-                  <div
-                    className="stats-bar-fill"
-                    style={{ height: `${(d.occupancyPct / maxBar) * 100}%` }}
-                  />
-                </div>
-                <div className="stats-bar-day">{fmtWeekday(d.date)}</div>
-                <div className="stats-bar-date">{fmtDate(d.date)}</div>
-                <div className="stats-bar-rev">{fmt(d.revenuePaid + d.revenueUnpaid)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Today breakdown */}
-        <div className="stats-card">
-          <div className="stats-card-title"><Armchair size={15} /> Hoje — Detalhe</div>
-          <div className="stats-rows">
-            <div className="stats-row">
-              <span>Manhã</span><span>{data.today.periods.morning} lugares</span>
+        <div className="period-controls">
+          <select className="period-select" value={period} onChange={(e) => setPeriod(e.target.value)}>
+            {PERIODS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+          </select>
+          {period === "custom" && (
+            <div className="date-range">
+              <input type="date" className="date-input" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+              <span className="date-sep">—</span>
+              <input type="date" className="date-input" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
             </div>
-            <div className="stats-row">
-              <span>Tarde</span><span>{data.today.periods.afternoon} lugares</span>
-            </div>
-            <div className="stats-row">
-              <span>Dia Inteiro</span><span>{data.today.periods.fullDay} lugares</span>
-            </div>
-            <div className="stats-row stats-row-sep">
-              <span>Carry-overs</span><span>{data.today.carryOvers}</span>
-            </div>
-            <div className="stats-row">
-              <span>Receita paga</span><strong>{fmt(data.today.revenuePaid)}</strong>
-            </div>
-            <div className="stats-row">
-              <span>Por cobrar</span><strong className="stats-unpaid">{fmt(data.today.revenueUnpaid)}</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Upcoming reservations */}
-        <div className="stats-card stats-card-wide">
-          <div className="stats-card-title"><BookOpen size={15} /> Reservas Activas / Futuras</div>
-          {data.reservations.upcoming.length === 0 ? (
-            <div className="stats-empty">Sem reservas activas.</div>
-          ) : (
-            <table className="stats-table">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Lugar</th>
-                  <th>Período</th>
-                  <th>Datas</th>
-                  <th>Valor</th>
-                  <th>Pago</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.reservations.upcoming.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.clientName}</td>
-                    <td className="stats-center">{r.spotNumber}</td>
-                    <td>{PERIOD_PT[r.period] ?? r.period}</td>
-                    <td className="stats-nowrap">{fmtDate(r.startDate)} → {fmtDate(r.endDate)}</td>
-                    <td className="stats-right">{fmt(r.totalPrice)}</td>
-                    <td className="stats-center">
-                      <span className={`stats-badge ${r.isPaid ? "paid" : "unpaid"}`}>
-                        {r.isPaid ? "Sim" : "Não"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           )}
         </div>
       </div>
 
-      <div className="stats-refresh">
-        <button onClick={load} className="stats-refresh-btn">
-          <RefreshCw size={14} /> Atualizar
-        </button>
-      </div>
+      {loading ? (
+        <div className="loading-screen" style={{ height: 200 }}><div className="loader" /></div>
+      ) : !data ? (
+        <p className="stats-empty">Erro ao carregar dados.</p>
+      ) : (
+        <>
+          {/* ── KPIs ── */}
+          <div className="kpi-grid">
+            <div className="kpi-card">
+              <span className="kpi-label">Receita Total (Paga)</span>
+              <span className="kpi-value">€{fmt(kpis.revenuePaid ?? 0)}</span>
+            </div>
+            <div className="kpi-card">
+              <span className="kpi-label">Por Cobrar</span>
+              <span className="kpi-value" style={{ color: "var(--red)" }}>€{fmt(kpis.revenueUnpaid ?? 0)}</span>
+            </div>
+            <div className="kpi-card">
+              <span className="kpi-label">Total Entradas</span>
+              <span className="kpi-value">{fmtInt(kpis.totalEntries ?? 0)}</span>
+            </div>
+            <div className="kpi-card">
+              <span className="kpi-label">Ocupação Média</span>
+              <span className="kpi-value">{kpis.avgOccupancyPct ?? 0}%</span>
+            </div>
+            <div className="kpi-card">
+              <span className="kpi-label">Reservas no Período</span>
+              <span className="kpi-value">{fmtInt(kpis.totalReservations ?? 0)}</span>
+            </div>
+            <div className="kpi-card">
+              <span className="kpi-label">Desconto Total</span>
+              <span className="kpi-value" style={{ color: "var(--amber, #f59e0b)" }}>−€{fmt(kpis.discountTotal ?? 0)}</span>
+              <span className="kpi-growth neutral">{kpis.discountCount ?? 0} reserva{kpis.discountCount !== 1 ? "s" : ""} com desconto</span>
+            </div>
+          </div>
+
+          {/* ── Receita ── */}
+          <div className="stats-section">
+            <h2 className="stats-section-title">Receita</h2>
+            <div className="chart-card">
+              <div className="chart-card-title">Receita por mês</div>
+              {data.revenueByMonth?.length > 0 ? (
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={data.revenueByMonth} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id={themeGradId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={themeColor} stopOpacity={0.25} />
+                        <stop offset="95%" stopColor={themeColor} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="month" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `€${v}`} />
+                    <Tooltip content={<ChartTooltip currency />} />
+                    <Area type="monotone" dataKey="revenue" name="Receita" stroke={themeColor} strokeWidth={2} fill={`url(#${themeGradId})`} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : <p className="stats-empty">Sem dados para o período</p>}
+            </div>
+
+            <div className="chart-two-col">
+              <div className="chart-card">
+                <div className="chart-card-title">Receita por modalidade</div>
+                <BarRankList items={data.periodBreakdown} valueKey="revenue" valuePrefix="€" />
+              </div>
+              <div className="chart-card">
+                <div className="chart-card-title">Entradas por modalidade</div>
+                <BarRankList items={data.periodBreakdown} valueKey="count" />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Comportamento Semanal ── */}
+          <div className="stats-section">
+            <h2 className="stats-section-title">Comportamento Semanal</h2>
+            <div className="chart-two-col">
+              <div className="chart-card">
+                <div className="chart-card-title">Entradas por dia da semana</div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={data.salesByDayOfWeek} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Bar dataKey="count" name="Entradas" fill={themeColor} radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="chart-card">
+                <div className="chart-card-title">Receita por dia da semana</div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={data.salesByDayOfWeek} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `€${v}`} />
+                    <Tooltip content={<ChartTooltip currency />} />
+                    <Bar dataKey="revenue" name="Receita" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Descontos e Reservas ── */}
+          <div className="stats-section">
+            <h2 className="stats-section-title">Descontos &amp; Reservas</h2>
+            <div className="chart-two-col">
+              <div className="chart-card">
+                <div className="chart-card-title">Walk-in vs Reserva</div>
+                <div className="bar-rank-list" style={{ paddingTop: 8 }}>
+                  {[
+                    { name: "Walk-in", count: data.walkInVsReservation?.walkIn?.count ?? 0, revenue: data.walkInVsReservation?.walkIn?.revenue ?? 0 },
+                    { name: "Reserva",  count: data.walkInVsReservation?.reservation?.count ?? 0, revenue: data.walkInVsReservation?.reservation?.revenue ?? 0 },
+                  ].map((item) => {
+                    const max = Math.max(data.walkInVsReservation?.walkIn?.count ?? 0, data.walkInVsReservation?.reservation?.count ?? 0, 1);
+                    return (
+                      <div key={item.name} className="bar-rank-row">
+                        <div className="bar-rank-meta">
+                          <span className="bar-rank-name">{item.name}</span>
+                          <span className="bar-rank-val">{fmtInt(item.count)} · €{fmt(item.revenue)}</span>
+                        </div>
+                        <div className="bar-rank-track">
+                          <div className="bar-rank-fill" style={{ width: `${(item.count / max) * 100}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="chart-card">
+                <div className="chart-card-title">Desconto 7=6 aplicado</div>
+                <div style={{ paddingTop: 8, display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div>
+                    <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--amber, #f59e0b)" }}>
+                      −€{fmt(kpis.discountTotal ?? 0)}
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--muted, #64748b)", marginTop: 4 }}>
+                      impacto na receita
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>{fmtInt(kpis.discountCount ?? 0)}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--muted, #64748b)", marginTop: 4 }}>
+                      reservas com semana grátis
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Camas & Carry-overs ── */}
+          <div className="stats-section">
+            <h2 className="stats-section-title">Configuração de Camas</h2>
+            <div className="chart-two-col">
+              <div className="chart-card">
+                <div className="chart-card-title">Camas por receita</div>
+                <BarRankList items={data.bedBreakdown} valueKey="revenue" valuePrefix="€" />
+              </div>
+              <div className="chart-card">
+                <div className="chart-card-title">Carry-overs</div>
+                <div style={{ paddingTop: 8, display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div>
+                    <div style={{ fontSize: "1.6rem", fontWeight: 700 }}>{fmtInt(data.carryOvers?.count ?? 0)}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--muted, #64748b)", marginTop: 4 }}>entradas carry-over</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>€{fmt(data.carryOvers?.revenue ?? 0)}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--muted, #64748b)", marginTop: 4 }}>receita associada</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Top Clientes ── */}
+          <div className="stats-section">
+            <h2 className="stats-section-title">Top Clientes</h2>
+            <div className="chart-two-col">
+              <div className="chart-card">
+                <div className="chart-card-title">Por receita</div>
+                <BarRankList items={data.topClients} valueKey="revenue" valuePrefix="€" />
+              </div>
+              <div className="chart-card">
+                <div className="chart-card-title">Por nº de entradas</div>
+                <BarRankList items={data.topClients?.slice().sort((a: any, b: any) => b.count - a.count)} valueKey="count" />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
