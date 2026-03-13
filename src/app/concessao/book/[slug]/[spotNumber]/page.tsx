@@ -56,6 +56,8 @@ const T: Record<Lang, Record<string, string>> = {
     nearbyAvailable: "Chapéus próximos disponíveis:",
     walkToNearby: "Dirija-se ao chapéu indicado e leia o QR code.",
     refundPolicy: "Reembolso total até 48h antes da chegada. Stripe processa em 5–10 dias úteis.",
+    beachClosed: "A praia está encerrada para hoje.",
+    beachClosedSub: "Use o separador \"Reserva\" para reservar dias futuros.",
     errorReload: "Erro ao carregar. Recarregue a página.",
   },
   en: {
@@ -97,6 +99,8 @@ const T: Record<Lang, Record<string, string>> = {
     nearbyAvailable: "Available nearby seats:",
     walkToNearby: "Please walk to the indicated seat and scan its QR code.",
     refundPolicy: "Full refund up to 48h before arrival. Stripe processes refunds within 5–10 business days.",
+    beachClosed: "The beach is closed for today.",
+    beachClosedSub: "Use the \"Reserve\" tab to book future dates.",
     errorReload: "Failed to load. Please reload the page.",
   },
   es: {
@@ -138,6 +142,8 @@ const T: Record<Lang, Record<string, string>> = {
     nearbyAvailable: "Sombrillas cercanas disponibles:",
     walkToNearby: "Por favor, diríjase a la sombrilla indicada y escanee su código QR.",
     refundPolicy: "Reembolso total hasta 48h antes de la llegada. Stripe procesa en 5–10 días hábiles.",
+    beachClosed: "La playa está cerrada por hoy.",
+    beachClosedSub: "Use el separador \"Reservar\" para reservar días futuros.",
     errorReload: "Error al cargar. Recargue la página.",
   },
   fr: {
@@ -179,6 +185,8 @@ const T: Record<Lang, Record<string, string>> = {
     nearbyAvailable: "Parasols disponibles à proximité :",
     walkToNearby: "Rendez-vous au parasol indiqué et scannez son QR code.",
     refundPolicy: "Remboursement complet jusqu'à 48h avant l'arrivée. Stripe traite en 5–10 jours ouvrables.",
+    beachClosed: "La plage est fermée pour aujourd'hui.",
+    beachClosedSub: "Utilisez l'onglet \"Réserver\" pour réserver des dates futures.",
     errorReload: "Échec du chargement. Rechargez la page.",
   },
   de: {
@@ -220,6 +228,8 @@ const T: Record<Lang, Record<string, string>> = {
     nearbyAvailable: "Verfügbare Sonnenschirme in der Nähe:",
     walkToNearby: "Bitte gehen Sie zum angezeigten Sonnenschirm und scannen Sie dessen QR-Code.",
     refundPolicy: "Volle Rückerstattung bis 48h vor Ankunft. Stripe bearbeitet in 5–10 Werktagen.",
+    beachClosed: "Der Strand ist für heute geschlossen.",
+    beachClosedSub: "Nutzen Sie den Reiter \"Reservieren\" für zukünftige Daten.",
     errorReload: "Ladefehler. Bitte Seite neu laden.",
   },
 };
@@ -346,6 +356,13 @@ export default function BookingPage() {
     return thisSpot.takenPeriods.includes(p) || thisSpot.takenPeriods.includes("FULL_DAY");
   };
 
+  const isBeachClosed = (): boolean => {
+    const available = (["MORNING", "AFTERNOON", "FULL_DAY"] as const).filter(
+      (p) => !isPastCutoff(p)
+    );
+    return available.length === 0;
+  };
+
   const isFullyOccupied = (): boolean => {
     if (!thisSpot) return false;
     // A spot is "fully occupied" if ALL non-time-locked periods are taken
@@ -467,6 +484,7 @@ export default function BookingPage() {
 
   const theme = slug === "subnauta" ? "subnauta" : "tropico";
   const Icon = slug === "subnauta" ? Waves : TreePalm;
+  const beachClosed = isBeachClosed();
   const occupied = isFullyOccupied();
   const { total: resTotal, days: resDays, freeDays, dayPrice, bedExtra } = calcResPrice();
   const resValid = !!(resPeriod && resClientName.trim() && resStartDate && resEndDate && resEndDate >= resStartDate && resDays > 0);
@@ -545,7 +563,19 @@ export default function BookingPage() {
                 <span style={{ textTransform: "capitalize" }}>{todayLabel}</span>
               </div>
 
-              {occupied ? (
+              {beachClosed ? (
+                <>
+                  <div className="book-occupied-badge">
+                    <div className="book-occupied-title">{t.beachClosed}</div>
+                    <div className="book-occupied-sub">{t.beachClosedSub}</div>
+                  </div>
+                  <div className="book-actions" style={{ marginTop: 16 }}>
+                    <button className="book-btn-staff" onClick={() => setShowStaffForm((v) => !v)}>
+                      {t.callStaff}
+                    </button>
+                  </div>
+                </>
+              ) : occupied ? (
                 <>
                   <div className="book-occupied-badge">
                     <div className="book-occupied-title">{t.occupied}</div>
