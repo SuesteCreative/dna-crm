@@ -62,5 +62,11 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     priceExtraBed: concession.priceExtraBed,
   };
 
-  return NextResponse.json({ date, spots, pricing });
+  return NextResponse.json({
+    date,
+    spots,
+    pricing,
+    concessionName: concession.name,
+    concessionId: concession.id,
+  });
 }

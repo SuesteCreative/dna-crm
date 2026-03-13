@@ -9,21 +9,29 @@ import { useParams } from "next/navigation";
 import { Waves, TreePalm, Calendar } from "lucide-react";
 import "../../book.css";
 
-const T: Record<string, Record<string, string>> = {
+// ── Translations ─────────────────────────────────────────────────────────────
+
+const LANGS = ["pt", "en", "es", "fr", "de"] as const;
+type Lang = (typeof LANGS)[number];
+
+const FLAGS: Record<Lang, string> = { pt: "🇵🇹", en: "🇬🇧", es: "🇪🇸", fr: "🇫🇷", de: "🇩🇪" };
+
+const T: Record<Lang, Record<string, string>> = {
   pt: {
     loading: "A carregar...",
     occupied: "Chapéu ocupado",
     occupiedSub: "Este chapéu está totalmente ocupado para hoje.",
     availableNearby: "Chapéus disponíveis próximos:",
     walkTo: "Dirija-se ao chapéu indicado e leia o QR code.",
-    period: "Período",
+    period: "Modalidade",
     morning: "Manhã",
-    morningHours: "09h00–14h00",
+    morningHours: "09h–14h",
     afternoon: "Tarde",
-    afternoonHours: "14h00–19h00",
+    afternoonHours: "14h–19h",
     fullDay: "Dia Inteiro",
+    fullDayHours: "09h–19h",
+    pastCutoff: "Período encerrado",
     extraBed: "+ Cama Extra",
-    extraBedPrice: "(+preço)",
     name: "Nome *",
     namePlaceholder: "O seu nome",
     phone: "Telefone (opcional)",
@@ -36,11 +44,10 @@ const T: Record<string, Record<string, string>> = {
     staffSent: "✓ Staff avisado. Por favor aguarde no seu chapéu.",
     spotTaken: "Chapéu ocupado! Por favor recarregue a página.",
     allOccupied: "Todos os chapéus estão ocupados. Chame o staff.",
-    // Reservation mode
     modeToday: "Hoje",
     modeReservation: "Reserva",
-    startDate: "Data de chegada *",
-    endDate: "Data de saída *",
+    startDate: "Chegada *",
+    endDate: "Saída *",
     days: "dia(s)",
     discount: "Desconto",
     freeDay: "dia(s) gratuito(s)",
@@ -48,7 +55,8 @@ const T: Record<string, Record<string, string>> = {
     conflictError: "Chapéu não disponível nesse período.",
     nearbyAvailable: "Chapéus próximos disponíveis:",
     walkToNearby: "Dirija-se ao chapéu indicado e leia o QR code.",
-    refundPolicy: "Política de reembolso: reembolso total até 48h antes da chegada. Stripe processa reembolsos em 5–10 dias úteis.",
+    refundPolicy: "Reembolso total até 48h antes da chegada. Stripe processa em 5–10 dias úteis.",
+    errorReload: "Erro ao carregar. Recarregue a página.",
   },
   en: {
     loading: "Loading...",
@@ -62,8 +70,9 @@ const T: Record<string, Record<string, string>> = {
     afternoon: "Afternoon",
     afternoonHours: "14:00–19:00",
     fullDay: "Full Day",
+    fullDayHours: "09:00–19:00",
+    pastCutoff: "Session ended",
     extraBed: "+ Extra Sunbed",
-    extraBedPrice: "(+price)",
     name: "Name *",
     namePlaceholder: "Your name",
     phone: "Phone (optional)",
@@ -78,8 +87,8 @@ const T: Record<string, Record<string, string>> = {
     allOccupied: "All umbrellas are occupied. Please call staff.",
     modeToday: "Today",
     modeReservation: "Reserve",
-    startDate: "Arrival date *",
-    endDate: "Departure date *",
+    startDate: "Arrival *",
+    endDate: "Departure *",
     days: "day(s)",
     discount: "Discount",
     freeDay: "free day(s)",
@@ -87,7 +96,8 @@ const T: Record<string, Record<string, string>> = {
     conflictError: "Umbrella not available for that period.",
     nearbyAvailable: "Available nearby umbrellas:",
     walkToNearby: "Please walk to the indicated umbrella and scan its QR code.",
-    refundPolicy: "Refund policy: full refund up to 48h before arrival. Stripe processes refunds within 5–10 business days.",
+    refundPolicy: "Full refund up to 48h before arrival. Stripe processes refunds within 5–10 business days.",
+    errorReload: "Failed to load. Please reload the page.",
   },
   es: {
     loading: "Cargando...",
@@ -101,8 +111,9 @@ const T: Record<string, Record<string, string>> = {
     afternoon: "Tarde",
     afternoonHours: "14:00–19:00",
     fullDay: "Día Completo",
+    fullDayHours: "09:00–19:00",
+    pastCutoff: "Período cerrado",
     extraBed: "+ Hamaca Extra",
-    extraBedPrice: "(+precio)",
     name: "Nombre *",
     namePlaceholder: "Su nombre",
     phone: "Teléfono (opcional)",
@@ -117,8 +128,8 @@ const T: Record<string, Record<string, string>> = {
     allOccupied: "Todas las sombrillas están ocupadas. Llame al personal.",
     modeToday: "Hoy",
     modeReservation: "Reservar",
-    startDate: "Fecha de llegada *",
-    endDate: "Fecha de salida *",
+    startDate: "Llegada *",
+    endDate: "Salida *",
     days: "día(s)",
     discount: "Descuento",
     freeDay: "día(s) gratis",
@@ -126,7 +137,8 @@ const T: Record<string, Record<string, string>> = {
     conflictError: "Sombrilla no disponible para ese período.",
     nearbyAvailable: "Sombrillas cercanas disponibles:",
     walkToNearby: "Por favor, diríjase a la sombrilla indicada y escanee su código QR.",
-    refundPolicy: "Política de reembolso: reembolso total hasta 48h antes de la llegada. Stripe procesa los reembolsos en 5–10 días hábiles.",
+    refundPolicy: "Reembolso total hasta 48h antes de la llegada. Stripe procesa en 5–10 días hábiles.",
+    errorReload: "Error al cargar. Recargue la página.",
   },
   fr: {
     loading: "Chargement...",
@@ -136,12 +148,13 @@ const T: Record<string, Record<string, string>> = {
     walkTo: "Rendez-vous au parasol indiqué et scannez son QR code.",
     period: "Période",
     morning: "Matin",
-    morningHours: "09h00–14h00",
+    morningHours: "09h–14h",
     afternoon: "Après-midi",
-    afternoonHours: "14h00–19h00",
+    afternoonHours: "14h–19h",
     fullDay: "Journée complète",
+    fullDayHours: "09h–19h",
+    pastCutoff: "Période terminée",
     extraBed: "+ Transat supplémentaire",
-    extraBedPrice: "(+prix)",
     name: "Nom *",
     namePlaceholder: "Votre nom",
     phone: "Téléphone (optionnel)",
@@ -156,8 +169,8 @@ const T: Record<string, Record<string, string>> = {
     allOccupied: "Tous les parasols sont occupés. Appelez le personnel.",
     modeToday: "Aujourd'hui",
     modeReservation: "Réserver",
-    startDate: "Date d'arrivée *",
-    endDate: "Date de départ *",
+    startDate: "Arrivée *",
+    endDate: "Départ *",
     days: "jour(s)",
     discount: "Réduction",
     freeDay: "jour(s) gratuit(s)",
@@ -165,7 +178,8 @@ const T: Record<string, Record<string, string>> = {
     conflictError: "Parasol non disponible pour cette période.",
     nearbyAvailable: "Parasols disponibles à proximité :",
     walkToNearby: "Rendez-vous au parasol indiqué et scannez son QR code.",
-    refundPolicy: "Politique de remboursement : remboursement complet jusqu'à 48h avant l'arrivée. Stripe traite les remboursements sous 5–10 jours ouvrables.",
+    refundPolicy: "Remboursement complet jusqu'à 48h avant l'arrivée. Stripe traite en 5–10 jours ouvrables.",
+    errorReload: "Échec du chargement. Rechargez la page.",
   },
   de: {
     loading: "Wird geladen...",
@@ -179,8 +193,9 @@ const T: Record<string, Record<string, string>> = {
     afternoon: "Nachmittag",
     afternoonHours: "14:00–19:00",
     fullDay: "Ganzer Tag",
+    fullDayHours: "09:00–19:00",
+    pastCutoff: "Zeitraum beendet",
     extraBed: "+ Extra Liegestuhl",
-    extraBedPrice: "(+Preis)",
     name: "Name *",
     namePlaceholder: "Ihr Name",
     phone: "Telefon (optional)",
@@ -195,8 +210,8 @@ const T: Record<string, Record<string, string>> = {
     allOccupied: "Alle Sonnenschirme sind belegt. Rufen Sie das Personal.",
     modeToday: "Heute",
     modeReservation: "Reservieren",
-    startDate: "Anreisedatum *",
-    endDate: "Abreisedatum *",
+    startDate: "Anreise *",
+    endDate: "Abreise *",
     days: "Tag(e)",
     discount: "Rabatt",
     freeDay: "kostenloser Tag/Tage",
@@ -204,9 +219,22 @@ const T: Record<string, Record<string, string>> = {
     conflictError: "Sonnenschirm für diesen Zeitraum nicht verfügbar.",
     nearbyAvailable: "Verfügbare Sonnenschirme in der Nähe:",
     walkToNearby: "Bitte gehen Sie zum angezeigten Sonnenschirm und scannen Sie dessen QR-Code.",
-    refundPolicy: "Rückgaberichtlinie: volle Rückerstattung bis 48h vor der Ankunft. Stripe bearbeitet Rückerstattungen innerhalb von 5–10 Werktagen.",
+    refundPolicy: "Volle Rückerstattung bis 48h vor Ankunft. Stripe bearbeitet in 5–10 Werktagen.",
+    errorReload: "Ladefehler. Bitte Seite neu laden.",
   },
 };
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Returns current hour (0-23) in Europe/Lisbon timezone. */
+function lisbonHour(): number {
+  return parseInt(
+    new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Lisbon", hour: "numeric", hour12: false }).format(new Date()),
+    10
+  );
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface SpotInfo {
   spotId: string;
@@ -216,29 +244,24 @@ interface SpotInfo {
   takenPeriods: string[];
 }
 
-interface Pricing {
+interface ConcessionInfo {
+  id: string;
+  name: string;
   priceFull: number;
   priceMorning: number;
   priceAfternoon: number;
   priceExtraBed: number;
 }
 
-interface ConcessionInfo {
-  id: string;
-  name: string;
-  slug: string;
-  priceFull: number;
-  priceMorning: number;
-  priceAfternoon: number;
-  priceExtraBed: number;
-}
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function BookingPage() {
   const { slug, spotNumber } = useParams<{ slug: string; spotNumber: string }>();
   const spotNum = Number(spotNumber);
 
-  const [lang, setLang] = useState("pt");
+  const [lang, setLang] = useState<Lang>("pt");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [concession, setConcession] = useState<ConcessionInfo | null>(null);
   const [allSpots, setAllSpots] = useState<SpotInfo[]>([]);
   const [thisSpot, setThisSpot] = useState<SpotInfo | null>(null);
@@ -271,34 +294,34 @@ export default function BookingPage() {
   const [staffSent, setStaffSent] = useState(false);
   const [staffSubmitting, setStaffSubmitting] = useState(false);
 
-  const t = T[lang] ?? T.pt;
+  const t = T[lang];
 
+  // Auto-detect language once on mount
   useEffect(() => {
-    const l = navigator.language.slice(0, 2).toLowerCase();
-    setLang(T[l] ? l : "pt");
+    const l = navigator.language.slice(0, 2).toLowerCase() as Lang;
+    if (LANGS.includes(l)) setLang(l);
   }, []);
 
+  // Load all data from a single public endpoint
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setLoadError(false);
       try {
         const res = await fetch(`/api/concessions/${slug}/spot-availability`);
+        if (!res.ok) throw new Error("Failed");
         const data = await res.json();
 
-        // Fetch concession info
-        const cRes = await fetch(`/api/concessions/${slug}`);
-        const cData = await cRes.json();
-        setConcession(cData);
-
-        // Use pricing from spot-availability if concession fetch failed
-        if (!cData || cData.error) {
-          const pricing: Pricing = data.pricing ?? {};
-          setConcession({ id: "", name: slug, slug, ...pricing } as ConcessionInfo);
-        }
-
+        setConcession({
+          id: data.concessionId ?? "",
+          name: data.concessionName ?? (slug === "subnauta" ? "Subnauta" : "Trópico"),
+          ...data.pricing,
+        });
         setAllSpots(data.spots ?? []);
         const found = (data.spots ?? []).find((s: SpotInfo) => s.spotNumber === spotNum);
         setThisSpot(found ?? null);
+      } catch {
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -306,28 +329,43 @@ export default function BookingPage() {
     fetchData();
   }, [slug, spotNum]);
 
-  const isOccupied = thisSpot
-    ? ["MORNING", "AFTERNOON", "FULL_DAY"].every((p) =>
-        thisSpot.takenPeriods.includes(p) ||
-        (thisSpot.takenPeriods.includes("FULL_DAY") && (p === "MORNING" || p === "AFTERNOON"))
-      )
-    : false;
+  // ── Period availability ───────────────────────────────────────────────────
 
-  const periodTaken = (p: string) => {
+  /** Whether the period has passed (time-based, Lisbon timezone). */
+  const isPastCutoff = (p: string): boolean => {
+    const h = lisbonHour();
+    if (p === "MORNING") return h >= 14;
+    if (p === "FULL_DAY") return h >= 14; // can't buy full day in the afternoon
+    if (p === "AFTERNOON") return h >= 19;
+    return false;
+  };
+
+  const periodTaken = (p: string): boolean => {
+    if (isPastCutoff(p)) return true;
     if (!thisSpot) return true;
     return thisSpot.takenPeriods.includes(p) || thisSpot.takenPeriods.includes("FULL_DAY");
   };
 
-  // Nearby free spots for daily occupied state (euclidean distance)
+  const isFullyOccupied = (): boolean => {
+    if (!thisSpot) return false;
+    // A spot is "fully occupied" if ALL non-time-locked periods are taken
+    const available = (["MORNING", "AFTERNOON", "FULL_DAY"] as const).filter(
+      (p) => !isPastCutoff(p)
+    );
+    if (available.length === 0) return false; // beach closed for today
+    return available.every((p) => periodTaken(p));
+  };
+
+  // Nearby free spots for daily occupied state
   const nearbyFree = thisSpot
     ? allSpots
-        .filter(
-          (s) =>
-            s.spotNumber !== spotNum &&
-            !["MORNING", "AFTERNOON", "FULL_DAY"].every(
-              (p) => s.takenPeriods.includes(p) || s.takenPeriods.includes("FULL_DAY")
-            )
-        )
+        .filter((s) => {
+          if (s.spotNumber === spotNum) return false;
+          const available = (["MORNING", "AFTERNOON", "FULL_DAY"] as const).filter(
+            (p) => !isPastCutoff(p)
+          );
+          return available.some((p) => !s.takenPeriods.includes(p) && !s.takenPeriods.includes("FULL_DAY"));
+        })
         .map((s) => ({
           ...s,
           dist: Math.sqrt((s.row - thisSpot.row) ** 2 + (s.col - thisSpot.col) ** 2),
@@ -336,7 +374,9 @@ export default function BookingPage() {
         .slice(0, 4)
     : [];
 
-  const calcDailyPrice = () => {
+  // ── Price calculation ─────────────────────────────────────────────────────
+
+  const calcDailyPrice = (): number => {
     if (!concession || !period) return 0;
     let base =
       period === "MORNING" ? concession.priceMorning :
@@ -346,12 +386,11 @@ export default function BookingPage() {
     return base;
   };
 
-  // Reservation price calculation
   const calcResPrice = () => {
-    if (!concession || !resPeriod || !resStartDate || !resEndDate) return { total: 0, days: 0, freeDays: 0 };
+    if (!concession || !resPeriod || !resStartDate || !resEndDate) return { total: 0, days: 0, freeDays: 0, dayPrice: 0, bedExtra: 0 };
     const start = new Date(resStartDate + "T12:00:00Z");
     const end = new Date(resEndDate + "T12:00:00Z");
-    if (end < start) return { total: 0, days: 0, freeDays: 0 };
+    if (end < start) return { total: 0, days: 0, freeDays: 0, dayPrice: 0, bedExtra: 0 };
     const days = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
     const freeDays = Math.floor(days / 7);
     const billableDays = days - freeDays;
@@ -361,11 +400,12 @@ export default function BookingPage() {
       concession.priceFull;
     const bedExtra = resExtraBed ? concession.priceExtraBed : 0;
     const total = billableDays * (dayPrice + bedExtra);
-    return { total, days, freeDays };
+    return { total, days, freeDays, dayPrice, bedExtra };
   };
 
-  // Today string for date picker min values
   const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" });
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handlePay = async () => {
     if (!period || !clientName.trim()) return;
@@ -396,22 +436,12 @@ export default function BookingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          slug,
-          spotNumber: spotNum,
-          startDate: resStartDate,
-          endDate: resEndDate,
-          period: resPeriod,
-          extraBed: resExtraBed,
-          clientName: resClientName,
-          clientPhone: resClientPhone,
+          slug, spotNumber: spotNum, startDate: resStartDate, endDate: resEndDate,
+          period: resPeriod, extraBed: resExtraBed, clientName: resClientName, clientPhone: resClientPhone,
         }),
       });
       const data = await res.json();
-      if (res.status === 409) {
-        setResError(t.conflictError);
-        setResNearbySpots(data.nearbySpots ?? []);
-        return;
-      }
+      if (res.status === 409) { setResError(t.conflictError); setResNearbySpots(data.nearbySpots ?? []); return; }
       if (!res.ok || !data.url) { setResError(data.error ?? "Erro. Tente novamente."); return; }
       window.location.href = data.url;
     } finally {
@@ -425,11 +455,7 @@ export default function BookingPage() {
       await fetch("/api/concessions/staff-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug,
-          spotNumber: spotNum,
-          clientName: staffName || clientName || resClientName || null,
-        }),
+        body: JSON.stringify({ slug, spotNumber: spotNum, clientName: staffName || clientName || resClientName || null }),
       });
       setStaffSent(true);
     } finally {
@@ -437,15 +463,18 @@ export default function BookingPage() {
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   const theme = slug === "subnauta" ? "subnauta" : "tropico";
   const Icon = slug === "subnauta" ? Waves : TreePalm;
-  const today = new Date().toLocaleDateString(
+  const occupied = isFullyOccupied();
+  const { total: resTotal, days: resDays, freeDays, dayPrice, bedExtra } = calcResPrice();
+  const resValid = !!(resPeriod && resClientName.trim() && resStartDate && resEndDate && resEndDate >= resStartDate && resDays > 0);
+
+  const todayLabel = new Date().toLocaleDateString(
     lang === "pt" ? "pt-PT" : lang === "es" ? "es-ES" : lang === "fr" ? "fr-FR" : lang === "de" ? "de-DE" : "en-GB",
     { weekday: "long", day: "numeric", month: "long" }
   );
-
-  const { total: resTotal, days: resDays, freeDays } = calcResPrice();
-  const resValid = resPeriod && resClientName.trim() && resStartDate && resEndDate && resEndDate >= resStartDate && resDays > 0;
 
   if (loading) {
     return (
@@ -467,12 +496,25 @@ export default function BookingPage() {
       <div className={`book-header ${theme}`}>
         <Icon size={28} className="book-header-icon" />
         <div>
-          <div className="book-header-title">{concession?.name ?? slug}</div>
+          <div className="book-header-title">{concession?.name ?? (slug === "subnauta" ? "Subnauta" : "Trópico")}</div>
           <div className="book-header-sub">Chapéu {spotNum}</div>
         </div>
       </div>
 
       <div className="book-card">
+        {/* Language selector */}
+        <div className="book-lang-row">
+          {LANGS.map((l) => (
+            <button
+              key={l}
+              className={`book-lang-btn ${lang === l ? `active ${theme}` : ""}`}
+              onClick={() => setLang(l)}
+            >
+              {FLAGS[l]}
+            </button>
+          ))}
+        </div>
+
         {/* Mode toggle */}
         <div className={`book-mode-toggle ${theme}`}>
           <button
@@ -491,15 +533,19 @@ export default function BookingPage() {
 
         <div className="book-card-body">
 
+          {loadError && (
+            <div className="book-error" style={{ marginBottom: 0 }}>{t.errorReload}</div>
+          )}
+
           {/* ── DAILY MODE ─────────────────────────────────────────── */}
-          {mode === "daily" && (
+          {!loadError && mode === "daily" && (
             <>
               <div className="book-date-row">
-                <Calendar size={15} />
-                <span style={{ textTransform: "capitalize" }}>{today}</span>
+                <Calendar size={14} />
+                <span style={{ textTransform: "capitalize" }}>{todayLabel}</span>
               </div>
 
-              {isOccupied ? (
+              {occupied ? (
                 <>
                   <div className="book-occupied-badge">
                     <div className="book-occupied-title">{t.occupied}</div>
@@ -516,10 +562,15 @@ export default function BookingPage() {
                       <div className="book-alt-walk">{t.walkTo}</div>
                     </div>
                   ) : (
-                    <div className="book-occupied-badge">
+                    <div className="book-occupied-badge" style={{ marginTop: 0 }}>
                       <div className="book-occupied-sub">{t.allOccupied}</div>
                     </div>
                   )}
+                  <div className="book-actions" style={{ marginTop: 16 }}>
+                    <button className="book-btn-staff" onClick={() => setShowStaffForm((v) => !v)}>
+                      {t.callStaff}
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>
@@ -529,8 +580,9 @@ export default function BookingPage() {
                   <div className="book-periods">
                     {(["MORNING", "AFTERNOON", "FULL_DAY"] as const).map((p) => {
                       const taken = periodTaken(p);
+                      const timeLocked = isPastCutoff(p);
                       const label = p === "MORNING" ? t.morning : p === "AFTERNOON" ? t.afternoon : t.fullDay;
-                      const hours = p === "MORNING" ? t.morningHours : p === "AFTERNOON" ? t.afternoonHours : "";
+                      const hours = p === "MORNING" ? t.morningHours : p === "AFTERNOON" ? t.afternoonHours : t.fullDayHours;
                       const price = concession
                         ? p === "MORNING" ? concession.priceMorning
                         : p === "AFTERNOON" ? concession.priceAfternoon
@@ -539,13 +591,13 @@ export default function BookingPage() {
                       return (
                         <button
                           key={p}
-                          className={`book-period-btn ${period === p ? `active ${theme}` : ""}`}
+                          className={`book-period-btn ${period === p ? `active ${theme}` : ""} ${taken ? "taken" : ""}`}
                           disabled={taken}
                           onClick={() => setPeriod(p)}
                         >
-                          {label}
-                          {hours && <><br /><small style={{ fontWeight: 400, fontSize: 11 }}>{hours}</small></>}
-                          <span className="period-price">{price.toFixed(2)}€</span>
+                          <span className="period-label">{label}</span>
+                          <span className="period-hours">{timeLocked ? t.pastCutoff : hours}</span>
+                          <span className="period-price">{taken ? "—" : `${price.toFixed(2)}€`}</span>
                         </button>
                       );
                     })}
@@ -572,7 +624,7 @@ export default function BookingPage() {
                           onChange={(e) => setClientName(e.target.value)}
                         />
                       </div>
-                      <div className={`book-field ${theme}`}>
+                      <div className={`book-field`}>
                         <label>{t.phone}</label>
                         <input
                           type="tel"
@@ -582,11 +634,9 @@ export default function BookingPage() {
                         />
                       </div>
 
-                      <div className="book-price-summary">
-                        <div className="book-price-row">
-                          <span className="book-price-label">{t.total}</span>
-                          <span className="book-price-total">{calcDailyPrice().toFixed(2)}€</span>
-                        </div>
+                      <div className={`book-price-summary ${theme}`}>
+                        <span className="book-price-label">{t.total}</span>
+                        <span className="book-price-total">{calcDailyPrice().toFixed(2)}€</span>
                       </div>
 
                       <div className="book-actions">
@@ -613,19 +663,11 @@ export default function BookingPage() {
                   )}
                 </>
               )}
-
-              {isOccupied && (
-                <div className="book-actions" style={{ marginTop: 16 }}>
-                  <button className="book-btn-staff" onClick={() => setShowStaffForm((v) => !v)}>
-                    {t.callStaff}
-                  </button>
-                </div>
-              )}
             </>
           )}
 
           {/* ── RESERVATION MODE ───────────────────────────────────── */}
-          {mode === "reservation" && (
+          {!loadError && mode === "reservation" && (
             <>
               {resError && (
                 <div className="book-error">
@@ -654,8 +696,7 @@ export default function BookingPage() {
                     onChange={(e) => {
                       setResStartDate(e.target.value);
                       if (resEndDate && e.target.value > resEndDate) setResEndDate(e.target.value);
-                      setResError(null);
-                      setResNearbySpots([]);
+                      setResError(null); setResNearbySpots([]);
                     }}
                   />
                 </div>
@@ -665,11 +706,7 @@ export default function BookingPage() {
                     type="date"
                     min={resStartDate || todayStr}
                     value={resEndDate}
-                    onChange={(e) => {
-                      setResEndDate(e.target.value);
-                      setResError(null);
-                      setResNearbySpots([]);
-                    }}
+                    onChange={(e) => { setResEndDate(e.target.value); setResError(null); setResNearbySpots([]); }}
                   />
                 </div>
               </div>
@@ -678,7 +715,7 @@ export default function BookingPage() {
               <div className="book-periods">
                 {(["MORNING", "AFTERNOON", "FULL_DAY"] as const).map((p) => {
                   const label = p === "MORNING" ? t.morning : p === "AFTERNOON" ? t.afternoon : t.fullDay;
-                  const hours = p === "MORNING" ? t.morningHours : p === "AFTERNOON" ? t.afternoonHours : "";
+                  const hours = p === "MORNING" ? t.morningHours : p === "AFTERNOON" ? t.afternoonHours : t.fullDayHours;
                   const price = concession
                     ? p === "MORNING" ? concession.priceMorning
                     : p === "AFTERNOON" ? concession.priceAfternoon
@@ -690,8 +727,8 @@ export default function BookingPage() {
                       className={`book-period-btn ${resPeriod === p ? `active ${theme}` : ""}`}
                       onClick={() => { setResPeriod(p); setResError(null); setResNearbySpots([]); }}
                     >
-                      {label}
-                      {hours && <><br /><small style={{ fontWeight: 400, fontSize: 11 }}>{hours}</small></>}
+                      <span className="period-label">{label}</span>
+                      <span className="period-hours">{hours}</span>
                       <span className="period-price">{price.toFixed(2)}€</span>
                     </button>
                   );
@@ -717,7 +754,7 @@ export default function BookingPage() {
                   onChange={(e) => setResClientName(e.target.value)}
                 />
               </div>
-              <div className={`book-field ${theme}`}>
+              <div className="book-field">
                 <label>{t.phone}</label>
                 <input
                   type="tel"
@@ -728,28 +765,18 @@ export default function BookingPage() {
               </div>
 
               {resPeriod && resStartDate && resEndDate && resDays > 0 && (
-                <div className="book-price-summary">
-                  <div className="book-price-row" style={{ marginBottom: 4 }}>
-                    <span className="book-price-label">{resDays} {t.days} × {
-                      (resPeriod === "MORNING" ? concession?.priceMorning :
-                       resPeriod === "AFTERNOON" ? concession?.priceAfternoon :
-                       concession?.priceFull ?? 0)?.toFixed(2)
-                    }€{resExtraBed && concession ? ` + ${concession.priceExtraBed.toFixed(2)}€` : ""}</span>
+                <div className={`book-price-summary ${theme} column`}>
+                  <div className="book-price-breakdown">
+                    <span>{resDays} {t.days} × {(dayPrice + bedExtra).toFixed(2)}€</span>
                   </div>
                   {freeDays > 0 && (
-                    <div className="book-price-row" style={{ marginBottom: 4 }}>
-                      <span className="book-price-label" style={{ color: "#16a34a" }}>
-                        {t.discount}: −{freeDays} {t.freeDay}
-                      </span>
-                      <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 700 }}>
-                        −{(freeDays * ((resPeriod === "MORNING" ? concession?.priceMorning :
-                           resPeriod === "AFTERNOON" ? concession?.priceAfternoon :
-                           concession?.priceFull ?? 0)! + (resExtraBed && concession ? concession.priceExtraBed : 0))).toFixed(2)}€
-                      </span>
+                    <div className="book-price-breakdown discount">
+                      <span>{t.discount}: −{freeDays} {t.freeDay}</span>
+                      <span>−{(freeDays * (dayPrice + bedExtra)).toFixed(2)}€</span>
                     </div>
                   )}
-                  <div className="book-price-row" style={{ borderTop: "1px solid #e5e5e5", paddingTop: 10, marginTop: 6 }}>
-                    <span className="book-price-label">{t.total}</span>
+                  <div className="book-price-row-total">
+                    <span>{t.total}</span>
                     <span className="book-price-total">{resTotal.toFixed(2)}€</span>
                   </div>
                 </div>
@@ -763,7 +790,7 @@ export default function BookingPage() {
                   disabled={resSubmitting || !resValid}
                   onClick={handleReserve}
                 >
-                  {resSubmitting ? "..." : `${t.reserve} ${resTotal > 0 ? resTotal.toFixed(2) + "€" : ""}`}
+                  {resSubmitting ? "..." : `${t.reserve}${resTotal > 0 ? ` ${resTotal.toFixed(2)}€` : ""}`}
                 </button>
                 <button className="book-btn-staff" onClick={() => setShowStaffForm((v) => !v)}>
                   {t.callStaff}
@@ -772,7 +799,7 @@ export default function BookingPage() {
             </>
           )}
 
-          {/* Staff request form — always available */}
+          {/* Staff request form */}
           {showStaffForm && !staffSent && (
             <div className="book-staff-form">
               <input

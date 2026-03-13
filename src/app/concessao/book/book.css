@@ -1,242 +1,85 @@
-/* ── Public booking pages ─────────────────────── */
+/* ── Public booking pages ──────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
 .book-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: #f0f4f8;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 0 40px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 0 0 48px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
 
 .book-header {
   width: 100%;
-  padding: 20px 24px;
+  padding: 24px 20px 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   color: white;
 }
-.book-header.tropico  { background: #f97316; }
-.book-header.subnauta { background: #0ea5e9; }
+.book-header.tropico  { background: linear-gradient(135deg, #fb923c, #ea580c); }
+.book-header.subnauta { background: linear-gradient(135deg, #38bdf8, #0284c7); }
 
-.book-header-icon { flex-shrink: 0; }
-.book-header-title { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; }
-.book-header-sub   { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+.book-header-icon { flex-shrink: 0; opacity: 0.95; }
+.book-header-title { font-size: 20px; font-weight: 800; letter-spacing: 0.3px; }
+.book-header-sub   { font-size: 14px; opacity: 0.8; margin-top: 2px; font-weight: 500; }
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
 
 .book-card {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 420px;
-  margin: 24px 16px 0;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  width: calc(100% - 32px);
+  max-width: 440px;
+  margin: -12px 16px 0;
   overflow: hidden;
 }
 
-.book-card-body { padding: 24px; }
+.book-card-body { padding: 20px; }
 
-.book-date-row {
+/* ── Language selector ───────────────────────────────────────────────────── */
+
+.book-lang-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 20px;
-  padding: 10px 14px;
-  background: #f9f9f9;
-  border-radius: 10px;
+  gap: 4px;
+  padding: 10px 14px 0;
+  justify-content: flex-end;
 }
-
-/* Period selector */
-.book-period-label { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px; }
-.book-periods {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-.book-period-btn {
-  flex: 1;
-  padding: 12px 6px;
-  border: 2px solid #e5e5e5;
-  border-radius: 10px;
-  background: white;
-  font-size: 13px;
-  font-weight: 600;
-  color: #444;
+.book-lang-btn {
+  padding: 4px 7px;
+  border: 1.5px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  font-size: 17px;
   cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-  line-height: 1.3;
+  opacity: 0.45;
+  transition: opacity 0.15s, border-color 0.15s;
+  line-height: 1;
 }
-.book-period-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.book-period-btn.active.tropico  { border-color: #f97316; background: #fff7ed; color: #c2410c; }
-.book-period-btn.active.subnauta { border-color: #0ea5e9; background: #f0f9ff; color: #0369a1; }
-.book-period-btn .period-price { font-size: 15px; font-weight: 800; display: block; }
+.book-lang-btn:hover { opacity: 0.7; }
+.book-lang-btn.active { opacity: 1; border-color: #e5e5e5; background: #f9f9f9; }
 
-/* Extra bed toggle */
-.book-extra-bed {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  background: #f9f9f9;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  cursor: pointer;
-  user-select: none;
-}
-.book-extra-bed input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #f97316; }
-.book-extra-bed.subnauta input[type="checkbox"] { accent-color: #0ea5e9; }
-.book-extra-bed-label { font-size: 14px; font-weight: 600; color: #333; }
-.book-extra-bed-price { font-size: 13px; color: #888; margin-left: auto; }
+/* ── Mode toggle ─────────────────────────────────────────────────────────── */
 
-/* Form fields */
-.book-field { margin-bottom: 14px; }
-.book-field label { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
-.book-field input {
-  width: 100%;
-  padding: 11px 14px;
-  border: 1.5px solid #e5e5e5;
-  border-radius: 10px;
-  font-size: 15px;
-  background: white;
-  box-sizing: border-box;
-  transition: border-color 0.15s;
-}
-.book-field input:focus { outline: none; border-color: #f97316; }
-.book-field.subnauta input:focus { border-color: #0ea5e9; }
-
-/* Price summary */
-.book-price-summary {
-  background: #f9f9f9;
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
-}
-.book-price-row { display: flex; justify-content: space-between; align-items: center; }
-.book-price-label { font-size: 14px; color: #555; }
-.book-price-total { font-size: 22px; font-weight: 900; color: #111; }
-
-/* Action buttons */
-.book-actions { display: flex; flex-direction: column; gap: 10px; }
-.book-btn-pay {
-  padding: 15px;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 800;
-  color: white;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.book-btn-pay.tropico  { background: #f97316; }
-.book-btn-pay.subnauta { background: #0ea5e9; }
-.book-btn-pay:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.book-btn-staff {
-  padding: 12px;
-  border: 2px solid #e5e5e5;
-  border-radius: 12px;
-  background: white;
-  font-size: 14px;
-  font-weight: 600;
-  color: #444;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.book-btn-staff:hover { border-color: #aaa; }
-
-/* Staff request inline form */
-.book-staff-form {
-  margin-top: 12px;
-  padding: 16px;
-  background: #f9f9f9;
-  border-radius: 12px;
-}
-.book-staff-form input {
-  width: 100%;
-  padding: 11px 14px;
-  border: 1.5px solid #e5e5e5;
-  border-radius: 10px;
-  font-size: 15px;
-  margin-bottom: 10px;
-  box-sizing: border-box;
-}
-.book-btn-staff-submit {
-  width: 100%;
-  padding: 11px;
-  border: none;
-  border-radius: 10px;
-  background: #374151;
-  color: white;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.book-staff-sent {
-  padding: 12px 14px;
-  background: #d1fae5;
-  border-radius: 10px;
-  color: #065f46;
-  font-size: 14px;
-  font-weight: 600;
-  text-align: center;
-  margin-top: 12px;
-}
-
-/* Occupied state */
-.book-occupied-badge {
-  padding: 16px;
-  background: #fef2f2;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  text-align: center;
-}
-.book-occupied-title { font-size: 16px; font-weight: 800; color: #991b1b; margin-bottom: 4px; }
-.book-occupied-sub   { font-size: 13px; color: #b91c1c; }
-
-.book-alternatives { margin-bottom: 20px; }
-.book-alternatives-label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 10px; }
-.book-alt-spots { display: flex; flex-wrap: wrap; gap: 8px; }
-.book-alt-spot {
-  width: 52px; height: 52px;
-  border-radius: 12px;
-  background: #f0fdf4;
-  border: 2px solid #86efac;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; font-weight: 900; color: #166534;
-  text-decoration: none;
-}
-.book-alt-walk { font-size: 12px; color: #666; margin-top: 8px; }
-
-/* Error */
-.book-error {
-  padding: 12px 14px;
-  background: #fef2f2;
-  border-radius: 10px;
-  color: #991b1b;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-/* Loading */
-.book-loading { text-align: center; padding: 48px 24px; color: #888; font-size: 15px; }
-
-/* Mode toggle (Today / Reserve) */
 .book-mode-toggle {
   display: flex;
   border-bottom: 1.5px solid #f0f0f0;
+  margin-top: 8px;
 }
 .book-mode-btn {
   flex: 1;
-  padding: 13px 8px;
+  padding: 14px 8px;
   border: none;
-  background: white;
+  background: transparent;
   font-size: 14px;
-  font-weight: 600;
-  color: #888;
+  font-weight: 700;
+  color: #aaa;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -245,47 +88,339 @@
   border-bottom: 2.5px solid transparent;
   margin-bottom: -1.5px;
   transition: color 0.15s, border-color 0.15s;
+  letter-spacing: 0.2px;
 }
-.book-mode-btn.active.tropico  { color: #f97316; border-bottom-color: #f97316; }
-.book-mode-btn.active.subnauta { color: #0ea5e9; border-bottom-color: #0ea5e9; }
+.book-mode-btn.active.tropico  { color: #ea580c; border-bottom-color: #ea580c; }
+.book-mode-btn.active.subnauta { color: #0284c7; border-bottom-color: #0284c7; }
 
-/* Reservation date inputs */
-.book-res-dates { display: flex; gap: 12px; }
-.book-res-dates .book-field { flex: 1; }
+/* ── Date row ────────────────────────────────────────────────────────────── */
 
-/* Refund policy note */
+.book-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  background: #f7f8fa;
+  border-radius: 10px;
+  text-transform: capitalize;
+}
+
+/* ── Period selector ─────────────────────────────────────────────────────── */
+
+.book-period-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin-bottom: 10px;
+}
+
+.book-periods {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.book-period-btn {
+  flex: 1;
+  padding: 14px 6px 12px;
+  border: 2px solid #ebebeb;
+  border-radius: 14px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.book-period-btn:hover:not(:disabled) { border-color: #ccc; background: #fafafa; }
+.book-period-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.book-period-btn.taken { opacity: 0.28; cursor: not-allowed; }
+
+.book-period-btn.active.tropico  { border-color: #ea580c; background: #fff7ed; }
+.book-period-btn.active.subnauta { border-color: #0284c7; background: #f0f9ff; }
+
+.period-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+}
+.book-period-btn.active.tropico  .period-label { color: #c2410c; }
+.book-period-btn.active.subnauta .period-label { color: #0369a1; }
+
+.period-hours {
+  font-size: 10px;
+  color: #999;
+  font-weight: 500;
+}
+.book-period-btn.active.tropico  .period-hours { color: #ea580c; opacity: 0.75; }
+.book-period-btn.active.subnauta .period-hours { color: #0284c7; opacity: 0.75; }
+
+.period-price {
+  font-size: 16px;
+  font-weight: 900;
+  color: #222;
+  margin-top: 2px;
+}
+.book-period-btn.active.tropico  .period-price { color: #c2410c; }
+.book-period-btn.active.subnauta .period-price { color: #0369a1; }
+
+/* ── Extra bed toggle ────────────────────────────────────────────────────── */
+
+.book-extra-bed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #f7f8fa;
+  border-radius: 12px;
+  margin-bottom: 18px;
+  cursor: pointer;
+  user-select: none;
+  border: 1.5px solid transparent;
+  transition: border-color 0.15s;
+}
+.book-extra-bed:has(input:checked).tropico  { border-color: #ea580c; background: #fff7ed; }
+.book-extra-bed:has(input:checked).subnauta { border-color: #0284c7; background: #f0f9ff; }
+.book-extra-bed input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #ea580c; flex-shrink: 0; }
+.book-extra-bed.subnauta input[type="checkbox"] { accent-color: #0284c7; }
+.book-extra-bed-label { font-size: 14px; font-weight: 600; color: #333; }
+.book-extra-bed-price { font-size: 13px; color: #888; margin-left: auto; font-weight: 500; }
+
+/* ── Form fields ─────────────────────────────────────────────────────────── */
+
+.book-field { margin-bottom: 14px; }
+.book-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.book-field input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 12px;
+  font-size: 15px;
+  background: white;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  color: #222;
+}
+.book-field input:focus {
+  outline: none;
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234,88,12,0.08);
+}
+
+/* ── Reservation date fields ─────────────────────────────────────────────── */
+
+.book-res-dates { display: flex; gap: 10px; margin-bottom: 4px; }
+.book-res-dates .book-field { flex: 1; margin-bottom: 14px; }
+.book-res-dates input[type="date"] { font-size: 14px; }
+
+/* ── Price summary ───────────────────────────────────────────────────────── */
+
+.book-price-summary {
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.book-price-summary.tropico  { background: #fff7ed; }
+.book-price-summary.subnauta { background: #f0f9ff; }
+.book-price-summary.column { flex-direction: column; align-items: stretch; gap: 6px; }
+
+.book-price-label { font-size: 14px; color: #666; font-weight: 500; }
+.book-price-total { font-size: 26px; font-weight: 900; color: #111; }
+
+.book-price-breakdown {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #666;
+}
+.book-price-breakdown.discount { color: #16a34a; font-weight: 600; }
+.book-price-row-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(0,0,0,0.07);
+  padding-top: 10px;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+}
+
+/* ── Refund policy ───────────────────────────────────────────────────────── */
+
 .book-refund-policy {
   font-size: 11px;
-  color: #999;
-  line-height: 1.5;
-  margin-bottom: 16px;
+  color: #aaa;
+  line-height: 1.6;
+  margin-bottom: 18px;
   padding: 10px 12px;
   background: #fafafa;
-  border-radius: 8px;
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
 }
 
-/* Success / Cancel pages */
+/* ── Action buttons ──────────────────────────────────────────────────────── */
+
+.book-actions { display: flex; flex-direction: column; gap: 10px; }
+
+.book-btn-pay {
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.2px;
+}
+.book-btn-pay.tropico  { background: linear-gradient(135deg, #fb923c, #ea580c); }
+.book-btn-pay.subnauta { background: linear-gradient(135deg, #38bdf8, #0284c7); }
+.book-btn-pay:not(:disabled):active { transform: scale(0.98); }
+.book-btn-pay:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.book-btn-staff {
+  padding: 14px;
+  border: 2px solid #e8e8e8;
+  border-radius: 14px;
+  background: white;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.book-btn-staff:hover { border-color: #bbb; background: #fafafa; }
+
+/* ── Staff inline form ───────────────────────────────────────────────────── */
+
+.book-staff-form {
+  margin-top: 14px;
+  padding: 16px;
+  background: #f7f8fa;
+  border-radius: 14px;
+  border: 1px solid #ebebeb;
+}
+.book-staff-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid #e5e5e5;
+  border-radius: 10px;
+  font-size: 15px;
+  margin-bottom: 10px;
+  background: white;
+}
+.book-btn-staff-submit {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #374151;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.book-btn-staff-submit:hover { background: #1f2937; }
+
+.book-staff-sent {
+  padding: 14px 16px;
+  background: #dcfce7;
+  border-radius: 12px;
+  color: #15803d;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 14px;
+}
+
+/* ── Occupied state ──────────────────────────────────────────────────────── */
+
+.book-occupied-badge {
+  padding: 18px 16px;
+  background: #fef2f2;
+  border-radius: 14px;
+  margin-bottom: 18px;
+  text-align: center;
+  border: 1px solid #fecaca;
+}
+.book-occupied-title { font-size: 16px; font-weight: 800; color: #991b1b; margin-bottom: 5px; }
+.book-occupied-sub   { font-size: 13px; color: #b91c1c; line-height: 1.5; }
+
+.book-alternatives { margin-bottom: 18px; }
+.book-alternatives-label { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.book-alt-spots { display: flex; flex-wrap: wrap; gap: 8px; }
+.book-alt-spot {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; font-weight: 900; color: #166534;
+}
+.book-alt-walk { font-size: 12px; color: #777; margin-top: 10px; line-height: 1.5; }
+
+/* ── Error ───────────────────────────────────────────────────────────────── */
+
+.book-error {
+  padding: 14px 16px;
+  background: #fef2f2;
+  border-radius: 12px;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  border: 1px solid #fecaca;
+  line-height: 1.5;
+}
+
+/* ── Loading ─────────────────────────────────────────────────────────────── */
+
+.book-loading { text-align: center; padding: 48px 24px; color: #aaa; font-size: 15px; }
+
+/* ── Success / Cancel pages ──────────────────────────────────────────────── */
+
 .book-result-card {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 420px;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  width: calc(100% - 32px);
+  max-width: 440px;
   margin: 48px 16px 0;
-  padding: 40px 28px;
+  padding: 44px 28px;
   text-align: center;
 }
-.book-result-icon { font-size: 52px; margin-bottom: 16px; }
-.book-result-title { font-size: 22px; font-weight: 900; color: #111; margin-bottom: 8px; }
-.book-result-sub   { font-size: 15px; color: #555; line-height: 1.5; }
+.book-result-icon  { font-size: 56px; margin-bottom: 18px; }
+.book-result-title { font-size: 22px; font-weight: 900; color: #111; margin-bottom: 10px; }
+.book-result-sub   { font-size: 15px; color: #666; line-height: 1.6; }
 .book-result-back  {
   display: inline-block;
-  margin-top: 24px;
-  padding: 12px 24px;
-  background: #f97316;
+  margin-top: 28px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #fb923c, #ea580c);
   color: white;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
+  transition: opacity 0.15s;
 }
+.book-result-back:hover { opacity: 0.9; }
