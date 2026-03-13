@@ -1,4 +1,4 @@
-# DNA CRM — Changelog & Architecture Reference
+su# DNA CRM — Changelog & Architecture Reference
 
 > **Purpose:** Complete reference for any developer or AI agent continuing work on this codebase. Read this before making changes.
 
@@ -635,3 +635,33 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 12. **Attendance (showedUp) at Booking level** — Currently, attendance is toggled for the entire booking transaction (all activities together), not per individual activity item.
 
 13. **Soft-delete on Booking and Customer** — `DELETE` endpoints set `deletedAt` instead of removing records. All `GET` queries filter `deletedAt: null`. A Prisma middleware guard throws at runtime if code tries to call `prisma.booking.delete` or `prisma.customer.delete` directly.
+
+14. **Stripe base URL is hardcoded** — both `checkout/route.ts` and `reservation-checkout/route.ts` use `"https://app.desportosnauticosalvor.com"` directly (not `NEXT_PUBLIC_BASE_URL`) to ensure `success_url` and `cancel_url` never redirect to the Shopify domain.
+
+15. **Beach time cutoffs** — `isPastCutoff()` on the public booking page locks MORNING and FULL_DAY at 14:00 Lisbon time, AFTERNOON at 19:00. When all periods are past cutoff, the page shows a "beach closed" message and suggests switching to the Reserva tab.
+
+---
+
+## Feature History (continued)
+
+| Commit | Feature |
+|---|---|
+| `cb4647c` | Fix: seat terminology in success page; add `sessionType` to daily checkout metadata |
+| `035ab68` | Fix: replace remaining "umbrella" with "seat" in English `staffSent` translation |
+| `03bcbd6` | Fix: center language selector on booking page |
+| `c7bd6a6` | Fix: use "seat" instead of "umbrella" in English translations |
+| `a7a25be` | Fix: update Stripe redirect fallback domain to `app.desportosnauticosalvor.com` |
+| `f921c29` | Perf: merge 3 DailyControl API calls into single `/daily-summary` endpoint (Promise.all); lazy-load Statistics with next/dynamic |
+| `7d2638d` | Fix: beach-closed message when all periods past cutoff; hardcode base URL in both checkout routes |
+
+### Concessão Stripe Self-Service (2026-03-13)
+
+- **Public booking page** (`/concessao/book/[slug]/[spotNumber]`): QR-accessible, no auth required. Two modes: **Hoje** (daily walk-in) and **Reserva** (multi-day).
+- **Language selector**: 5 languages (PT/EN/ES/FR/DE) with flag emoji buttons, auto-detected from `navigator.language`.
+- **Daily mode**: Period buttons (Morning/Afternoon/Full Day), extra bed toggle, name + phone, live price. Time-based cutoffs lock past periods. Fully-occupied state shows nearby available spots.
+- **Reservation mode**: Date range picker, period + extra bed, 7-day discount applied automatically, refund policy note. Conflict → nearby spot suggestions shown.
+- **Stripe Checkout**: `POST /api/concessions/checkout` (daily) and `POST /api/concessions/reservation-checkout` (multi-day). Billing address + NIF collection, Stripe Tax enabled.
+- **Webhook**: `POST /api/webhooks/stripe` handles both `sessionType: "daily"` and `sessionType: "reservation"`. Idempotency via `stripeSessionId`. Race-condition guard auto-refunds if spot taken between checkout creation and webhook.
+- **Staff requests**: Customer can call staff (cash payment) — creates `StaffRequest` → CRM bell badge shows count, auto-refreshes every 10s.
+- **Statistics tab**: Added to concession detail page. KPIs (revenue paid/unpaid, occupancy, reservations, discounts), area chart by month, bar charts by day-of-week, walk-in vs reservation, bed config breakdown, top clients. Period selector (7d/30d/90d/1y/all/custom). Lazy-loaded with `next/dynamic`.
+- **DailyControl**: Date navigation ← → arrows; export button fixed (DOM append before click); merged 3 API calls into single `/daily-summary` endpoint.
