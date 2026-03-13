@@ -247,11 +247,31 @@ export default function DailyControl({ concession }: { concession: Concession })
     <div>
       {/* Date bar */}
       <div className="date-bar">
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
+        <div className="date-nav">
+          <button
+            className="date-nav-arrow"
+            onClick={() => {
+              const d = new Date(date + "T00:00:00");
+              d.setDate(d.getDate() - 1);
+              setDate(d.toLocaleDateString("sv-SE"));
+            }}
+            title="Dia anterior"
+          >&#8592;</button>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+          <button
+            className="date-nav-arrow"
+            onClick={() => {
+              const d = new Date(date + "T00:00:00");
+              d.setDate(d.getDate() + 1);
+              setDate(d.toLocaleDateString("sv-SE"));
+            }}
+            title="Dia seguinte"
+          >&#8594;</button>
+        </div>
         {weather && (
           <div className="dc-weather">
             <span className="dc-weather-main">{weatherIcon(weather.code)} {weather.temp}°C</span>

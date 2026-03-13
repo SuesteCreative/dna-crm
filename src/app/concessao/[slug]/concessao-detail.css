@@ -893,6 +893,32 @@
   }
 }
 
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.date-nav-arrow {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--color-text, #f1f1f1);
+  font-size: 1rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.date-nav-arrow:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .date-bar input[type="date"] {
   padding: 0.4rem 0.7rem;
   background: rgba(255, 255, 255, 0.07);
