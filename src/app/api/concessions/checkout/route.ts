@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
       }],
       automatic_tax: { enabled: true },
       metadata: {
+        sessionType: "daily",
         spotId: spot.id,
         concessionId: concession.id,
         date,

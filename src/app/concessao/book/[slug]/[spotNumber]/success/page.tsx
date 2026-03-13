@@ -14,7 +14,7 @@ export default function SuccessPage() {
         <div className="book-result-sub">
           O seu chapéu {spotNumber} está reservado. Pode acomodar-se — o staff foi notificado.
           <br /><br />
-          <em>Payment confirmed. Your umbrella {spotNumber} is reserved.</em>
+          <em>Payment confirmed. Your seat {spotNumber} is reserved.</em>
         </div>
         <Link href={`/concessao/book/${slug}/${spotNumber}`} className="book-result-back">
           Voltar ao Chapéu
