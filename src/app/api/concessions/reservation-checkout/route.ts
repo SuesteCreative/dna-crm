@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
     const productName = `${concession.name} — Chapéu ${spotNumber}`;
     const productDescription = `Reserva ${periodLabel} · ${startFormatted}–${endFormatted}${extraBed ? " · Cama Extra" : ""}`;
 
-    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "https://desportosnauticosalvor.com";
+    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "https://app.desportosnauticosalvor.com";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
