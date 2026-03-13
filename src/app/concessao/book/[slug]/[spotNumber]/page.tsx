@@ -82,7 +82,7 @@ const T: Record<Lang, Record<string, string>> = {
     callStaff: "Call Staff / Pay with Cash",
     staffName: "Your name (optional)",
     sendRequest: "Send Request",
-    staffSent: "✓ Staff notified. Please wait at your umbrella.",
+    staffSent: "✓ Staff notified. Please wait at your seat.",
     spotTaken: "Seat taken! Please reload the page.",
     allOccupied: "All seats are occupied. Please call staff.",
     modeToday: "Today",
