@@ -33,6 +33,8 @@ This is the CRM for **Desportos Náuticos de Alvor (DNA)**, a water sports busin
 
 7. **Never delete the `scripts/` or `prisma/` directories** — they contain seed scripts and schema that are critical for recovery.
 
+8. **Never change the public booking URL pattern** — the route `/concessao/book/[slug]/[spotNumber]` is **permanently fixed**. 88 physical QR codes have been professionally printed and laminated on beach umbrella stakes at Trópico (spots 1–48) and Subnauta (spots 1–40). Changing this route, the slug names (`tropico`/`subnauta`), or the domain (`desportosnauticosalvor.com`) would invalidate all printed QR codes and require a full reprint at significant cost. If the domain ever changes, set up a permanent redirect from the old domain — do NOT just update the code.
+
 ### 🟡 PROCEED WITH CARE
 
 - **Schema changes**: Always confirm with the user before editing `prisma/schema.prisma`. A bad `db push` can destroy column data.

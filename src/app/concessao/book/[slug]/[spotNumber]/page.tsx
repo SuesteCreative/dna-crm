@@ -1,3 +1,8 @@
+// ⚠️  PERMANENT ROUTE — DO NOT RENAME OR MOVE THIS FILE
+// 88 QR codes have been professionally printed and physically attached to beach umbrella
+// stakes at Trópico (spots 1–48) and Subnauta (spots 1–40). The URL pattern
+// /concessao/book/[slug]/[spotNumber] is encoded in every QR code.
+// Changing this route requires a full reprint. If the domain changes, set up a redirect.
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
