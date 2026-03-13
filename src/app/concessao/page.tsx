@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { TreePalm, Waves, Sun, MapPin, LayoutGrid, Settings, ChevronRight, Loader2 } from "lucide-react";
+import { TreePalm, Waves, Sun, MapPin, LayoutGrid, Settings, ChevronRight, Loader2, ExternalLink } from "lucide-react";
 import "./concessao.css";
 
 interface Concession {
@@ -160,6 +160,15 @@ export default function ConcessaoPage() {
                 <span>Dia Inteiro <strong>{c.priceFull.toFixed(2)}€</strong></span>
                 <span>Manhã/Tarde <strong>{c.priceMorning.toFixed(2)}€</strong></span>
               </div>
+              <a
+                href={`/concessao/book/${c.slug}/1`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="conc-card-preview"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink size={13} /> Página do cliente
+              </a>
             </button>
           ))}
         </div>
