@@ -261,25 +261,26 @@ model ConcessionEntry {
 }
 
 model ConcessionReservation {
-  id           String            @id @default(cuid())
-  concessionId String
-  spotId       String
-  clientName   String
-  clientPhone  String?
-  clientEmail  String?
-  startDate    String
-  endDate      String
-  period       String
-  bedConfig    String            @default("TWO_BEDS")
-  totalPrice   Float
-  isPaid       Boolean           @default(false)
-  notes        String?
-  status       String            @default("ACTIVE")
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  entries      ConcessionEntry[]
-  concession   Concession        @relation(fields: [concessionId], references: [id])
-  spot         ConcessionSpot    @relation(fields: [spotId], references: [id])
+  id              String            @id @default(cuid())
+  concessionId    String
+  spotId          String
+  clientName      String
+  clientPhone     String?
+  clientEmail     String?
+  startDate       String
+  endDate         String
+  period          String
+  bedConfig       String            @default("TWO_BEDS")
+  totalPrice      Float
+  isPaid          Boolean           @default(false)
+  notes           String?
+  status          String            @default("ACTIVE")
+  stripeSessionId String?           @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  entries         ConcessionEntry[]
+  concession      Concession        @relation(fields: [concessionId], references: [id])
+  spot            ConcessionSpot    @relation(fields: [spotId], references: [id])
 }
 
 model ConcessionDailyNote {

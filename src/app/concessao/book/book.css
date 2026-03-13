@@ -224,6 +224,46 @@
 /* Loading */
 .book-loading { text-align: center; padding: 48px 24px; color: #888; font-size: 15px; }
 
+/* Mode toggle (Today / Reserve) */
+.book-mode-toggle {
+  display: flex;
+  border-bottom: 1.5px solid #f0f0f0;
+}
+.book-mode-btn {
+  flex: 1;
+  padding: 13px 8px;
+  border: none;
+  background: white;
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -1.5px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.book-mode-btn.active.tropico  { color: #f97316; border-bottom-color: #f97316; }
+.book-mode-btn.active.subnauta { color: #0ea5e9; border-bottom-color: #0ea5e9; }
+
+/* Reservation date inputs */
+.book-res-dates { display: flex; gap: 12px; }
+.book-res-dates .book-field { flex: 1; }
+
+/* Refund policy note */
+.book-refund-policy {
+  font-size: 11px;
+  color: #999;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
 /* Success / Cancel pages */
 .book-result-card {
   background: white;

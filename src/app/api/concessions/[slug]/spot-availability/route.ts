@@ -55,5 +55,12 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     takenPeriods: Array.from(takenMap[s.id] ?? []),
   }));
 
-  return NextResponse.json({ date, spots });
+  const pricing = {
+    priceFull: concession.priceFull,
+    priceMorning: concession.priceMorning,
+    priceAfternoon: concession.priceAfternoon,
+    priceExtraBed: concession.priceExtraBed,
+  };
+
+  return NextResponse.json({ date, spots, pricing });
 }
