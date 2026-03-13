@@ -71,6 +71,7 @@ export default function Statistics({ concession }: { concession: { id: string; s
   const [customEnd, setCustomEnd] = useState("");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const themeColor = concession.slug === "tropico" ? "#f97316" : "#0ea5e9";
   const themeGradId = `conc-grad-${concession.slug}`;
@@ -78,13 +79,18 @@ export default function Statistics({ concession }: { concession: { id: string; s
   const load = useCallback(() => {
     if (period === "custom" && (!customStart || !customEnd)) return;
     setLoading(true);
+    setError(null);
     const url = period === "custom"
       ? `/api/concessions/${concession.slug}/stats?period=custom&startDate=${customStart}&endDate=${customEnd}`
       : `/api/concessions/${concession.slug}/stats?period=${period}`;
     fetch(url)
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(async (r) => {
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+        setData(d);
+      })
+      .catch((e) => setError(e.message ?? "Erro desconhecido"))
+      .finally(() => setLoading(false));
   }, [period, customStart, customEnd, concession.slug]);
 
   useEffect(() => { load(); }, [load]);
@@ -116,7 +122,10 @@ export default function Statistics({ concession }: { concession: { id: string; s
       {loading ? (
         <div className="loading-screen" style={{ height: 200 }}><div className="loader" /></div>
       ) : !data ? (
-        <p className="stats-empty">Erro ao carregar dados.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "2rem 0" }}>
+          <p className="stats-empty">Erro ao carregar dados: {error}</p>
+          <button onClick={load} className="stats-refresh-btn" style={{ alignSelf: "flex-start" }}>Tentar novamente</button>
+        </div>
       ) : (
         <>
           {/* ── KPIs ── */}
