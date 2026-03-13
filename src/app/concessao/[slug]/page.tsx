@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter, useParams } from "next/navigation";
-import { TreePalm, Waves, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator, Bell, X, Check, XCircle } from "lucide-react";
+import { TreePalm, Waves, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator, Bell, X, Check, XCircle, ExternalLink } from "lucide-react";
 import DailyControl from "./components/DailyControl";
 import Reservations from "./components/Reservations";
 import type { ReservationInitData } from "./components/Reservations";
@@ -111,6 +111,16 @@ export default function ConcessaoDetailPage() {
           {concession.slug === "subnauta" ? <Waves size={24} className="cd-title-icon" /> : <TreePalm size={24} className="cd-title-icon" />}
           <h1 className="cd-title">{concession.name}</h1>
           <span className="cd-loc">{concession.location}</span>
+          {/* Preview customer page */}
+          <a
+            href={`/concessao/book/${concession.slug}/1`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cd-preview-btn"
+            title="Ver página do cliente (Chapéu 1)"
+          >
+            <ExternalLink size={16} />
+          </a>
           {/* Staff requests bell */}
           <button
             className={`cd-bell-btn ${staffRequests.length > 0 ? "cd-bell-active" : ""}`}

@@ -7,7 +7,7 @@
 import QRCode from "qrcode";
 import { writeFile, mkdir } from "fs/promises";
 
-const BASE = "https://desportosnauticosalvor.com";
+const BASE = "https://app.desportosnauticosalvor.com";
 const OUT = "./public/qr-codes";
 
 await mkdir(OUT, { recursive: true });
