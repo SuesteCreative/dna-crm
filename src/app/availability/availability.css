@@ -258,7 +258,9 @@
 }
 
 .avail-panel {
-    width: 360px;
+    width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
@@ -349,6 +351,86 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+.avail-field textarea {
+    padding: 0.6rem 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+    resize: vertical;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.avail-field textarea:focus {
+    border-color: var(--blue);
+}
+
+.avail-field-readonly {
+    opacity: 0.7;
+    cursor: default;
+    background: rgba(20, 184, 166, 0.08) !important;
+    border-color: rgba(20, 184, 166, 0.3) !important;
+    color: rgb(45, 212, 191) !important;
+}
+
+.avail-discount-wrap,
+.avail-fee-wrap {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.avail-discount-wrap input,
+.avail-fee-wrap input {
+    flex: 1;
+    min-width: 0;
+}
+
+.avail-discount-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.avail-discount-toggle button {
+    padding: 0.35rem 0.6rem;
+    background: var(--surface2);
+    border: none;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.avail-discount-toggle button.active {
+    background: var(--blue);
+    color: #fff;
+}
+
+.avail-btn-calc {
+    padding: 0.45rem 0.75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.avail-btn-calc:hover {
+    border-color: var(--blue);
+    color: var(--blue);
 }
 
 .avail-field input,

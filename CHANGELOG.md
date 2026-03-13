@@ -447,6 +447,12 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `STB-V3` | **Stable V3 Release**: Standardized activity logic, improved scanner error handling, and fixed order edit pre-filling. |
 | `ef6e8c6` | **Real-time Sync & Automation**: GCal Webhooks, Staff Audit v2, Server Search, Follow-up Email |
 | `5e4531c` | **Multi-Activity Booking System**: Support for multiple products per booking, individual capacity checks, and GCal sync per activity. |
+| `f3fb46e` | **Shopify Sync Enrichment**: Extract `postalCode`, `discountCodes`, and `country` (billing → shipping fallback) from Shopify orders. |
+| `fc0a24c` | **Fix**: Availability API now flattens `BookingActivity` rows for capacity checks — sub-activities were previously invisible to slot overlap logic. |
+| `0adb517` | **Fix**: Prevent GCal double-booking — track assigned calendar IDs within a booking's sync loop so two same-service activities distribute across different staff calendars. |
+| `dbe4ce8` | **Security Audit Fixes**: Services POST whitelisted + locked to ADMIN; `debug-db` endpoint locked to ADMIN; email sender replaced with production domain; bug-report sender corrected. |
+| `1428707` | **Soft-Delete Protection**: `deletedAt` added to `Booking` and `Customer`. Deletes now soft-hide records. Prisma middleware guard throws on any `prisma.booking.delete` / `prisma.customer.delete` call at runtime to prevent accidental hard-deletes. |
+| `e86a855` | **Fix**: `slotGapMinutes` and `unitCapacity` use `undefined` instead of `null` in services POST (non-nullable schema fields with defaults). |
 
 ### Crisis Recovery & System Stabilization (2026-03-12)
 
@@ -561,3 +567,5 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 11. **Multi-Activity Stats aggregation** — many metrics now iterate over `b.activities`. When calculating per-service popularities, we count each activity individually rather than the single parent booking.
 
 12. **Attendance (showedUp) at Booking level** — Currently, attendance is toggled for the entire booking transaction (all activities together), not per individual activity item.
+
+13. **Soft-delete on Booking and Customer** — `DELETE` endpoints set `deletedAt` instead of removing records. All `GET` queries filter `deletedAt: null`. A Prisma middleware guard throws at runtime if code tries to call `prisma.booking.delete` or `prisma.customer.delete` directly.

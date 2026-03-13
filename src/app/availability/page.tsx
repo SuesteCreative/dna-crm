@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Clock, Users, CheckCircle, Plus, ChevronRight, X } from "lucide-react";
+import { CountrySelector } from "@/components/CountrySelector";
 import "./availability.css";
 
 interface SlotInfo { time: string; available: number; capacity: number; blocked: boolean; }
@@ -12,6 +13,7 @@ interface ServiceAvail {
     slots: SlotInfo[];
 }
 interface AvailResponse { closed: boolean; openTime?: string; closeTime?: string; services: ServiceAvail[]; }
+interface Partner { id: string; name: string; commission: number; }
 
 function todayLisbon() {
     return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" });
@@ -24,19 +26,28 @@ export default function AvailabilityPage() {
 
     const role = (sessionClaims as any)?.metadata?.role as string | undefined;
     const partnerId = (sessionClaims as any)?.metadata?.partnerId as string | undefined;
+    const isPartner = role === "PARTNER";
 
     const [date, setDate] = useState(todayLisbon());
     const [data, setData] = useState<AvailResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [selected, setSelected] = useState<{ service: ServiceAvail; slot: SlotInfo } | null>(null);
+    const [partners, setPartners] = useState<Partner[]>([]);
 
     // Booking Form State
     const [bookingForm, setBookingForm] = useState({
         customerName: "",
         customerPhone: "",
         customerEmail: "",
+        countryCode: "PT",
         pax: 1,
-        quantity: 1
+        quantity: 1,
+        forPartnerId: "",
+        totalPrice: "0",
+        discountAmount: "0",
+        discountType: "%",
+        bookingFee: "0",
+        notes: "",
     });
 
     const [submitting, setSubmitting] = useState(false);
@@ -52,6 +63,45 @@ export default function AvailabilityPage() {
             return;
         }
     }, [isLoaded, role, partnerId]);
+
+    // Fetch Partners
+    useEffect(() => {
+        if (!isLoaded || isPartner) return;
+        fetch("/api/partners").then(r => r.json()).then(setPartners).catch(() => {});
+    }, [isLoaded, isPartner]);
+
+    // Auto-calc total price
+    useEffect(() => {
+        if (!selected) return;
+        const qty = isJetski ? bookingForm.quantity : bookingForm.pax;
+        const itemPrice = (selected.service.price ?? 0) * qty;
+        const disc = parseFloat(bookingForm.discountAmount) || 0;
+        let net = itemPrice;
+        if (disc > 0) net = bookingForm.discountType === "%" ? itemPrice * (1 - disc / 100) : itemPrice - disc;
+        const fee = parseFloat(bookingForm.bookingFee) || 0;
+        setBookingForm(f => ({ ...f, totalPrice: Math.max(0, net - fee).toFixed(2) }));
+    }, [selected, bookingForm.pax, bookingForm.quantity, bookingForm.discountAmount, bookingForm.discountType, bookingForm.bookingFee]);
+
+    // Reset booking fee when partner cleared
+    useEffect(() => {
+        const pId = isPartner ? partnerId : bookingForm.forPartnerId;
+        if (!partners.find(p => p.id === pId)) {
+            setBookingForm(f => ({ ...f, bookingFee: "0" }));
+        }
+    }, [bookingForm.forPartnerId, partners, isPartner, partnerId]);
+
+    const applyQuickCommission = () => {
+        if (!selected) return;
+        const pId = isPartner ? partnerId : bookingForm.forPartnerId;
+        const partner = partners.find(p => p.id === pId);
+        if (!partner) return;
+        const qty = isJetski ? bookingForm.quantity : bookingForm.pax;
+        const itemPrice = (selected.service.price ?? 0) * qty;
+        const disc = parseFloat(bookingForm.discountAmount) || 0;
+        let net = itemPrice;
+        if (disc > 0) net = bookingForm.discountType === "%" ? itemPrice * (1 - disc / 100) : itemPrice - disc;
+        setBookingForm(f => ({ ...f, bookingFee: (net * (partner.commission / 100)).toFixed(2) }));
+    };
 
     // Fetch Availability
     useEffect(() => {
@@ -129,23 +179,29 @@ export default function AvailabilityPage() {
         }
 
         try {
+            const payload: Record<string, any> = {
+                customerName: bookingForm.customerName,
+                customerPhone: bookingForm.customerPhone,
+                customerEmail: bookingForm.customerEmail,
+                countryCode: bookingForm.countryCode,
+                activityDate: date,
+                activityTime: selected.slot.time,
+                pax: bookingForm.pax,
+                serviceId: selected.service.id,
+                activityType: selected.service.name + (selected.service.variant ? ` — ${selected.service.variant}` : ""),
+                totalPrice: parseFloat(bookingForm.totalPrice) || finalPrice,
+                quantity: bookingForm.quantity,
+                partnerId: partnerId || undefined,
+                notes: bookingForm.notes || undefined,
+                bookingFee: parseFloat(bookingForm.bookingFee) || 0,
+                discountAmount: parseFloat(bookingForm.discountAmount) || 0,
+                userName: user?.fullName ?? "Partner User",
+            };
+            if (!isPartner && bookingForm.forPartnerId) payload.forPartnerId = bookingForm.forPartnerId;
             const res = await fetch("/api/bookings/create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    customerName: bookingForm.customerName,
-                    customerPhone: bookingForm.customerPhone,
-                    customerEmail: bookingForm.customerEmail,
-                    activityDate: date,
-                    activityTime: selected.slot.time,
-                    pax: bookingForm.pax,
-                    serviceId: selected.service.id,
-                    activityType: selected.service.name + (selected.service.variant ? ` — ${selected.service.variant}` : ""),
-                    totalPrice: finalPrice,
-                    quantity: bookingForm.quantity,
-                    partnerId: partnerId || undefined,
-                    userName: user?.fullName ?? "Partner User",
-                }),
+                body: JSON.stringify(payload),
             });
             if (!res.ok) {
                 const d = await res.json();
@@ -184,9 +240,6 @@ export default function AvailabilityPage() {
         return acc;
     }, {}) ?? {};
 
-    const totalPriceDisplay = selected?.service.price
-        ? (selected.service.price * (isJetski ? bookingForm.quantity : bookingForm.pax)).toFixed(2)
-        : "0.00";
 
     return (
         <div className="avail-page">
@@ -248,8 +301,15 @@ export default function AvailabilityPage() {
                                                                 customerName: "",
                                                                 customerPhone: "",
                                                                 customerEmail: "",
+                                                                countryCode: "PT",
                                                                 pax: svc.minPax ?? 1,
-                                                                quantity: 1
+                                                                quantity: 1,
+                                                                forPartnerId: "",
+                                                                totalPrice: "0",
+                                                                discountAmount: "0",
+                                                                discountType: "%",
+                                                                bookingFee: "0",
+                                                                notes: "",
                                                             });
                                                         }}
                                                     >
@@ -286,12 +346,19 @@ export default function AvailabilityPage() {
                                         <input value={bookingForm.customerName} onChange={(e) => setBookingForm((f) => ({ ...f, customerName: e.target.value }))} placeholder="Nome completo" />
                                     </div>
                                     <div className="avail-field">
-                                        <label>Telefone</label>
-                                        <input value={bookingForm.customerPhone} onChange={(e) => setBookingForm((f) => ({ ...f, customerPhone: e.target.value }))} placeholder="+351 9xx xxx xxx" />
-                                    </div>
-                                    <div className="avail-field">
                                         <label>Email</label>
                                         <input type="email" value={bookingForm.customerEmail} onChange={(e) => setBookingForm((f) => ({ ...f, customerEmail: e.target.value }))} placeholder="email@exemplo.com" />
+                                    </div>
+                                    <div className="avail-field">
+                                        <CountrySelector
+                                            label="País / Indicativo"
+                                            value={bookingForm.countryCode}
+                                            onChange={val => setBookingForm(f => ({ ...f, countryCode: val }))}
+                                        />
+                                    </div>
+                                    <div className="avail-field">
+                                        <label>Telefone</label>
+                                        <input value={bookingForm.customerPhone} onChange={(e) => setBookingForm((f) => ({ ...f, customerPhone: e.target.value }))} placeholder="+351 9xx xxx xxx" />
                                     </div>
 
                                     <div className="avail-row-fields">
@@ -317,11 +384,48 @@ export default function AvailabilityPage() {
                                         </div>
                                     </div>
 
-                                    {selected.service.price && (
-                                        <div className="avail-total">
-                                            Total: <strong>{totalPriceDisplay}€</strong>
+                                    {!isPartner && partners.length > 0 && (
+                                        <div className="avail-field">
+                                            <label>Reserva em nome de parceiro (opcional)</label>
+                                            <select value={bookingForm.forPartnerId} onChange={e => setBookingForm(f => ({ ...f, forPartnerId: e.target.value }))}>
+                                                <option value="">— Reserva direta (sem parceiro) —</option>
+                                                {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                            </select>
                                         </div>
                                     )}
+
+                                    <div className="avail-field">
+                                        <label>Preço Total da Reserva (€)</label>
+                                        <input type="number" step="0.01" value={bookingForm.totalPrice} readOnly className="avail-field-readonly" title="Calculado automaticamente" />
+                                    </div>
+
+                                    <div className="avail-row-fields">
+                                        <div className="avail-field">
+                                            <label>Desconto Global</label>
+                                            <div className="avail-discount-wrap">
+                                                <input type="number" min="0" step="0.01" placeholder="0" value={bookingForm.discountAmount} onChange={e => setBookingForm(f => ({ ...f, discountAmount: e.target.value }))} />
+                                                <div className="avail-discount-toggle">
+                                                    <button type="button" className={bookingForm.discountType === "%" ? "active" : ""} onClick={() => setBookingForm(f => ({ ...f, discountType: "%" }))}>%</button>
+                                                    <button type="button" className={bookingForm.discountType === "€" ? "active" : ""} onClick={() => setBookingForm(f => ({ ...f, discountType: "€" }))}>€</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="avail-field">
+                                            <label>Comissão (Booking Fee)</label>
+                                            <div className="avail-fee-wrap">
+                                                <input type="number" step="0.01" placeholder="0.00" value={bookingForm.bookingFee} onChange={e => setBookingForm(f => ({ ...f, bookingFee: e.target.value }))} />
+                                                {(isPartner || partners.length > 0) && (
+                                                    <button type="button" className="avail-btn-calc" onClick={applyQuickCommission}>Calcular</button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="avail-field">
+                                        <label>Notas Internas / Observações</label>
+                                        <textarea rows={2} value={bookingForm.notes} onChange={e => setBookingForm(f => ({ ...f, notes: e.target.value }))} />
+                                    </div>
+
                                     <button className="avail-btn-primary" onClick={handleBook} disabled={submitting || !bookingForm.customerName}>
                                         <Plus size={14} /> {submitting ? "A criar..." : "Criar Reserva"}
                                     </button>
