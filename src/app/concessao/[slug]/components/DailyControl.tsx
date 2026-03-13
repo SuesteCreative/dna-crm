@@ -205,18 +205,23 @@ export default function DailyControl({ concession }: { concession: Concession })
   const afternoonCount = entries.filter((e) => e.period === "AFTERNOON").length;
   const fullDayCount = entries.filter((e) => e.period === "FULL_DAY").length;
 
+  function triggerDownload(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   const handleExport = async () => {
     setExporting(true);
     try {
       const res = await fetch(`/api/concessions/${concession.slug}/export?date=${date}&note=${encodeURIComponent(dailyNote)}`);
-      if (!res.ok) throw new Error("Export failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `controlo-${concession.slug}-${date}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
+      if (!res.ok) { alert("Erro ao exportar. Tente novamente."); return; }
+      triggerDownload(await res.blob(), `controlo-${concession.slug}-${date}.xlsx`);
     } finally {
       setExporting(false);
     }
@@ -231,13 +236,7 @@ export default function DailyControl({ concession }: { concession: Concession })
     try {
       const res = await fetch(`/api/concessions/${concession.slug}/export-range?from=${from}&to=${to}`);
       if (!res.ok) { const d = await res.json(); alert(d.error ?? "Erro ao exportar"); return; }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `relatorio-${concession.slug}-${from}-${to}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
+      triggerDownload(await res.blob(), `relatorio-${concession.slug}-${from}-${to}.xlsx`);
     } finally {
       setExportingRange(false);
     }
