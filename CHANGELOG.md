@@ -4,6 +4,63 @@
 
 ---
 
+## ⚠️ AGENT SAFETY GUIDE — READ FIRST
+
+This section exists because multiple AI agents may work on this codebase at different times. If you are an AI agent, read this before doing anything.
+
+### Project Overview
+
+This is the CRM for **Desportos Náuticos de Alvor (DNA)**, a water sports business in Alvor, Portugal. It manages bookings, partners, statistics, and beach chair concessions. It is a **live production system** used by real staff and partners daily. Mistakes have real business consequences.
+
+- **Framework**: Next.js 14 (App Router), TypeScript, Prisma ORM, PostgreSQL (Supabase), Clerk auth
+- **Deployment**: GitHub → Vercel (auto-deploys on every push to `main`)
+- **Database**: PostgreSQL hosted on Supabase — there is **no local DB**, all queries hit production
+- **Schema changes**: Use `npx prisma db push` — NOT `prisma migrate dev` (non-interactive environment)
+
+### 🔴 NEVER DO THESE THINGS
+
+1. **Never hard-delete database records** — `Booking` and `Customer` use soft-delete (`deletedAt`). A Prisma middleware guard will throw if you try `prisma.booking.delete()` or `prisma.customer.delete()` directly. Use `prisma.booking.update({ data: { deletedAt: new Date() } })` instead.
+
+2. **Never run `prisma migrate dev`** — this environment does not support interactive migrations. Only use `npx prisma db push`.
+
+3. **Never run `prisma migrate reset`** — this **wipes the entire database**. There is no local dev DB — the database is production.
+
+4. **Never run destructive scripts without confirmation** — if a script drops tables, truncates data, or reseeds a model that already has data, stop and ask the user first.
+
+5. **Never push to `main` without the user's explicit approval** — every push triggers an auto-deploy to production.
+
+6. **Never commit `.env` files, credentials, or service account keys** — these have been rotated once already after an accidental exposure.
+
+7. **Never delete the `scripts/` or `prisma/` directories** — they contain seed scripts and schema that are critical for recovery.
+
+### 🟡 PROCEED WITH CARE
+
+- **Schema changes**: Always confirm with the user before editing `prisma/schema.prisma`. A bad `db push` can destroy column data.
+- **API route changes**: Test logic mentally before applying. Booking creation and slot availability logic is complex — see the Key Business Logic section below.
+- **GCal sync**: Booking create/delete routes sync with Google Calendar. Changing the flow can leave orphaned calendar events or miss cleanup.
+- **Partner auth**: Partners only see/edit/delete their own bookings. Never weaken this ownership check.
+- **Capacity checks**: Slot overlap logic lives in `src/lib/slots.ts`. Changes here affect all booking validation across the system.
+
+### ✅ SAFE PATTERNS
+
+- Read files before editing them — never assume content
+- Make small, targeted changes — one concern at a time
+- Check `CHANGELOG.md` (this file) for recent changes before starting work — the previous agent may have left the codebase in a specific state
+- After editing API routes, trace the logic manually: auth check → validation → DB query → response
+- When in doubt, ask the user rather than guessing
+
+### Context for Resuming Work
+
+The owner (Pedro) switches between AI agents due to usage limits. When you pick up work:
+1. Read this file fully
+2. Run `git log --oneline -10` to see recent commits
+3. Check `git status` for any uncommitted changes
+4. Ask the user what they want to work on — do not assume you know the current state
+
+---
+
+---
+
 ## Stack
 
 | Layer | Technology | Notes |
@@ -453,6 +510,8 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `dbe4ce8` | **Security Audit Fixes**: Services POST whitelisted + locked to ADMIN; `debug-db` endpoint locked to ADMIN; email sender replaced with production domain; bug-report sender corrected. |
 | `1428707` | **Soft-Delete Protection**: `deletedAt` added to `Booking` and `Customer`. Deletes now soft-hide records. Prisma middleware guard throws on any `prisma.booking.delete` / `prisma.customer.delete` call at runtime to prevent accidental hard-deletes. |
 | `e86a855` | **Fix**: `slotGapMinutes` and `unitCapacity` use `undefined` instead of `null` in services POST (non-nullable schema fields with defaults). |
+| `af04721` | **Availability Booking Panel**: Expanded the `/availability` booking drawer to match the full dashboard booking form — CountrySelector, partner dropdown (admin only), total price, discount, booking fee, and notes fields. |
+| `dd2b032` | **Security & Data Integrity Audit**: Partner ownership enforcement on delete/update (partners can only modify their own bookings); `deletedAt: null` added to all 4 capacity-check queries; status/discount validation on update; multi-activity GCal event cleanup on booking delete. |
 
 ### Crisis Recovery & System Stabilization (2026-03-12)
 

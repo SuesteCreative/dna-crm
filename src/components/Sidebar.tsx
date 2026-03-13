@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth, useUser } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, CalendarCheck, BookUser, Scan
+    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, Sun, CalendarCheck, BookUser, Scan
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -207,7 +207,7 @@ export function Sidebar() {
                             className={`nav-item ${pathname.startsWith("/concessao") ? "active" : ""}`}
                             onClick={() => router.push("/concessao")}
                         >
-                            <TreePalm size={18} />
+                            <Sun size={18} />
                             <span>Concessão</span>
                             {pathname.startsWith("/concessao") && <ChevronRight size={14} className="nav-arrow" />}
                         </button>

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { TreePalm, MapPin, LayoutGrid, Settings, ChevronRight, Loader2 } from "lucide-react";
+import { TreePalm, Waves, Sun, MapPin, LayoutGrid, Settings, ChevronRight, Loader2 } from "lucide-react";
 import "./concessao.css";
 
 interface Concession {
@@ -105,7 +105,7 @@ export default function ConcessaoPage() {
     <div className="conc-page">
       <div className="conc-header">
         <div className="conc-header-left">
-          <TreePalm size={28} className="conc-header-icon" />
+          <Sun size={28} className="conc-header-icon" />
           <div>
             <h1 className="conc-title">Concessão</h1>
             <p className="conc-subtitle">Gestão de espreguiçadeiras e chapéus de praia</p>
@@ -148,7 +148,7 @@ export default function ConcessaoPage() {
               onClick={() => router.push(`/concessao/${c.slug}`)}
             >
               <div className="conc-card-top">
-                <TreePalm size={36} className="conc-card-icon" />
+                {c.slug === "subnauta" ? <Waves size={36} className="conc-card-icon" /> : <TreePalm size={36} className="conc-card-icon" />}
                 <ChevronRight size={20} className="conc-card-arrow" />
               </div>
               <h2 className="conc-card-name">{c.name}</h2>
@@ -170,7 +170,7 @@ export default function ConcessaoPage() {
           {concessions.map((c) => (
             <div key={c.slug} className={`conc-settings-card theme-${c.slug}`}>
               <div className="conc-settings-card-header">
-                <TreePalm size={20} />
+                {c.slug === "subnauta" ? <Waves size={20} /> : <TreePalm size={20} />}
                 <h3>{c.name}</h3>
                 <span className="conc-settings-meta">{c.location} · {c.rows}×{c.cols} lugares</span>
               </div>
