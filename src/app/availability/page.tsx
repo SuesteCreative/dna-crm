@@ -399,27 +399,29 @@ export default function AvailabilityPage() {
                                         <input type="number" step="0.01" value={bookingForm.totalPrice} readOnly className="avail-field-readonly" title="Calculado automaticamente" />
                                     </div>
 
-                                    <div className="avail-row-fields">
-                                        <div className="avail-field">
-                                            <label>Desconto Global</label>
-                                            <div className="avail-discount-wrap">
-                                                <input type="number" min="0" step="0.01" placeholder="0" value={bookingForm.discountAmount} onChange={e => setBookingForm(f => ({ ...f, discountAmount: e.target.value }))} />
-                                                <div className="avail-discount-toggle">
-                                                    <button type="button" className={bookingForm.discountType === "%" ? "active" : ""} onClick={() => setBookingForm(f => ({ ...f, discountType: "%" }))}>%</button>
-                                                    <button type="button" className={bookingForm.discountType === "€" ? "active" : ""} onClick={() => setBookingForm(f => ({ ...f, discountType: "€" }))}>€</button>
+                                    {!isPartner && (
+                                        <div className="avail-row-fields">
+                                            <div className="avail-field">
+                                                <label>Desconto Global</label>
+                                                <div className="avail-discount-wrap">
+                                                    <input type="number" min="0" step="0.01" placeholder="0" value={bookingForm.discountAmount} onChange={e => setBookingForm(f => ({ ...f, discountAmount: e.target.value }))} />
+                                                    <div className="avail-discount-toggle">
+                                                        <button type="button" className={bookingForm.discountType === "%" ? "active" : ""} onClick={() => setBookingForm(f => ({ ...f, discountType: "%" }))}>%</button>
+                                                        <button type="button" className={bookingForm.discountType === "€" ? "active" : ""} onClick={() => setBookingForm(f => ({ ...f, discountType: "€" }))}>€</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="avail-field">
+                                                <label>Comissão (Booking Fee)</label>
+                                                <div className="avail-fee-wrap">
+                                                    <input type="number" step="0.01" placeholder="0.00" value={bookingForm.bookingFee} onChange={e => setBookingForm(f => ({ ...f, bookingFee: e.target.value }))} />
+                                                    {partners.length > 0 && (
+                                                        <button type="button" className="avail-btn-calc" onClick={applyQuickCommission}>Calcular</button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="avail-field">
-                                            <label>Comissão (Booking Fee)</label>
-                                            <div className="avail-fee-wrap">
-                                                <input type="number" step="0.01" placeholder="0.00" value={bookingForm.bookingFee} onChange={e => setBookingForm(f => ({ ...f, bookingFee: e.target.value }))} />
-                                                {(isPartner || partners.length > 0) && (
-                                                    <button type="button" className="avail-btn-calc" onClick={applyQuickCommission}>Calcular</button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                                    )}
 
                                     <div className="avail-field">
                                         <label>Notas Internas / Observações</label>

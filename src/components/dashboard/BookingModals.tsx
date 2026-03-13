@@ -405,19 +405,21 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                   <input value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} />
                 </div>
 
-                <div className="field">
-                  <label>Reserva em nome de parceiro (opcional)</label>
-                  <select
-                    className="field-select"
-                    value={formData.forPartnerId}
-                    onChange={e => setFormData({ ...formData, forPartnerId: e.target.value })}
-                  >
-                    <option value="">— Reserva direta (sem parceiro) —</option>
-                    {partners.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
+                {!isPartner && partners.length > 0 && (
+                  <div className="field">
+                    <label>Reserva em nome de parceiro (opcional)</label>
+                    <select
+                      className="field-select"
+                      value={formData.forPartnerId}
+                      onChange={e => setFormData({ ...formData, forPartnerId: e.target.value })}
+                    >
+                      <option value="">— Reserva direta (sem parceiro) —</option>
+                      {partners.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="field">
                   <label>Preço Total da Reserva (€)</label>
@@ -433,36 +435,40 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                   </div>
                 </div>
 
-                <div className="field discount-row-main">
-                  <label>Desconto Global</label>
-                  <div className="discount-wrap">
-                    <input
-                      type="number" min="0" step="0.01" placeholder="0"
-                      value={formData.discountAmount}
-                      onChange={e => setFormData({ ...formData, discountAmount: e.target.value })}
-                    />
-                    <div className="discount-type-toggle">
-                      <button type="button" className={formData.discountType === "%" ? "active" : ""} onClick={() => setFormData({ ...formData, discountType: "%" })}>%</button>
-                      <button type="button" className={formData.discountType === "€" ? "active" : ""} onClick={() => setFormData({ ...formData, discountType: "€" })}>€</button>
+                {!isPartner && (
+                  <>
+                    <div className="field discount-row-main">
+                      <label>Desconto Global</label>
+                      <div className="discount-wrap">
+                        <input
+                          type="number" min="0" step="0.01" placeholder="0"
+                          value={formData.discountAmount}
+                          onChange={e => setFormData({ ...formData, discountAmount: e.target.value })}
+                        />
+                        <div className="discount-type-toggle">
+                          <button type="button" className={formData.discountType === "%" ? "active" : ""} onClick={() => setFormData({ ...formData, discountType: "%" })}>%</button>
+                          <button type="button" className={formData.discountType === "€" ? "active" : ""} onClick={() => setFormData({ ...formData, discountType: "€" })}>€</button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="field">
-                  <label>Comissão (Booking Fee)</label>
-                  <div className="booking-fee-wrap">
-                    <input
-                      type="number" step="0.01" placeholder="0.00"
-                      value={formData.bookingFee}
-                      onChange={e => setFormData({ ...formData, bookingFee: e.target.value })}
-                    />
-                    {(isPartner || partners.length > 0) && (
-                      <button type="button" className="btn-quick-fee" onClick={applyQuickCommission} title="Aplicar comissão automática">
-                        Calcular
-                      </button>
-                    )}
-                  </div>
-                </div>
+                    <div className="field">
+                      <label>Comissão (Booking Fee)</label>
+                      <div className="booking-fee-wrap">
+                        <input
+                          type="number" step="0.01" placeholder="0.00"
+                          value={formData.bookingFee}
+                          onChange={e => setFormData({ ...formData, bookingFee: e.target.value })}
+                        />
+                        {partners.length > 0 && (
+                          <button type="button" className="btn-quick-fee" onClick={applyQuickCommission} title="Aplicar comissão automática">
+                            Calcular
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="field full">
                   <label>Notas Internas / Observações</label>
