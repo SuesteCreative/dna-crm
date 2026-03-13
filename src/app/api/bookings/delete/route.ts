@@ -5,10 +5,14 @@ import { deleteBusyEvent } from "@/lib/gcal";
 import { logAudit } from "@/lib/audit";
 
 export async function DELETE(req: Request) {
-    const { userId } = await auth();
+    const { userId, sessionClaims } = await auth();
     if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+    const sessionPartnerId = (sessionClaims as any)?.metadata?.partnerId as string | undefined;
+    const isPartner = role === "PARTNER";
 
     try {
         const { searchParams } = new URL(req.url);
@@ -21,14 +25,19 @@ export async function DELETE(req: Request) {
         const prisma = await getPrisma();
         const booking = await prisma.booking.findUnique({
             where: { id },
-            include: { partner: true }
+            include: { partner: true, activities: true }
         });
 
         if (!booking) {
             return NextResponse.json({ error: "Booking not found" }, { status: 404 });
         }
 
-        // Delete Google Calendar events before removing the booking
+        // Partners can only delete their own bookings
+        if (isPartner && booking.partnerId !== sessionPartnerId) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        // Delete Google Calendar events for the parent booking (legacy single-activity)
         if (booking.gcalEventIds && booking.gcalCalendarIds) {
             try {
                 const eventIds: string[] = JSON.parse(booking.gcalEventIds);
@@ -38,6 +47,21 @@ export async function DELETE(req: Request) {
                 }
             } catch (gcalErr) {
                 console.error("gcal delete failed (non-blocking):", gcalErr);
+            }
+        }
+
+        // Delete Google Calendar events for each BookingActivity (multi-activity bookings)
+        for (const act of (booking as any).activities ?? []) {
+            if (act.gcalEventIds && act.gcalCalendarIds) {
+                try {
+                    const eIds: string[] = JSON.parse(act.gcalEventIds);
+                    const cIds: string[] = JSON.parse(act.gcalCalendarIds);
+                    for (let i = 0; i < eIds.length; i++) {
+                        await deleteBusyEvent(cIds[i], eIds[i]);
+                    }
+                } catch (gcalErr) {
+                    console.error("gcal activity delete failed (non-blocking):", gcalErr);
+                }
             }
         }
 

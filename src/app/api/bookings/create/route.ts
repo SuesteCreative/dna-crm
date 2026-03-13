@@ -62,6 +62,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No activities provided" }, { status: 400 });
         }
 
+        // Validate discount
+        const rawDiscount = parseFloat(discountAmount || 0);
+        if (rawDiscount < 0) {
+            return NextResponse.json({ error: "Invalid discountAmount" }, { status: 400 });
+        }
+        if ((discountType === "%" || !discountType) && rawDiscount > 100) {
+            return NextResponse.json({ error: "Percentage discount cannot exceed 100" }, { status: 400 });
+        }
+
         // Admins can pass forPartnerId to book on behalf of a partner
         const adminPartnerId = !isPartner && forPartnerId ? forPartnerId : null;
 
@@ -89,7 +98,7 @@ export async function POST(req: Request) {
                         where: {
                             serviceId: { in: serviceIds },
                             activityDate: { gte: startOfDay, lte: endOfDay },
-                            booking: { status: { not: "CANCELLED" } }
+                            booking: { status: { not: "CANCELLED" }, deletedAt: null }
                         },
                         select: { activityTime: true, quantity: true, serviceId: true },
                     });

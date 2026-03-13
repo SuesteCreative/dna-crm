@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest) {
 
         if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-        const current = await prisma.booking.findUnique({ 
+        const current = await prisma.booking.findUnique({
             where: { id },
             include: { activities: true }
         });
@@ -27,7 +27,28 @@ export async function PATCH(req: NextRequest) {
 
         const { sessionClaims } = await auth();
         const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+        const sessionPartnerId = (sessionClaims as any)?.metadata?.partnerId as string | undefined;
         const isPartner = role === "PARTNER";
+
+        // Partners can only edit their own bookings
+        if (isPartner && current.partnerId !== sessionPartnerId) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        // Validate status if provided
+        const VALID_STATUSES = ["CONFIRMED", "CANCELLED", "NO_SHOW"];
+        if (fields.status && !VALID_STATUSES.includes(fields.status)) {
+            return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+        }
+
+        // Validate discount
+        const rawDiscount = parseFloat(discountAmount);
+        if (discountAmount !== undefined && (isNaN(rawDiscount) || rawDiscount < 0)) {
+            return NextResponse.json({ error: "Invalid discountAmount" }, { status: 400 });
+        }
+        if (discountType === "%" && rawDiscount > 100) {
+            return NextResponse.json({ error: "Percentage discount cannot exceed 100" }, { status: 400 });
+        }
 
         // 1. Prepare activities for check
         // If not provided, fallback to top-level fields (legacy/simple edit)
@@ -70,7 +91,7 @@ export async function PATCH(req: NextRequest) {
                 const otherBookingsActities = await prisma.bookingActivity.findMany({
                     where: {
                         id: { not: act.id || "none" }, // EXCLUDE THIS SPECIFIC ACTIVITY
-                        booking: { status: { not: "CANCELLED" } },
+                        booking: { status: { not: "CANCELLED" }, deletedAt: null },
                         serviceId: { in: serviceIds },
                         activityDate: { gte: startOfDay, lte: endOfDay },
                     },

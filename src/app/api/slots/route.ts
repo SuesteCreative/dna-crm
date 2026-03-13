@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
             serviceId: { in: serviceIds },
             activityDate: { gte: startOfDay, lte: endOfDay },
             status: { not: "CANCELLED" },
+            deletedAt: null,
             ...(excludeBookingId && { id: { not: excludeBookingId } }),
         },
         select: { activityTime: true, quantity: true, serviceId: true },

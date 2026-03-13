@@ -30,11 +30,12 @@ export async function GET(req: NextRequest) {
         orderBy: [{ category: "asc" }, { name: "asc" }],
     });
 
-    // All bookings for this date (confirmed/pending), including their sub-activities
+    // All bookings for this date (confirmed/pending, not soft-deleted), including their sub-activities
     const bookings = await prisma.booking.findMany({
         where: {
             activityDate: { gte: new Date(date + "T00:00:00Z"), lte: new Date(date + "T23:59:59Z") },
             status: { in: ["CONFIRMED", "PENDING"] },
+            deletedAt: null,
         },
         include: { activities: true },
     });
