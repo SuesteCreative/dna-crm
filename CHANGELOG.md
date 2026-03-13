@@ -96,6 +96,8 @@ GOOGLE_PRIVATE_KEY
 RESEND_API_KEY                # Bug report emails
 RESEND_FROM_EMAIL
 RESEND_TO_EMAIL
+STRIPE_SECRET_KEY             # Stripe server-side API key (sk_live_...)
+STRIPE_WEBHOOK_SECRET         # Stripe webhook signing secret (whsec_...)
 ```
 
 ---
@@ -512,6 +514,9 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `e86a855` | **Fix**: `slotGapMinutes` and `unitCapacity` use `undefined` instead of `null` in services POST (non-nullable schema fields with defaults). |
 | `af04721` | **Availability Booking Panel**: Expanded the `/availability` booking drawer to match the full dashboard booking form — CountrySelector, partner dropdown (admin only), total price, discount, booking fee, and notes fields. |
 | `dd2b032` | **Security & Data Integrity Audit**: Partner ownership enforcement on delete/update (partners can only modify their own bookings); `deletedAt: null` added to all 4 capacity-check queries; status/discount validation on update; multi-activity GCal event cleanup on booking delete. |
+| `8257a3d` | **Concession Icons**: Sidebar + page header icon changed to `Sun`; Subnauta card/detail uses `Waves`, Trópico keeps `TreePalm`. |
+| `9b0fc5f` | **Partner Permission Fix**: Partner dropdown (book on behalf) hidden from PARTNER role in both dashboard modal and availability page. Discount and commission fields also hidden from partners. Bookings in availability page are correctly tied to the partner's own account via Clerk session. |
+| `STB-V4` | **Stable V4**: Concessão module complete (themes, bugs fixed, mobile), partner permissions locked down, soft-delete protection active. Stripe self-service integration begins next. |
 
 ### Crisis Recovery & System Stabilization (2026-03-12)
 
