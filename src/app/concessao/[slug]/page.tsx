@@ -2,12 +2,13 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter, useParams } from "next/navigation";
-import { TreePalm, Waves, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator, Bell, X, Check, XCircle, ExternalLink } from "lucide-react";
+import { TreePalm, Waves, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator, Bell, X, Check, XCircle, ExternalLink, BarChart2 } from "lucide-react";
 import DailyControl from "./components/DailyControl";
 import Reservations from "./components/Reservations";
 import type { ReservationInitData } from "./components/Reservations";
 import PriceList from "./components/PriceList";
 import CalcComponent from "./components/Calculator";
+import Statistics from "./components/Statistics";
 import "./concessao-detail.css";
 
 interface Concession {
@@ -33,7 +34,7 @@ interface StaffRequest {
   status: string;
 }
 
-type Tab = "controlo" | "reservas" | "precario" | "calculadora";
+type Tab = "controlo" | "reservas" | "precario" | "calculadora" | "estatisticas";
 
 export default function ConcessaoDetailPage() {
   const { isLoaded, sessionClaims } = useAuth();
@@ -99,6 +100,7 @@ export default function ConcessaoDetailPage() {
     { id: "reservas", label: "Reservas", icon: <BookOpen size={15} /> },
     { id: "precario", label: "Preçário", icon: <CalendarDays size={15} /> },
     { id: "calculadora", label: "Calculadora", icon: <Calculator size={15} /> },
+    { id: "estatisticas", label: "Estatísticas", icon: <BarChart2 size={15} /> },
   ];
 
   return (
@@ -183,6 +185,7 @@ export default function ConcessaoDetailPage() {
         {tab === "reservas" && <Reservations concession={concession} initialReservation={reservationInit} onInitHandled={() => setReservationInit(null)} />}
         {tab === "precario" && <PriceList concession={concession} />}
         {tab === "calculadora" && <CalcComponent concession={concession} onProceed={handleCalcProceed} />}
+        {tab === "estatisticas" && <Statistics concession={concession} />}
       </div>
     </div>
   );
