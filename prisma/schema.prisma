@@ -218,6 +218,7 @@ model Concession {
   entries        ConcessionEntry[]
   reservations   ConcessionReservation[]
   spots          ConcessionSpot[]
+  staffRequests  StaffRequest[]
 }
 
 model ConcessionSpot {
@@ -228,9 +229,10 @@ model ConcessionSpot {
   col          Int
   isActive     Boolean                 @default(true)
   createdAt    DateTime                @default(now())
-  entries      ConcessionEntry[]
-  reservations ConcessionReservation[]
-  concession   Concession              @relation(fields: [concessionId], references: [id])
+  entries       ConcessionEntry[]
+  reservations  ConcessionReservation[]
+  staffRequests StaffRequest[]
+  concession    Concession              @relation(fields: [concessionId], references: [id])
 
   @@unique([concessionId, spotNumber])
 }
@@ -248,13 +250,14 @@ model ConcessionEntry {
   isPaid        Boolean                @default(true)
   notes         String?
   reservationId String?
-  isCarryOver   Boolean                @default(false)
-  status        String                 @default("ACTIVE")
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  concession    Concession             @relation(fields: [concessionId], references: [id])
-  reservation   ConcessionReservation? @relation(fields: [reservationId], references: [id])
-  spot          ConcessionSpot         @relation(fields: [spotId], references: [id])
+  isCarryOver     Boolean                @default(false)
+  status          String                 @default("ACTIVE")
+  stripeSessionId String?                @unique
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  concession      Concession             @relation(fields: [concessionId], references: [id])
+  reservation     ConcessionReservation? @relation(fields: [reservationId], references: [id])
+  spot            ConcessionSpot         @relation(fields: [spotId], references: [id])
 }
 
 model ConcessionReservation {
@@ -300,6 +303,19 @@ model ConcessionBlock {
 
   @@unique([concessionId, date])
 }
+model StaffRequest {
+  id           String         @id @default(cuid())
+  concessionId String
+  spotId       String
+  date         String
+  clientName   String?
+  status       String         @default("PENDING")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  concession   Concession     @relation(fields: [concessionId], references: [id])
+  spot         ConcessionSpot @relation(fields: [spotId], references: [id])
+}
+
 model GcalBusySlot {
   id         String   @id @default(cuid())
   calendarId String

@@ -7,6 +7,11 @@ const isPublicRoute = createRouteMatcher([
     "/api/shopify/webhook(.*)",
     "/api/webhooks/(.*)",
     "/api/debug-(.*)",
+    "/concessao/book/(.*)",
+    "/api/concessions/checkout",
+    "/api/concessions/staff-request",
+    "/api/concessions/staff-request/(.*)",
+    "/api/concessions/(.*)/spot-availability",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
@@ -21,8 +26,8 @@ export default clerkMiddleware(async (auth, request) => {
     // /pending is accessible to all authenticated users
     if (path.startsWith("/pending")) return;
 
-    // /concessao/* — only SUPER_ADMIN and ADMIN
-    if (path.startsWith("/concessao")) {
+    // /concessao/* — only SUPER_ADMIN and ADMIN (public booking pages are already excluded above)
+    if (path.startsWith("/concessao") && !path.startsWith("/concessao/book")) {
         if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
             return NextResponse.redirect(new URL("/pending", request.url));
         }

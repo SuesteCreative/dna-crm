@@ -1,0 +1,119 @@
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { getPrisma } from "@/lib/prisma";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+function todayLisbon() {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" });
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { slug, spotNumber, period, extraBed, clientName, clientPhone } = await req.json();
+
+    if (!slug || !spotNumber || !period || !clientName) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const date = todayLisbon();
+    const prisma = await getPrisma();
+
+    // Look up concession
+    const concession = await prisma.concession.findUnique({ where: { slug } });
+    if (!concession) return NextResponse.json({ error: "Concession not found" }, { status: 404 });
+
+    // Look up spot
+    const spot = await prisma.concessionSpot.findUnique({
+      where: { concessionId_spotNumber: { concessionId: concession.id, spotNumber: Number(spotNumber) } },
+    });
+    if (!spot) return NextResponse.json({ error: "Spot not found" }, { status: 404 });
+
+    // Check availability — reject if period already taken
+    const takenPeriods = ["FULL_DAY"];
+    if (period === "MORNING") takenPeriods.push("MORNING");
+    if (period === "AFTERNOON") takenPeriods.push("AFTERNOON");
+    if (period === "FULL_DAY") takenPeriods.push("MORNING", "AFTERNOON");
+
+    const conflicts = await prisma.concessionEntry.findMany({
+      where: { spotId: spot.id, date, status: "ACTIVE", period: { in: takenPeriods } },
+    });
+    if (conflicts.length > 0) {
+      return NextResponse.json({ error: "Spot no longer available for this period" }, { status: 409 });
+    }
+
+    // Calculate price
+    const bedConfig = extraBed ? "EXTRA_BED" : "TWO_BEDS";
+    let netPrice =
+      period === "MORNING" ? concession.priceMorning :
+      period === "AFTERNOON" ? concession.priceAfternoon :
+      concession.priceFull;
+    if (bedConfig === "EXTRA_BED") netPrice += concession.priceExtraBed;
+
+    // Build labels
+    const periodLabel =
+      period === "MORNING" ? "Manhã (09h00–14h00)" :
+      period === "AFTERNOON" ? "Tarde (14h00–19h00)" : "Dia Inteiro";
+    const dateFormatted = new Date(date + "T12:00:00Z").toLocaleDateString("pt-PT", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+    });
+    const productName = `${concession.name} — Chapéu ${spotNumber}`;
+    const productDescription = `${periodLabel} · ${dateFormatted}${extraBed ? " · Cama Extra" : ""}`;
+
+    const base = process.env.NEXT_PUBLIC_BASE_URL ?? "https://desportosnauticosalvor.com";
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      billing_address_collection: "required",
+      tax_id_collection: { enabled: true },
+      customer_creation: "always",
+      line_items: [{
+        price_data: {
+          currency: "eur",
+          unit_amount: Math.round(netPrice * 100),
+          tax_behavior: "exclusive",
+          product_data: {
+            name: productName,
+            description: productDescription,
+            tax_code: "txcd_10103001",
+          },
+        },
+        quantity: 1,
+      }],
+      automatic_tax: { enabled: true },
+      metadata: {
+        spotId: spot.id,
+        concessionId: concession.id,
+        date,
+        period,
+        bedConfig,
+        clientName,
+        clientPhone: clientPhone ?? "",
+        productName,
+        productDescription,
+        netAmount: netPrice.toFixed(2),
+        concessionSlug: slug,
+        spotNumber: String(spotNumber),
+      },
+      payment_intent_data: {
+        metadata: {
+          productName,
+          productDescription,
+          netAmount: netPrice.toFixed(2),
+          date,
+          period,
+          clientName,
+          spotNumber: String(spotNumber),
+          concessionName: concession.name,
+        },
+      },
+      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${base}/concessao/book/${slug}/${spotNumber}/cancel`,
+    });
+
+    return NextResponse.json({ url: session.url });
+  } catch (err: any) {
+    console.error("Checkout error:", err);
+    return NextResponse.json({ error: err.message ?? "Internal error" }, { status: 500 });
+  }
+}

@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter, useParams } from "next/navigation";
-import { TreePalm, Waves, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator } from "lucide-react";
+import { TreePalm, Waves, ArrowLeft, LayoutGrid, CalendarDays, BookOpen, Calculator, Bell, X, Check, XCircle } from "lucide-react";
 import DailyControl from "./components/DailyControl";
 import Reservations from "./components/Reservations";
 import type { ReservationInitData } from "./components/Reservations";
@@ -25,6 +25,14 @@ interface Concession {
   spots: { id: string; spotNumber: number; row: number; col: number; isActive: boolean }[];
 }
 
+interface StaffRequest {
+  id: string;
+  clientName: string | null;
+  createdAt: string;
+  spot: { spotNumber: number };
+  status: string;
+}
+
 type Tab = "controlo" | "reservas" | "precario" | "calculadora";
 
 export default function ConcessaoDetailPage() {
@@ -38,9 +46,21 @@ export default function ConcessaoDetailPage() {
   const [tab, setTab] = useState<Tab>("controlo");
   const [reservationInit, setReservationInit] = useState<ReservationInitData | null>(null);
 
+  // Staff requests
+  const [staffRequests, setStaffRequests] = useState<StaffRequest[]>([]);
+  const [showRequests, setShowRequests] = useState(false);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleCalcProceed = (data: ReservationInitData) => {
     setReservationInit(data);
     setTab("reservas");
+  };
+
+  const fetchStaffRequests = async (slug: string) => {
+    try {
+      const res = await fetch(`/api/concessions/${slug}/staff-requests`);
+      if (res.ok) setStaffRequests(await res.json());
+    } catch {}
   };
 
   useEffect(() => {
@@ -51,8 +71,20 @@ export default function ConcessaoDetailPage() {
       .then((data) => {
         if (data.error) { router.push("/concessao"); return; }
         setConcession(data);
+        fetchStaffRequests(params.slug);
+        pollRef.current = setInterval(() => fetchStaffRequests(params.slug), 10000);
       });
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [isLoaded, isAdmin, params.slug]);
+
+  const handleRequestAction = async (id: string, status: "ATTENDED" | "DISMISSED") => {
+    await fetch(`/api/concessions/staff-request/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    setStaffRequests((prev) => prev.filter((r) => r.id !== id));
+  };
 
   if (!concession) {
     return (
@@ -79,6 +111,17 @@ export default function ConcessaoDetailPage() {
           {concession.slug === "subnauta" ? <Waves size={24} className="cd-title-icon" /> : <TreePalm size={24} className="cd-title-icon" />}
           <h1 className="cd-title">{concession.name}</h1>
           <span className="cd-loc">{concession.location}</span>
+          {/* Staff requests bell */}
+          <button
+            className={`cd-bell-btn ${staffRequests.length > 0 ? "cd-bell-active" : ""}`}
+            onClick={() => setShowRequests((v) => !v)}
+            title="Pedidos de Staff"
+          >
+            <Bell size={18} />
+            {staffRequests.length > 0 && (
+              <span className="cd-bell-badge">{staffRequests.length}</span>
+            )}
+          </button>
         </div>
         <div className="cd-tabs">
           {tabs.map((t) => (
@@ -92,6 +135,38 @@ export default function ConcessaoDetailPage() {
           ))}
         </div>
       </div>
+
+      {/* Staff requests panel */}
+      {showRequests && (
+        <div className="cd-requests-panel">
+          <div className="cd-requests-hdr">
+            <span>Pedidos de Staff</span>
+            <button className="cd-requests-close" onClick={() => setShowRequests(false)}><X size={16} /></button>
+          </div>
+          {staffRequests.length === 0 ? (
+            <div className="cd-requests-empty">Sem pedidos pendentes.</div>
+          ) : (
+            staffRequests.map((r) => (
+              <div key={r.id} className="cd-request-row">
+                <div className="cd-request-info">
+                  <span className="cd-request-spot">Chapéu {r.spot.spotNumber}</span>
+                  <span className="cd-request-meta">
+                    {r.clientName ?? "—"} · {new Date(r.createdAt).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+                <div className="cd-request-actions">
+                  <button className="cd-req-btn attended" onClick={() => handleRequestAction(r.id, "ATTENDED")} title="Atendido">
+                    <Check size={14} />
+                  </button>
+                  <button className="cd-req-btn dismissed" onClick={() => handleRequestAction(r.id, "DISMISSED")} title="Dispensar">
+                    <XCircle size={14} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       <div className="cd-body">
         {tab === "controlo" && <DailyControl concession={concession} />}
