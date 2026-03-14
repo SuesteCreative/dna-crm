@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Sidebar } from "@/components/Sidebar";
 import { ToastProvider } from "@/components/Toast";
+import { StaffRequestProvider } from "@/contexts/StaffRequestContext";
+import { StaffBanner } from "@/components/StaffBanner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,8 +25,11 @@ export default function RootLayout({
             <html lang="pt">
                 <body className={inter.className}>
                     <ToastProvider>
-                        <Sidebar />
-                        {children}
+                        <StaffRequestProvider>
+                            <Sidebar />
+                            <StaffBanner />
+                            {children}
+                        </StaffRequestProvider>
                     </ToastProvider>
                 </body>
             </html>

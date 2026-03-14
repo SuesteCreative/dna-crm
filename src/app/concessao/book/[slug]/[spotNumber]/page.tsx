@@ -552,7 +552,7 @@ export default function BookingPage() {
   const handleStaffRequest = async (type: "payment" | "assist") => {
     setStaffSubmitting(true);
     try {
-      await fetch("/api/concessions/staff-request", {
+      const res = await fetch("/api/concessions/staff-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -561,7 +561,7 @@ export default function BookingPage() {
           requestType: type === "payment" ? "PAYMENT" : "ASSISTANCE",
         }),
       });
-      setStaffSentType(type);
+      if (res.ok) setStaffSentType(type);
     } finally {
       setStaffSubmitting(false);
     }

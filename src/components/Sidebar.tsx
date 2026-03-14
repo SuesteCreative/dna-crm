@@ -7,6 +7,7 @@ import {
     ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, Sun, CalendarCheck, BookUser, Scan
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useStaffRequests } from "@/contexts/StaffRequestContext";
 
 export function Sidebar() {
     const { userId, sessionClaims } = useAuth();
@@ -21,6 +22,7 @@ export function Sidebar() {
     const [bugError, setBugError] = useState<string | null>(null);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [perms, setPerms] = useState<any>(null);
+    const { pendingCount } = useStaffRequests();
 
     useEffect(() => {
         setIsMobileOpen(false);
@@ -209,6 +211,7 @@ export function Sidebar() {
                         >
                             <Sun size={18} />
                             <span>Concessão</span>
+                            {pendingCount > 0 && <span className="nav-pending-dot" />}
                             {pathname.startsWith("/concessao") && <ChevronRight size={14} className="nav-arrow" />}
                         </button>
                     )}
