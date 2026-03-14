@@ -3135,3 +3135,15 @@ body.has-staff-banner .crm-main {
         padding-top: calc(20px + 52px);
     }
 }
+
+.staff-banner-chip-type {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.staff-banner-chip-type.payment { background: rgba(0,0,0,0.25); color: #fff8e1; }
+.staff-banner-chip-type.assist  { background: rgba(0,0,0,0.15); color: #fff8e1; }

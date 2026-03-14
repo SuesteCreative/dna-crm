@@ -20,8 +20,8 @@ export function StaffBanner() {
       <div className="staff-banner-items">
         {requests.map((r) => (
           <div key={r.id} className={`staff-banner-chip ${r.requestType === "PAYMENT" ? "payment" : "assist"}`}>
-            <span className="staff-banner-chip-icon">
-              {r.requestType === "PAYMENT" ? "💳" : "🙋"}
+            <span className={`staff-banner-chip-type ${r.requestType === "PAYMENT" ? "payment" : "assist"}`}>
+              {r.requestType === "PAYMENT" ? "Pay" : "Help"}
             </span>
             <span className="staff-banner-chip-text">
               <strong>{r.concessionName} · Chapéu {r.spotNumber}</strong>
