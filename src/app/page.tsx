@@ -573,7 +573,12 @@ export default function Dashboard() {
         body: JSON.stringify({ id: booking.id, showedUp: newValue }),
       });
       if (res.ok) {
-        setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, showedUp: newValue } : b));
+        const data = await res.json();
+        setBookings(prev => prev.map(b =>
+          b.id === booking.id
+            ? { ...b, showedUp: data.showedUp, totalPrice: data.totalPrice ?? b.totalPrice }
+            : b
+        ));
       }
     } catch { }
     finally { setAttendanceSaving(false); setAttendanceTarget(null); }

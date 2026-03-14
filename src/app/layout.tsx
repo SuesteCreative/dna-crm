@@ -45,19 +45,30 @@ export default function RootLayout({
                 pageScrollBox: { background: "#1e1e2e" },
                 headerTitle: { color: "#f1f5f9" },
                 headerSubtitle: { color: "#94a3b8" },
-                profileSectionTitle: { color: "#f1f5f9", borderBottom: "1px solid #2d2d3d" },
-                profileSectionTitleText: { color: "#f1f5f9" },
+                // Breadcrumb ("Account / Manage your account info")
+                breadcrumbs: { color: "#f1f5f9" },
+                breadcrumbsItem: { color: "#f1f5f9" },
+                breadcrumbsItemDivider: { color: "#64748b" },
+                // Section titles ("Profile", "Email addresses", "Connected accounts")
+                profileSectionTitle: { borderBottom: "1px solid #2d2d3d" },
+                profileSectionTitleText: { color: "#f1f5f9", fontWeight: "600" },
                 profileSectionContent: { color: "#e2e8f0" },
                 profileSectionPrimaryButton: { color: "#3b82f6" },
+                profileSectionItem: { color: "#e2e8f0" },
+                // Form elements
                 formFieldLabel: { color: "#e2e8f0" },
                 formFieldInput: { background: "#16213e", borderColor: "#2d2d3d", color: "#f1f5f9" },
                 formFieldHintText: { color: "#94a3b8" },
                 formFieldErrorText: { color: "#f87171" },
                 formButtonPrimary: { background: "#3b82f6" },
+                // Misc
                 badge: { color: "#f1f5f9", background: "rgba(59,130,246,0.2)" },
                 avatarBox: { border: "2px solid #2d2d3d" },
                 userPreviewTextContainer: { color: "#f1f5f9" },
                 accordionTriggerButton: { color: "#e2e8f0" },
+                identityPreviewText: { color: "#f1f5f9" },
+                identityPreviewEditButton: { color: "#3b82f6" },
+                modalCloseButton: { color: "#94a3b8" },
             },
         }}>
             <html lang="pt">
