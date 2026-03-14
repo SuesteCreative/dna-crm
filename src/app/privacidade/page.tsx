@@ -22,7 +22,7 @@ export default function PrivacidadePage() {
                 <p>
                     <strong>Desportos Náuticos de Alvor (DNA)</strong><br />
                     Alvor, Portimão, Portugal<br />
-                    Contacto: <a href="mailto:geral@desportosnauticosalvor.com" style={{ color: "#3b82f6" }}>geral@desportosnauticosalvor.com</a>
+                    Contacto: <a href="mailto:booking@desportosnauticosalvor.com" style={{ color: "#3b82f6" }}>booking@desportosnauticosalvor.com</a>
                 </p>
             </section>
 
@@ -88,8 +88,8 @@ export default function PrivacidadePage() {
                 </ul>
                 <p style={{ marginTop: 12 }}>
                     Para exercer qualquer destes direitos, contacte-nos por e-mail para{" "}
-                    <a href="mailto:geral@desportosnauticosalvor.com" style={{ color: "#3b82f6" }}>
-                        geral@desportosnauticosalvor.com
+                    <a href="mailto:booking@desportosnauticosalvor.com" style={{ color: "#3b82f6" }}>
+                        booking@desportosnauticosalvor.com
                     </a>. Responderemos no prazo de 30 dias.
                 </p>
             </section>
@@ -114,18 +114,6 @@ export default function PrivacidadePage() {
                     </a>.
                 </p>
             </section>
-
-            <div style={{
-                marginTop: 48,
-                padding: "16px 20px",
-                background: "#fef9c3",
-                border: "1px solid #fde047",
-                borderRadius: 8,
-                fontSize: "0.82rem",
-                color: "#713f12",
-            }}>
-                <strong>Nota:</strong> Este documento é um rascunho de boa-fé. Recomendamos a revisão por um advogado ou especialista em RGPD antes de o considerar definitivo.
-            </div>
 
             <p style={{ marginTop: 40, fontSize: "0.8rem", color: "#94a3b8", textAlign: "center" }}>
                 © Desportos Náuticos de Alvor · Desenvolvido por{" "}
