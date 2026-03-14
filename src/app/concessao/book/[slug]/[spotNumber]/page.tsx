@@ -350,10 +350,19 @@ export default function BookingPage() {
     return false;
   };
 
+  const isPeriodBlocked = (spot: SpotInfo, p: string): boolean => {
+    if (p === "FULL_DAY") {
+      // Full day is blocked if there's a FULL_DAY entry OR if both MORNING and AFTERNOON are taken
+      return spot.takenPeriods.includes("FULL_DAY") ||
+        (spot.takenPeriods.includes("MORNING") && spot.takenPeriods.includes("AFTERNOON"));
+    }
+    return spot.takenPeriods.includes(p) || spot.takenPeriods.includes("FULL_DAY");
+  };
+
   const periodTaken = (p: string): boolean => {
     if (isPastCutoff(p)) return true;
     if (!thisSpot) return true;
-    return thisSpot.takenPeriods.includes(p) || thisSpot.takenPeriods.includes("FULL_DAY");
+    return isPeriodBlocked(thisSpot, p);
   };
 
   const isBeachClosed = (): boolean => {
@@ -381,7 +390,7 @@ export default function BookingPage() {
           const available = (["MORNING", "AFTERNOON", "FULL_DAY"] as const).filter(
             (p) => !isPastCutoff(p)
           );
-          return available.some((p) => !s.takenPeriods.includes(p) && !s.takenPeriods.includes("FULL_DAY"));
+          return available.some((p) => !isPeriodBlocked(s, p));
         })
         .map((s) => ({
           ...s,
