@@ -114,7 +114,8 @@ export async function POST(req: NextRequest) {
     const days = dates.length;
     const freeDays = Math.floor(days / 7);
     const billableDays = days - freeDays;
-    const netPrice = billableDays * (dayPrice + bedExtra);
+    // Extra bed is charged for all days — free-day discount applies to base price only
+    const netPrice = billableDays * dayPrice + days * bedExtra;
 
     // Build labels
     const periodLabel =
@@ -136,6 +137,15 @@ export async function POST(req: NextRequest) {
       billing_address_collection: "required",
       tax_id_collection: { enabled: true },
       customer_creation: "always",
+      custom_fields: [
+        {
+          key: "tax_id",
+          label: { type: "custom", custom: "NIF / VAT Number" },
+          type: "text",
+          optional: true,
+          text: { minimum_length: 7, maximum_length: 15 },
+        },
+      ],
       line_items: [{
         price_data: {
           currency: "eur",
@@ -179,7 +189,7 @@ export async function POST(req: NextRequest) {
           concessionName: concession.name,
         },
       },
-      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}&type=reservation&start=${startDate}&end=${endDate}&period=${period}&days=${days}&freeDays=${freeDays}&total=${netPrice.toFixed(2)}&name=${encodeURIComponent(clientName)}`,
       cancel_url: `${base}/concessao/book/${slug}/${spotNumber}/cancel`,
     });
 

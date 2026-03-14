@@ -471,6 +471,41 @@
 }
 .book-result-back:hover { opacity: 0.9; }
 
+.book-result-details {
+  width: 100%;
+  margin-top: 22px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+.book-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 14px;
+}
+.book-result-row span:first-child {
+  color: #888;
+  flex-shrink: 0;
+  min-width: 60px;
+}
+.book-result-row span:last-child {
+  color: #111;
+  font-weight: 500;
+  text-align: right;
+}
+.book-result-row.total {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 8px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+.book-result-total { font-size: 18px; font-weight: 900; color: #111 !important; }
+
 /* ── Activity card ───────────────────────────────────────────────────────── */
 
 .book-activity-card {
