@@ -49,7 +49,8 @@ export async function POST(req: NextRequest) {
       period === "AFTERNOON" ? concession.priceAfternoon :
       concession.priceFull;
     if (bedConfig === "EXTRA_BED") netPrice += concession.priceExtraBed;
-    const grossPrice = netPrice * 1.23; // 23% VAT included in price
+    // DB prices are already VAT-inclusive; derive net for accounting records
+    const grossPrice = netPrice; // DB prices already include 23% VAT
 
     // Build labels
     const periodLabel =
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
         clientPhone: clientPhone ?? "",
         productName,
         productDescription,
-        netAmount: netPrice.toFixed(2),
+        netAmount: (netPrice / 1.23).toFixed(2),
         grossAmount: grossPrice.toFixed(2),
         concessionSlug: slug,
         spotNumber: String(spotNumber),
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           productName,
           productDescription,
-          netAmount: netPrice.toFixed(2),
+          netAmount: (netPrice / 1.23).toFixed(2),
           grossAmount: grossPrice.toFixed(2),
           date,
           period,

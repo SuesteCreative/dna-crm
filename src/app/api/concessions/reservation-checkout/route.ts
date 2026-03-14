@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
     const billableDays = days - freeDays;
     // Extra bed is charged for all days — free-day discount applies to base price only
     const netPrice = billableDays * dayPrice + days * bedExtra;
-    const grossPrice = netPrice * 1.23; // 23% VAT included in price
+    const grossPrice = netPrice; // DB prices already include 23% VAT
 
     // Build labels
     const periodLabel =
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
         clientPhone: clientPhone ?? "",
         productName,
         productDescription,
-        netAmount: netPrice.toFixed(2),
+        netAmount: (netPrice / 1.23).toFixed(2),
         grossAmount: grossPrice.toFixed(2),
         concessionSlug: slug,
         spotNumber: String(spotNumber),
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           productName,
           productDescription,
-          netAmount: netPrice.toFixed(2),
+          netAmount: (netPrice / 1.23).toFixed(2),
           grossAmount: grossPrice.toFixed(2),
           startDate,
           endDate,
