@@ -23,7 +23,7 @@ const T: Record<Lang, Record<string, string>> = {
     days: "dias",
     freeDays: "dia(s) gratuito(s)",
     discount: "Desconto",
-    total: "Total (antes de IVA)",
+    total: "Total (IVA 23% incluído)",
     back: "Voltar ao Chapéu",
   },
   en: {
@@ -41,7 +41,7 @@ const T: Record<Lang, Record<string, string>> = {
     days: "days",
     freeDays: "free day(s)",
     discount: "Discount",
-    total: "Total (before tax)",
+    total: "Total (23% VAT included)",
     back: "Back to Seat",
   },
   es: {
@@ -59,7 +59,7 @@ const T: Record<Lang, Record<string, string>> = {
     days: "días",
     freeDays: "día(s) gratis",
     discount: "Descuento",
-    total: "Total (antes de IVA)",
+    total: "Total (IVA 23% incluido)",
     back: "Volver a la Sombrilla",
   },
   fr: {
@@ -77,7 +77,7 @@ const T: Record<Lang, Record<string, string>> = {
     days: "jours",
     freeDays: "jour(s) gratuit(s)",
     discount: "Réduction",
-    total: "Total (hors TVA)",
+    total: "Total (TVA 23% incluse)",
     back: "Retour au Parasol",
   },
   de: {
@@ -95,7 +95,7 @@ const T: Record<Lang, Record<string, string>> = {
     days: "Tage",
     freeDays: "Gratistag(e)",
     discount: "Rabatt",
-    total: "Gesamt (vor MwSt.)",
+    total: "Gesamt (inkl. 23% MwSt.)",
     back: "Zurück zum Sonnenschirm",
   },
 };

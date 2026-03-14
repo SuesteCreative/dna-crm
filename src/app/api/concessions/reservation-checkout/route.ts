@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
     const billableDays = days - freeDays;
     // Extra bed is charged for all days — free-day discount applies to base price only
     const netPrice = billableDays * dayPrice + days * bedExtra;
+    const grossPrice = netPrice * 1.23; // 23% VAT included in price
 
     // Build labels
     const periodLabel =
@@ -135,7 +136,7 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       billing_address_collection: "required",
-      tax_id_collection: { enabled: true },
+      tax_id_collection: { enabled: false },
       customer_creation: "always",
       custom_fields: [
         {
@@ -149,17 +150,14 @@ export async function POST(req: NextRequest) {
       line_items: [{
         price_data: {
           currency: "eur",
-          unit_amount: Math.round(netPrice * 100),
-          tax_behavior: "exclusive",
+          unit_amount: Math.round(grossPrice * 100),
           product_data: {
             name: productName,
             description: productDescription,
-            tax_code: "txcd_10103001",
           },
         },
         quantity: 1,
       }],
-      automatic_tax: { enabled: true },
       metadata: {
         sessionType: "reservation",
         spotId: spot.id,
@@ -173,6 +171,7 @@ export async function POST(req: NextRequest) {
         productName,
         productDescription,
         netAmount: netPrice.toFixed(2),
+        grossAmount: grossPrice.toFixed(2),
         concessionSlug: slug,
         spotNumber: String(spotNumber),
       },
@@ -181,6 +180,7 @@ export async function POST(req: NextRequest) {
           productName,
           productDescription,
           netAmount: netPrice.toFixed(2),
+          grossAmount: grossPrice.toFixed(2),
           startDate,
           endDate,
           period,
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
           concessionName: concession.name,
         },
       },
-      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}&type=reservation&start=${startDate}&end=${endDate}&period=${period}&days=${days}&freeDays=${freeDays}&total=${netPrice.toFixed(2)}&name=${encodeURIComponent(clientName)}`,
+      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}&type=reservation&start=${startDate}&end=${endDate}&period=${period}&days=${days}&freeDays=${freeDays}&total=${grossPrice.toFixed(2)}&name=${encodeURIComponent(clientName)}`,
       cancel_url: `${base}/concessao/book/${slug}/${spotNumber}/cancel`,
     });
 

@@ -42,13 +42,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Spot no longer available for this period" }, { status: 409 });
     }
 
-    // Calculate price
+    // Calculate price (net) then apply 23% VAT inclusive
     const bedConfig = extraBed ? "EXTRA_BED" : "TWO_BEDS";
     let netPrice =
       period === "MORNING" ? concession.priceMorning :
       period === "AFTERNOON" ? concession.priceAfternoon :
       concession.priceFull;
     if (bedConfig === "EXTRA_BED") netPrice += concession.priceExtraBed;
+    const grossPrice = netPrice * 1.23; // 23% VAT included in price
 
     // Build labels
     const periodLabel =
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       billing_address_collection: "required",
-      tax_id_collection: { enabled: true },
+      tax_id_collection: { enabled: false },
       customer_creation: "always",
       custom_fields: [
         {
@@ -79,17 +80,14 @@ export async function POST(req: NextRequest) {
       line_items: [{
         price_data: {
           currency: "eur",
-          unit_amount: Math.round(netPrice * 100),
-          tax_behavior: "exclusive",
+          unit_amount: Math.round(grossPrice * 100),
           product_data: {
             name: productName,
             description: productDescription,
-            tax_code: "txcd_10103001",
           },
         },
         quantity: 1,
       }],
-      automatic_tax: { enabled: true },
       metadata: {
         sessionType: "daily",
         spotId: spot.id,
@@ -102,6 +100,7 @@ export async function POST(req: NextRequest) {
         productName,
         productDescription,
         netAmount: netPrice.toFixed(2),
+        grossAmount: grossPrice.toFixed(2),
         concessionSlug: slug,
         spotNumber: String(spotNumber),
       },
@@ -110,6 +109,7 @@ export async function POST(req: NextRequest) {
           productName,
           productDescription,
           netAmount: netPrice.toFixed(2),
+          grossAmount: grossPrice.toFixed(2),
           date,
           period,
           clientName,
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
           concessionName: concession.name,
         },
       },
-      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}&type=daily&date=${date}&period=${period}&total=${netPrice.toFixed(2)}&name=${encodeURIComponent(clientName)}`,
+      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}&type=daily&date=${date}&period=${period}&total=${grossPrice.toFixed(2)}&name=${encodeURIComponent(clientName)}`,
       cancel_url: `${base}/concessao/book/${slug}/${spotNumber}/cancel`,
     });
 
