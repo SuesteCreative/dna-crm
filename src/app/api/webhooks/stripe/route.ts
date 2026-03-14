@@ -35,6 +35,14 @@ export async function POST(req: NextRequest) {
     const meta = session.metadata ?? {};
     const sessionType = meta.sessionType ?? "daily";
 
+    // Attach NIF (filled in by customer) to payment intent metadata
+    const nif = session.custom_fields?.find((f) => f.key === "tax_id")?.text?.value ?? "";
+    if (nif && session.payment_intent) {
+      await stripe.paymentIntents.update(session.payment_intent as string, {
+        metadata: { nif },
+      });
+    }
+
     if (sessionType === "reservation") {
       await handleReservationSession(session, meta);
     } else {
