@@ -3,7 +3,7 @@ import { getPrisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
-    const { slug, spotNumber, clientName } = await req.json();
+    const { slug, spotNumber, clientName, requestType } = await req.json();
     if (!slug || !spotNumber) {
       return NextResponse.json({ error: "Missing slug or spotNumber" }, { status: 400 });
     }
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
         spotId: spot.id,
         date,
         clientName: clientName || null,
+        requestType: requestType === "PAYMENT" ? "PAYMENT" : "ASSISTANCE",
         status: "PENDING",
       },
     });

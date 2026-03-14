@@ -38,10 +38,13 @@ const T: Record<Lang, Record<string, string>> = {
     phonePlaceholder: "+351 9xx xxx xxx",
     total: "Total",
     pay: "Pagar",
-    callStaff: "Chamar Staff / Pagar em Numerário",
-    staffName: "O seu nome (opcional)",
-    sendRequest: "Enviar Pedido",
+    payWithCash: "Pagar em Numerário / Cartão Físico",
+    callStaff: "Chamar Staff",
+    staffPaySent: "✓ Staff a caminho para pagamento. Por favor aguarde.",
     staffSent: "✓ Staff avisado. Por favor aguarde no seu chapéu.",
+    activities: "Reservar Atividade",
+    activitiesSub: "Jetski · Passeios de barco · Paddleboard · e mais",
+    activitiesBtn: "Ver atividades →",
     spotTaken: "Chapéu ocupado! Por favor recarregue a página.",
     allOccupied: "Todos os chapéus estão ocupados. Chame o staff.",
     modeToday: "Hoje",
@@ -81,10 +84,13 @@ const T: Record<Lang, Record<string, string>> = {
     phonePlaceholder: "+351 9xx xxx xxx",
     total: "Total",
     pay: "Pay",
-    callStaff: "Call Staff / Pay with Cash",
-    staffName: "Your name (optional)",
-    sendRequest: "Send Request",
+    payWithCash: "Pay with Cash / Physical Card",
+    callStaff: "Call Staff",
+    staffPaySent: "✓ Staff on their way for payment. Please wait.",
     staffSent: "✓ Staff notified. Please wait at your seat.",
+    activities: "Book an Activity",
+    activitiesSub: "Jet ski · Boat tours · Paddleboard · and more",
+    activitiesBtn: "View activities →",
     spotTaken: "Seat taken! Please reload the page.",
     allOccupied: "All seats are occupied. Please call staff.",
     modeToday: "Today",
@@ -124,10 +130,13 @@ const T: Record<Lang, Record<string, string>> = {
     phonePlaceholder: "+351 9xx xxx xxx",
     total: "Total",
     pay: "Pagar",
-    callStaff: "Llamar al Staff / Pagar en Efectivo",
-    staffName: "Su nombre (opcional)",
-    sendRequest: "Enviar Solicitud",
+    payWithCash: "Pagar en Efectivo / Tarjeta Física",
+    callStaff: "Llamar al Staff",
+    staffPaySent: "✓ Personal en camino para el pago. Por favor espere.",
     staffSent: "✓ Staff avisado. Por favor espere en su sombrilla.",
+    activities: "Reservar Actividad",
+    activitiesSub: "Jet ski · Paseos en barco · Paddleboard · y más",
+    activitiesBtn: "Ver actividades →",
     spotTaken: "¡Sombrilla ocupada! Por favor, recargue la página.",
     allOccupied: "Todas las sombrillas están ocupadas. Llame al personal.",
     modeToday: "Hoy",
@@ -167,10 +176,13 @@ const T: Record<Lang, Record<string, string>> = {
     phonePlaceholder: "+351 9xx xxx xxx",
     total: "Total",
     pay: "Payer",
-    callStaff: "Appeler le Staff / Payer en espèces",
-    staffName: "Votre nom (optionnel)",
-    sendRequest: "Envoyer la demande",
+    payWithCash: "Payer en Espèces / Carte Physique",
+    callStaff: "Appeler le Staff",
+    staffPaySent: "✓ Staff en route pour le paiement. Veuillez patienter.",
     staffSent: "✓ Staff prévenu. Veuillez attendre à votre parasol.",
+    activities: "Réserver une Activité",
+    activitiesSub: "Jet ski · Sorties en bateau · Paddleboard · et plus",
+    activitiesBtn: "Voir les activités →",
     spotTaken: "Parasol occupé ! Veuillez recharger la page.",
     allOccupied: "Tous les parasols sont occupés. Appelez le personnel.",
     modeToday: "Aujourd'hui",
@@ -210,10 +222,13 @@ const T: Record<Lang, Record<string, string>> = {
     phonePlaceholder: "+351 9xx xxx xxx",
     total: "Gesamt",
     pay: "Bezahlen",
-    callStaff: "Personal rufen / Bar bezahlen",
-    staffName: "Ihr Name (optional)",
-    sendRequest: "Anfrage senden",
+    payWithCash: "Bar / Physische Karte bezahlen",
+    callStaff: "Personal rufen",
+    staffPaySent: "✓ Personal unterwegs für Zahlung. Bitte warten.",
     staffSent: "✓ Personal benachrichtigt. Bitte warten Sie an Ihrem Sonnenschirm.",
+    activities: "Aktivität buchen",
+    activitiesSub: "Jet Ski · Bootsfahrten · Paddleboard · und mehr",
+    activitiesBtn: "Aktivitäten ansehen →",
     spotTaken: "Sonnenschirm belegt! Bitte laden Sie die Seite neu.",
     allOccupied: "Alle Sonnenschirme sind belegt. Rufen Sie das Personal.",
     modeToday: "Heute",
@@ -232,6 +247,23 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosedSub: "Nutzen Sie den Reiter \"Reservieren\" für zukünftige Daten.",
     errorReload: "Ladefehler. Bitte Seite neu laden.",
   },
+};
+
+// ── Phone prefixes ────────────────────────────────────────────────────────────
+
+const PHONE_PREFIXES = [
+  { code: "+351", flag: "🇵🇹" }, { code: "+44", flag: "🇬🇧" },
+  { code: "+49", flag: "🇩🇪" }, { code: "+33", flag: "🇫🇷" },
+  { code: "+34", flag: "🇪🇸" }, { code: "+31", flag: "🇳🇱" },
+  { code: "+353", flag: "🇮🇪" }, { code: "+32", flag: "🇧🇪" },
+  { code: "+39", flag: "🇮🇹" }, { code: "+46", flag: "🇸🇪" },
+  { code: "+47", flag: "🇳🇴" }, { code: "+45", flag: "🇩🇰" },
+  { code: "+41", flag: "🇨🇭" }, { code: "+43", flag: "🇦🇹" },
+  { code: "+1", flag: "🇺🇸" },  { code: "+55", flag: "🇧🇷" },
+];
+
+const LANG_TO_PREFIX: Record<string, string> = {
+  pt: "+351", en: "+44", de: "+49", fr: "+33", es: "+34",
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -298,18 +330,20 @@ export default function BookingPage() {
   const [resError, setResError] = useState<string | null>(null);
   const [resNearbySpots, setResNearbySpots] = useState<number[]>([]);
 
+  // Phone prefix
+  const [phonePrefix, setPhonePrefix] = useState("+351");
+
   // Staff request state
-  const [showStaffForm, setShowStaffForm] = useState(false);
-  const [staffName, setStaffName] = useState("");
-  const [staffSent, setStaffSent] = useState(false);
+  const [staffSentType, setStaffSentType] = useState<null | "payment" | "assist">(null);
   const [staffSubmitting, setStaffSubmitting] = useState(false);
 
   const t = T[lang];
 
-  // Auto-detect language once on mount
+  // Auto-detect language and phone prefix once on mount
   useEffect(() => {
     const l = navigator.language.slice(0, 2).toLowerCase() as Lang;
     if (LANGS.includes(l)) setLang(l);
+    if (LANG_TO_PREFIX[l]) setPhonePrefix(LANG_TO_PREFIX[l]);
   }, []);
 
   // Load all data from a single public endpoint
@@ -443,7 +477,7 @@ export default function BookingPage() {
       const res = await fetch("/api/concessions/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, spotNumber: spotNum, period, extraBed, clientName, clientPhone }),
+        body: JSON.stringify({ slug, spotNumber: spotNum, period, extraBed, clientName, clientPhone: clientPhone ? `${phonePrefix}${clientPhone}` : "" }),
       });
       const data = await res.json();
       if (res.status === 409) { setError(t.spotTaken); return; }
@@ -465,7 +499,7 @@ export default function BookingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slug, spotNumber: spotNum, startDate: resStartDate, endDate: resEndDate,
-          period: resPeriod, extraBed: resExtraBed, clientName: resClientName, clientPhone: resClientPhone,
+          period: resPeriod, extraBed: resExtraBed, clientName: resClientName, clientPhone: resClientPhone ? `${phonePrefix}${resClientPhone}` : "",
         }),
       });
       const data = await res.json();
@@ -477,15 +511,19 @@ export default function BookingPage() {
     }
   };
 
-  const handleStaffRequest = async () => {
+  const handleStaffRequest = async (type: "payment" | "assist") => {
     setStaffSubmitting(true);
     try {
       await fetch("/api/concessions/staff-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, spotNumber: spotNum, clientName: staffName || clientName || resClientName || null }),
+        body: JSON.stringify({
+          slug, spotNumber: spotNum,
+          clientName: clientName || resClientName || null,
+          requestType: type === "payment" ? "PAYMENT" : "ASSISTANCE",
+        }),
       });
-      setStaffSent(true);
+      setStaffSentType(type);
     } finally {
       setStaffSubmitting(false);
     }
@@ -581,9 +619,8 @@ export default function BookingPage() {
                     <div className="book-occupied-sub">{t.beachClosedSub}</div>
                   </div>
                   <div className="book-actions" style={{ marginTop: 16 }}>
-                    <button className="book-btn-staff" onClick={() => setShowStaffForm((v) => !v)}>
-                      {t.callStaff}
-                    </button>
+                    <button className="book-btn-staff" onClick={() => handleStaffRequest("payment")} disabled={staffSubmitting}>{t.payWithCash}</button>
+                    <button className="book-btn-staff" onClick={() => handleStaffRequest("assist")} disabled={staffSubmitting}>{t.callStaff}</button>
                   </div>
                 </>
               ) : occupied ? (
@@ -608,9 +645,8 @@ export default function BookingPage() {
                     </div>
                   )}
                   <div className="book-actions" style={{ marginTop: 16 }}>
-                    <button className="book-btn-staff" onClick={() => setShowStaffForm((v) => !v)}>
-                      {t.callStaff}
-                    </button>
+                    <button className="book-btn-staff" onClick={() => handleStaffRequest("payment")} disabled={staffSubmitting}>{t.payWithCash}</button>
+                    <button className="book-btn-staff" onClick={() => handleStaffRequest("assist")} disabled={staffSubmitting}>{t.callStaff}</button>
                   </div>
                 </>
               ) : (
@@ -665,14 +701,21 @@ export default function BookingPage() {
                           onChange={(e) => setClientName(e.target.value)}
                         />
                       </div>
-                      <div className={`book-field`}>
+                      <div className="book-field">
                         <label>{t.phone}</label>
-                        <input
-                          type="tel"
-                          placeholder={t.phonePlaceholder}
-                          value={clientPhone}
-                          onChange={(e) => setClientPhone(e.target.value)}
-                        />
+                        <div className="book-phone-row">
+                          <select className="book-prefix-select" value={phonePrefix} onChange={(e) => setPhonePrefix(e.target.value)}>
+                            {PHONE_PREFIXES.map((p) => (
+                              <option key={p.code} value={p.code}>{p.flag} {p.code}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="tel"
+                            placeholder={t.phonePlaceholder}
+                            value={clientPhone}
+                            onChange={(e) => setClientPhone(e.target.value)}
+                          />
+                        </div>
                       </div>
 
                       <div className={`book-price-summary ${theme}`}>
@@ -688,18 +731,16 @@ export default function BookingPage() {
                         >
                           {submitting ? "..." : `${t.pay} ${calcDailyPrice().toFixed(2)}€`}
                         </button>
-                        <button className="book-btn-staff" onClick={() => setShowStaffForm((v) => !v)}>
-                          {t.callStaff}
-                        </button>
+                        <button className="book-btn-staff" onClick={() => handleStaffRequest("payment")} disabled={staffSubmitting}>{t.payWithCash}</button>
+                        <button className="book-btn-staff" onClick={() => handleStaffRequest("assist")} disabled={staffSubmitting}>{t.callStaff}</button>
                       </div>
                     </>
                   )}
 
                   {!period && (
                     <div className="book-actions" style={{ marginTop: 8 }}>
-                      <button className="book-btn-staff" onClick={() => setShowStaffForm((v) => !v)}>
-                        {t.callStaff}
-                      </button>
+                      <button className="book-btn-staff" onClick={() => handleStaffRequest("payment")} disabled={staffSubmitting}>{t.payWithCash}</button>
+                      <button className="book-btn-staff" onClick={() => handleStaffRequest("assist")} disabled={staffSubmitting}>{t.callStaff}</button>
                     </div>
                   )}
                 </>
@@ -797,12 +838,19 @@ export default function BookingPage() {
               </div>
               <div className="book-field">
                 <label>{t.phone}</label>
-                <input
-                  type="tel"
-                  placeholder={t.phonePlaceholder}
-                  value={resClientPhone}
-                  onChange={(e) => setResClientPhone(e.target.value)}
-                />
+                <div className="book-phone-row">
+                  <select className="book-prefix-select" value={phonePrefix} onChange={(e) => setPhonePrefix(e.target.value)}>
+                    {PHONE_PREFIXES.map((p) => (
+                      <option key={p.code} value={p.code}>{p.flag} {p.code}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    placeholder={t.phonePlaceholder}
+                    value={resClientPhone}
+                    onChange={(e) => setResClientPhone(e.target.value)}
+                  />
+                </div>
               </div>
 
               {resPeriod && resStartDate && resEndDate && resDays > 0 && (
@@ -833,34 +881,34 @@ export default function BookingPage() {
                 >
                   {resSubmitting ? "..." : `${t.reserve}${resTotal > 0 ? ` ${resTotal.toFixed(2)}€` : ""}`}
                 </button>
-                <button className="book-btn-staff" onClick={() => setShowStaffForm((v) => !v)}>
-                  {t.callStaff}
-                </button>
+                <button className="book-btn-staff" onClick={() => handleStaffRequest("payment")} disabled={staffSubmitting}>{t.payWithCash}</button>
+                <button className="book-btn-staff" onClick={() => handleStaffRequest("assist")} disabled={staffSubmitting}>{t.callStaff}</button>
               </div>
             </>
           )}
 
-          {/* Staff request form */}
-          {showStaffForm && !staffSent && (
-            <div className="book-staff-form">
-              <input
-                type="text"
-                placeholder={t.staffName}
-                value={staffName}
-                onChange={(e) => setStaffName(e.target.value)}
-              />
-              <button
-                className="book-btn-staff-submit"
-                onClick={handleStaffRequest}
-                disabled={staffSubmitting}
-              >
-                {staffSubmitting ? "..." : t.sendRequest}
-              </button>
-            </div>
-          )}
-          {staffSent && <div className="book-staff-sent">{t.staffSent}</div>}
+          {/* Staff request confirmation */}
+          {staffSentType === "payment" && <div className="book-staff-sent">{t.staffPaySent}</div>}
+          {staffSentType === "assist"  && <div className="book-staff-sent">{t.staffSent}</div>}
+
         </div>
       </div>
+
+      {/* Activity card */}
+      <a
+        href="https://desportosnauticosalvor.com/collections/all"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="book-activity-card"
+      >
+        <div className="book-activity-icon">🏄</div>
+        <div className="book-activity-text">
+          <div className="book-activity-title">{t.activities}</div>
+          <div className="book-activity-sub">{t.activitiesSub}</div>
+        </div>
+        <div className="book-activity-arrow">{t.activitiesBtn}</div>
+      </a>
+
     </div>
   );
 }

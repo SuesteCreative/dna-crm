@@ -310,6 +310,7 @@ model StaffRequest {
   spotId       String
   date         String
   clientName   String?
+  requestType  String         @default("ASSISTANCE")
   status       String         @default("PENDING")
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
