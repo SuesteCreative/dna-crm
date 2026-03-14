@@ -391,14 +391,32 @@
 .book-alternatives-label { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
 .book-alt-spots { display: flex; flex-wrap: wrap; gap: 8px; }
 .book-alt-spot {
-  width: 56px; height: 56px;
+  min-width: 56px; min-height: 56px;
+  padding: 6px 10px;
   border-radius: 14px;
   background: #f0fdf4;
   border: 2px solid #86efac;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   font-size: 19px; font-weight: 900; color: #166534;
 }
+.book-alt-avail {
+  font-size: 9px; font-weight: 600; color: #15803d;
+  text-align: center; line-height: 1.2;
+  white-space: nowrap;
+}
 .book-alt-walk { font-size: 12px; color: #777; margin-top: 10px; line-height: 1.5; }
+
+/* ── Morning-only warning ────────────────────────────────────────────────── */
+.book-morning-warning {
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
 
 /* ── Error ───────────────────────────────────────────────────────────────── */
 

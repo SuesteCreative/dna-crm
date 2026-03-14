@@ -43,7 +43,9 @@ export default function Calculator({ concession, onProceed }: Props) {
     if (discount === "free_day" && days >= 7) {
       freeDays = Math.floor(days / 7);
       billableDays = days - freeDays;
-      discountAmount = subtotal - basePerDay * spots * billableDays;
+      // Free-day discount applies to base period price only — extra bed is charged for all days
+      const basePriceForDiscount = bedConfig === "EXTRA_BED" ? periodPrice : basePerDay;
+      discountAmount = basePriceForDiscount * spots * freeDays;
     } else if (discount === "ten_percent" && days > 7) {
       discountAmount = subtotal * 0.1;
     }

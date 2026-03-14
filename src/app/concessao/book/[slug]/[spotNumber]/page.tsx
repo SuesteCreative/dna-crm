@@ -45,6 +45,9 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Reservar Atividade",
     activitiesSub: "Jetski · Passeios de barco · Paddleboard · e mais",
     activitiesBtn: "Ver atividades →",
+    availUntil2pm: "Disponível até às 14h",
+    availFrom2pm: "Disponível a partir das 14h",
+    morningOnlyWarning: "Este chapéu só está disponível até às 14h (tarde já reservada). Quer continuar ou prefere chamar o staff?",
     spotTaken: "Chapéu ocupado! Por favor recarregue a página.",
     allOccupied: "Todos os chapéus estão ocupados. Chame o staff.",
     modeToday: "Hoje",
@@ -58,7 +61,8 @@ const T: Record<Lang, Record<string, string>> = {
     conflictError: "Chapéu não disponível nesse período.",
     nearbyAvailable: "Chapéus próximos disponíveis:",
     walkToNearby: "Dirija-se ao chapéu indicado e leia o QR code.",
-    refundPolicy: "Reembolso total até 48h antes da chegada. Stripe processa em 5–10 dias úteis.",
+    spotLabel: "Chapéu",
+    refundPolicy: "Pagamento seguro via Stripe. Em caso de reembolso, o prazo é de 5–10 dias úteis.",
     beachClosed: "A praia está encerrada para hoje.",
     beachClosedSub: "Use o separador \"Reserva\" para reservar dias futuros.",
     errorReload: "Erro ao carregar. Recarregue a página.",
@@ -91,6 +95,9 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Book an Activity",
     activitiesSub: "Jet ski · Boat tours · Paddleboard · and more",
     activitiesBtn: "View activities →",
+    availUntil2pm: "Available until 2pm",
+    availFrom2pm: "Available from 2pm",
+    morningOnlyWarning: "This seat is only available until 2pm (afternoon already booked). Continue or call staff?",
     spotTaken: "Seat taken! Please reload the page.",
     allOccupied: "All seats are occupied. Please call staff.",
     modeToday: "Today",
@@ -104,7 +111,8 @@ const T: Record<Lang, Record<string, string>> = {
     conflictError: "Seat not available for that period.",
     nearbyAvailable: "Available nearby seats:",
     walkToNearby: "Please walk to the indicated seat and scan its QR code.",
-    refundPolicy: "Full refund up to 48h before arrival. Stripe processes refunds within 5–10 business days.",
+    spotLabel: "Seat",
+    refundPolicy: "Secure payment via Stripe. In case of refund, processing takes 5–10 business days.",
     beachClosed: "The beach is closed for today.",
     beachClosedSub: "Use the \"Reserve\" tab to book future dates.",
     errorReload: "Failed to load. Please reload the page.",
@@ -137,6 +145,9 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Reservar Actividad",
     activitiesSub: "Jet ski · Paseos en barco · Paddleboard · y más",
     activitiesBtn: "Ver actividades →",
+    availUntil2pm: "Disponible hasta las 14h",
+    availFrom2pm: "Disponible a partir de las 14h",
+    morningOnlyWarning: "Esta sombrilla solo está disponible hasta las 14h (tarde ya reservada). ¿Continuar o llamar al personal?",
     spotTaken: "¡Sombrilla ocupada! Por favor, recargue la página.",
     allOccupied: "Todas las sombrillas están ocupadas. Llame al personal.",
     modeToday: "Hoy",
@@ -150,7 +161,8 @@ const T: Record<Lang, Record<string, string>> = {
     conflictError: "Sombrilla no disponible para ese período.",
     nearbyAvailable: "Sombrillas cercanas disponibles:",
     walkToNearby: "Por favor, diríjase a la sombrilla indicada y escanee su código QR.",
-    refundPolicy: "Reembolso total hasta 48h antes de la llegada. Stripe procesa en 5–10 días hábiles.",
+    spotLabel: "Sombrilla",
+    refundPolicy: "Pago seguro a través de Stripe. En caso de reembolso, el plazo es de 5–10 días hábiles.",
     beachClosed: "La playa está cerrada por hoy.",
     beachClosedSub: "Use el separador \"Reservar\" para reservar días futuros.",
     errorReload: "Error al cargar. Recargue la página.",
@@ -183,6 +195,9 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Réserver une Activité",
     activitiesSub: "Jet ski · Sorties en bateau · Paddleboard · et plus",
     activitiesBtn: "Voir les activités →",
+    availUntil2pm: "Disponible jusqu'à 14h",
+    availFrom2pm: "Disponible à partir de 14h",
+    morningOnlyWarning: "Ce parasol n'est disponible que jusqu'à 14h (après-midi déjà réservé). Continuer ou appeler le staff ?",
     spotTaken: "Parasol occupé ! Veuillez recharger la page.",
     allOccupied: "Tous les parasols sont occupés. Appelez le personnel.",
     modeToday: "Aujourd'hui",
@@ -196,7 +211,8 @@ const T: Record<Lang, Record<string, string>> = {
     conflictError: "Parasol non disponible pour cette période.",
     nearbyAvailable: "Parasols disponibles à proximité :",
     walkToNearby: "Rendez-vous au parasol indiqué et scannez son QR code.",
-    refundPolicy: "Remboursement complet jusqu'à 48h avant l'arrivée. Stripe traite en 5–10 jours ouvrables.",
+    spotLabel: "Parasol",
+    refundPolicy: "Paiement sécurisé via Stripe. En cas de remboursement, le délai est de 5 à 10 jours ouvrables.",
     beachClosed: "La plage est fermée pour aujourd'hui.",
     beachClosedSub: "Utilisez l'onglet \"Réserver\" pour réserver des dates futures.",
     errorReload: "Échec du chargement. Rechargez la page.",
@@ -229,6 +245,9 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Aktivität buchen",
     activitiesSub: "Jet Ski · Bootsfahrten · Paddleboard · und mehr",
     activitiesBtn: "Aktivitäten ansehen →",
+    availUntil2pm: "Verfügbar bis 14:00 Uhr",
+    availFrom2pm: "Verfügbar ab 14:00 Uhr",
+    morningOnlyWarning: "Dieser Sonnenschirm ist nur bis 14:00 Uhr verfügbar (Nachmittag bereits gebucht). Fortfahren oder Personal rufen?",
     spotTaken: "Sonnenschirm belegt! Bitte laden Sie die Seite neu.",
     allOccupied: "Alle Sonnenschirme sind belegt. Rufen Sie das Personal.",
     modeToday: "Heute",
@@ -242,7 +261,8 @@ const T: Record<Lang, Record<string, string>> = {
     conflictError: "Sonnenschirm für diesen Zeitraum nicht verfügbar.",
     nearbyAvailable: "Verfügbare Sonnenschirme in der Nähe:",
     walkToNearby: "Bitte gehen Sie zum angezeigten Sonnenschirm und scannen Sie dessen QR-Code.",
-    refundPolicy: "Volle Rückerstattung bis 48h vor Ankunft. Stripe bearbeitet in 5–10 Werktagen.",
+    spotLabel: "Sonnenschirm",
+    refundPolicy: "Sichere Zahlung über Stripe. Im Falle einer Rückerstattung beträgt die Bearbeitungszeit 5–10 Werktage.",
     beachClosed: "Der Strand ist für heute geschlossen.",
     beachClosedSub: "Nutzen Sie den Reiter \"Reservieren\" für zukünftige Daten.",
     errorReload: "Ladefehler. Bitte Seite neu laden.",
@@ -418,6 +438,17 @@ export default function BookingPage() {
     return available.every((p) => periodTaken(p));
   };
 
+  /** Returns an availability label for a nearby spot tile, or "" if fully available. */
+  const getSpotAvailLabel = (spot: SpotInfo): string => {
+    const morningFree = !isPeriodBlocked(spot, "MORNING") && !isPastCutoff("MORNING");
+    const afternoonFree = !isPeriodBlocked(spot, "AFTERNOON") && !isPastCutoff("AFTERNOON");
+    const fullDayFree = !isPeriodBlocked(spot, "FULL_DAY") && !isPastCutoff("FULL_DAY");
+    if (fullDayFree) return "";
+    if (morningFree && !afternoonFree) return t.availUntil2pm;
+    if (!morningFree && afternoonFree) return t.availFrom2pm;
+    return "";
+  };
+
   // Nearby free spots for daily occupied state
   const nearbyFree = thisSpot
     ? allSpots
@@ -461,7 +492,8 @@ export default function BookingPage() {
       resPeriod === "AFTERNOON" ? concession.priceAfternoon :
       concession.priceFull;
     const bedExtra = resExtraBed ? concession.priceExtraBed : 0;
-    const total = billableDays * (dayPrice + bedExtra);
+    // Extra bed is paid for ALL days — the free-day discount only applies to the base day price
+    const total = billableDays * dayPrice + days * bedExtra;
     return { total, days, freeDays, dayPrice, bedExtra };
   };
 
@@ -535,6 +567,13 @@ export default function BookingPage() {
   const Icon = slug === "subnauta" ? Waves : TreePalm;
   const beachClosed = isBeachClosed();
   const occupied = isFullyOccupied();
+
+  // True when: 12h–14h, this spot's afternoon is already taken, morning still free
+  // → warn customer they only have until 2pm
+  const showMorningWarning = !beachClosed && !occupied && !!thisSpot &&
+    lisbonHour() >= 12 && lisbonHour() < 14 &&
+    thisSpot.takenPeriods.includes("AFTERNOON") &&
+    !thisSpot.takenPeriods.includes("FULL_DAY");
   const { total: resTotal, days: resDays, freeDays, dayPrice, bedExtra } = calcResPrice();
   const resValid = !!(resPeriod && resClientName.trim() && resStartDate && resEndDate && resEndDate >= resStartDate && resDays > 0);
 
@@ -550,7 +589,7 @@ export default function BookingPage() {
           <Icon size={28} className="book-header-icon" />
           <div>
             <div className="book-header-title">{slug === "subnauta" ? "Subnauta" : "Trópico"}</div>
-            <div className="book-header-sub">Chapéu {spotNum}</div>
+            <div className="book-header-sub">{t.spotLabel} {spotNum}</div>
           </div>
         </div>
         <div className="book-loading">{t.loading}</div>
@@ -633,9 +672,15 @@ export default function BookingPage() {
                     <div className="book-alternatives">
                       <div className="book-alternatives-label">{t.availableNearby}</div>
                       <div className="book-alt-spots">
-                        {nearbyFree.map((s) => (
-                          <div key={s.spotId} className="book-alt-spot">{s.spotNumber}</div>
-                        ))}
+                        {nearbyFree.map((s) => {
+                          const lbl = getSpotAvailLabel(s);
+                          return (
+                            <div key={s.spotId} className="book-alt-spot">
+                              <span>{s.spotNumber}</span>
+                              {lbl && <span className="book-alt-avail">{lbl}</span>}
+                            </div>
+                          );
+                        })}
                       </div>
                       <div className="book-alt-walk">{t.walkTo}</div>
                     </div>
@@ -652,6 +697,12 @@ export default function BookingPage() {
               ) : (
                 <>
                   {error && <div className="book-error">{error}</div>}
+
+                  {showMorningWarning && (
+                    <div className="book-morning-warning">
+                      ⚠️ {t.morningOnlyWarning}
+                    </div>
+                  )}
 
                   <div className="book-period-label">{t.period}</div>
                   <div className="book-periods">
@@ -856,12 +907,17 @@ export default function BookingPage() {
               {resPeriod && resStartDate && resEndDate && resDays > 0 && (
                 <div className={`book-price-summary ${theme} column`}>
                   <div className="book-price-breakdown">
-                    <span>{resDays} {t.days} × {(dayPrice + bedExtra).toFixed(2)}€</span>
+                    <span>{resDays} {t.days} × {dayPrice.toFixed(2)}€</span>
                   </div>
+                  {bedExtra > 0 && (
+                    <div className="book-price-breakdown">
+                      <span>+ {t.extraBed}: {resDays} × {bedExtra.toFixed(2)}€</span>
+                    </div>
+                  )}
                   {freeDays > 0 && (
                     <div className="book-price-breakdown discount">
                       <span>{t.discount}: −{freeDays} {t.freeDay}</span>
-                      <span>−{(freeDays * (dayPrice + bedExtra)).toFixed(2)}€</span>
+                      <span>−{(freeDays * dayPrice).toFixed(2)}€</span>
                     </div>
                   )}
                   <div className="book-price-row-total">
