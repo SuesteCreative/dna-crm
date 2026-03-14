@@ -638,7 +638,7 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 
 14. **Stripe base URL is hardcoded** — both `checkout/route.ts` and `reservation-checkout/route.ts` use `"https://app.desportosnauticosalvor.com"` directly (not `NEXT_PUBLIC_BASE_URL`) to ensure `success_url` and `cancel_url` never redirect to the Shopify domain.
 
-15. **Beach time cutoffs** — `isPastCutoff()` on the public booking page locks MORNING and FULL_DAY at 14:00 Lisbon time, AFTERNOON at 19:00. When all periods are past cutoff, the page shows a "beach closed" message and suggests switching to the Reserva tab.
+15. **Beach time cutoffs** — `isPastCutoff()` on the public booking page locks MORNING and FULL_DAY at **13:00** Lisbon time, AFTERNOON at **18:00** (1-hour buffer before each period ends). When all periods are past cutoff, the page shows a "beach closed" message and suggests switching to the Reserva tab.
 
 ---
 
@@ -653,6 +653,44 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `a7a25be` | Fix: update Stripe redirect fallback domain to `app.desportosnauticosalvor.com` |
 | `f921c29` | Perf: merge 3 DailyControl API calls into single `/daily-summary` endpoint (Promise.all); lazy-load Statistics with next/dynamic |
 | `7d2638d` | Fix: beach-closed message when all periods past cutoff; hardcode base URL in both checkout routes |
+
+### Booking Page Cutoffs, Clerk Production & Auth Styling (2026-03-14)
+
+#### Time Cutoffs — 1-Hour Buffer Before Period Start
+- **MORNING / FULL_DAY**: `isPastCutoff` now locks at **13h** (was 14h). Customers can no longer select morning or full-day after 13:00 Lisbon time.
+- **AFTERNOON**: cutoff moved to **18h** (was 19h). Afternoon locks 1 hour before the 19h end of period.
+- **Warning window**: "Manhã disponível até às 13h" warning shown between 12h–13h (was 12h–14h).
+- **All 5 languages updated**: `morningOnlyWarning` and `availUntil2pm` strings changed to reflect 13h / 1pm.
+
+#### Booking Page — Header Fix
+- Header subtitle now uses the translated `t.spotLabel` instead of the hardcoded Portuguese "Chapéu". All 5 languages now show the correct word (Spot / Parasol / Sombrilla / Parasol / Sonnenschirm).
+
+#### Checkout — Reservation Conflict Check
+- `POST /api/concessions/checkout` (daily mode) now also checks `ConcessionReservation` records for conflicts, not just `ConcessionEntry`. Previously a spot blocked by an active multi-day reservation could still be booked via the daily checkout if no daily entry had been generated yet.
+
+#### Bug Investigation & Data Cleanup
+- **Root cause found**: Subnauta spot 2 appearing "fully booked" when morning was visually free — caused by an active `ConcessionReservation` (not an entry) covering that date and period. The spot-availability route queries both `ConcessionEntry` and `ConcessionReservation`; the vacate script had only released entries, not reservations.
+- **Cleanup**: Released 55 active test entries and cancelled 4 active reservations covering the test date.
+
+#### Clerk — Migration to Production Instance
+- Created a new Clerk **Production** instance (cloned from Development) for `app.desportosnauticosalvor.com`.
+- Added 5 DNS CNAME records at dominios.pt: `clerk`, `accounts`, `clkmail`, `clk._domainkey`, `clk2._domainkey`.
+- DNS verified; SSL certificates issued automatically by Clerk.
+- Updated Vercel environment variables: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` rotated to production keys.
+- **Note**: User accounts do not transfer between Clerk instances — admin accounts were re-created and assigned `{"role": "SUPER_ADMIN"}` via Clerk Dashboard → Users → Public metadata.
+
+#### Clerk — Dark Theme Styling
+- Extracted shared appearance config to `src/app/clerkAppearance.ts` — used by both sign-in and sign-up pages.
+- Sign-in and sign-up pages now have a fully dark-themed Clerk card: dark background (`#111827`), blue primary, slate text, card border and deep shadow.
+- **User button popup** (in `layout.tsx` `ClerkProvider`): dark card (`#1e1e2e`), white text on action buttons, "Powered by Clerk" footer hidden.
+- Fixed: 2FA code digits were black-on-dark (unreadable) — resolved by `colorText: "#f1f5f9"` in variables.
+- Fixed: "Last used" pill on social buttons had black text — resolved with `badge` element override (`color: "#f1f5f9 !important"`).
+
+#### Auth Pages — Footer & Branding
+- Added footer section to sign-in and sign-up pages:
+  - Amber warning: "⚠️ Ferramenta interna. Se não é parceiro, não faça login."
+  - Copyright line with Sueste Creative Agency credit and link.
+- Added `src/app/auth.css` with `.auth-root` (dark background + glow effect), `.auth-logo`, `.auth-footer`, `.auth-footer-warning`, `.auth-footer-copy` styles.
 
 ### Concessão Stripe Self-Service (2026-03-13)
 

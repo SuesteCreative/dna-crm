@@ -67,6 +67,8 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "A praia está encerrada para hoje.",
     beachClosedSub: "Use o separador \"Reserva\" para reservar dias futuros.",
     errorReload: "Erro ao carregar. Recarregue a página.",
+    privacyNotice: "Ao prosseguir, aceita que o seu nome e telefone sejam utilizados exclusivamente para gerir esta reserva.",
+    privacyLink: "Política de Privacidade",
   },
   en: {
     loading: "Loading...",
@@ -118,6 +120,8 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "The beach is closed for today.",
     beachClosedSub: "Use the \"Reserve\" tab to book future dates.",
     errorReload: "Failed to load. Please reload the page.",
+    privacyNotice: "By proceeding, you agree that your name and phone will be used solely to manage this booking.",
+    privacyLink: "Privacy Policy",
   },
   es: {
     loading: "Cargando...",
@@ -169,6 +173,8 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "La playa está cerrada por hoy.",
     beachClosedSub: "Use el separador \"Reservar\" para reservar días futuros.",
     errorReload: "Error al cargar. Recargue la página.",
+    privacyNotice: "Al continuar, acepta que su nombre y teléfono se usen exclusivamente para gestionar esta reserva.",
+    privacyLink: "Política de Privacidad",
   },
   fr: {
     loading: "Chargement...",
@@ -220,6 +226,8 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "La plage est fermée pour aujourd'hui.",
     beachClosedSub: "Utilisez l'onglet \"Réserver\" pour réserver des dates futures.",
     errorReload: "Échec du chargement. Rechargez la page.",
+    privacyNotice: "En continuant, vous acceptez que votre nom et téléphone soient utilisés uniquement pour gérer cette réservation.",
+    privacyLink: "Politique de Confidentialité",
   },
   de: {
     loading: "Wird geladen...",
@@ -271,6 +279,8 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "Der Strand ist für heute geschlossen.",
     beachClosedSub: "Nutzen Sie den Reiter \"Reservieren\" für zukünftige Daten.",
     errorReload: "Ladefehler. Bitte Seite neu laden.",
+    privacyNotice: "Indem Sie fortfahren, stimmen Sie zu, dass Ihr Name und Telefon ausschließlich zur Verwaltung dieser Buchung verwendet werden.",
+    privacyLink: "Datenschutzerklärung",
   },
 };
 
@@ -780,6 +790,11 @@ export default function BookingPage() {
                         <span className="book-price-total">{calcDailyPrice().toFixed(2)}€</span>
                       </div>
 
+                      <p className="book-privacy-notice">
+                        {t.privacyNotice}{" "}
+                        <a href="/privacidade" target="_blank" rel="noopener noreferrer">{t.privacyLink}</a>
+                      </p>
+
                       <div className="book-actions">
                         <button
                           className={`book-btn-pay ${theme}`}
@@ -934,6 +949,11 @@ export default function BookingPage() {
               )}
 
               <div className="book-refund-policy">{t.refundPolicy}</div>
+
+              <p className="book-privacy-notice">
+                {t.privacyNotice}{" "}
+                <a href="/privacidade" target="_blank" rel="noopener noreferrer">{t.privacyLink}</a>
+              </p>
 
               <div className="book-actions">
                 <button

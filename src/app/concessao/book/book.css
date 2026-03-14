@@ -298,6 +298,21 @@
   border: 1px solid #f0f0f0;
 }
 
+/* ── Privacy notice ──────────────────────────────────────────────────────── */
+
+.book-privacy-notice {
+  font-size: 10.5px;
+  color: #bbb;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  text-align: center;
+}
+
+.book-privacy-notice a {
+  color: #94a3b8;
+  text-decoration: underline;
+}
+
 /* ── Action buttons ──────────────────────────────────────────────────────── */
 
 .book-actions { display: flex; flex-direction: column; gap: 10px; }

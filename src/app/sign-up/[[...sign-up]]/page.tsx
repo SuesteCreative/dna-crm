@@ -11,6 +11,8 @@ export default function Page() {
             <div className="auth-footer">
                 <p className="auth-footer-warning">⚠️ Ferramenta interna. Se não é parceiro, não faça login.</p>
                 <p className="auth-footer-copy">
+                    <a href="/privacidade" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>
+                    {" · "}
                     © Desportos Náuticos de Alvor. Todos os direitos reservados.<br />
                     Desenvolvido por{" "}
                     <a href="https://sueste-creative.pt/" target="_blank" rel="noopener noreferrer">
