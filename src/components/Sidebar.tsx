@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth, useUser } from "@clerk/nextjs";
 import {
     LayoutDashboard, Waves, Users, ShoppingBag,
-    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, Sun, CalendarCheck, BookUser, Scan
+    ChevronRight, RefreshCcw, Shield, BarChart2, Clock, AlertTriangle, UserCircle, Bug, X, Menu, Send, TreePalm, Sun, CalendarCheck, BookUser, Scan, ShieldAlert
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useStaffRequests } from "@/contexts/StaffRequestContext";
@@ -254,6 +254,16 @@ export function Sidebar() {
                                 <span>Logs Reservas</span>
                                 {pathname === "/admin/logs" && <ChevronRight size={14} className="nav-arrow" />}
                             </button>
+                            {role === "SUPER_ADMIN" && (
+                                <button
+                                    className={`nav-item ${pathname === "/admin/gdpr" ? "active" : ""}`}
+                                    onClick={() => router.push("/admin/gdpr")}
+                                >
+                                    <ShieldAlert size={18} />
+                                    <span>Apagar Dados (RGPD)</span>
+                                    {pathname === "/admin/gdpr" && <ChevronRight size={14} className="nav-arrow" />}
+                                </button>
+                            )}
                         </>
                     )}
 
