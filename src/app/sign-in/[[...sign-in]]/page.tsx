@@ -20,7 +20,9 @@ const appearance = {
         headerSubtitle: { color: "#64748b" },
         formFieldLabel: { color: "#f1f5f9" },
         formFieldInput: { borderColor: "rgba(255,255,255,0.07)" },
-        footerActionLink: { color: "#3b82f6" },
+        footerActionLink: { color: "#3b82f6", fontWeight: "500" },
+        footerActionText: { color: "#94a3b8" },
+        footer: { borderTop: "1px solid rgba(255,255,255,0.07)", marginTop: "4px" },
         identityPreviewText: { color: "#f1f5f9" },
         identityPreviewEditButton: { color: "#3b82f6" },
         badge: { color: "#f1f5f9", backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.15)" },
@@ -32,6 +34,16 @@ export default function Page() {
         <div className="auth-root">
             <img src="/SVG/logo-white.svg" alt="DNA" className="auth-logo" />
             <SignIn appearance={appearance} />
+            <div className="auth-footer">
+                <p className="auth-footer-warning">⚠️ Ferramenta interna. Se não é parceiro, não faça login.</p>
+                <p className="auth-footer-copy">
+                    © Desportos Náuticos de Alvor. Todos os direitos reservados.<br />
+                    Desenvolvido por{" "}
+                    <a href="https://sueste-creative.pt/" target="_blank" rel="noopener noreferrer">
+                        Sueste — Creative Agency
+                    </a>
+                </p>
+            </div>
         </div>
     );
 }

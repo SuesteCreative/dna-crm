@@ -33,3 +33,32 @@
     position: relative;
     z-index: 1;
 }
+
+.auth-footer {
+    margin-top: 24px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.auth-footer-warning {
+    color: #f59e0b;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.auth-footer-copy {
+    color: #475569;
+    font-size: 0.75rem;
+    line-height: 1.6;
+}
+
+.auth-footer-copy a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.auth-footer-copy a:hover {
+    text-decoration: underline;
+}
