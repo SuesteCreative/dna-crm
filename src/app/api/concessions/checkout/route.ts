@@ -38,7 +38,10 @@ export async function POST(req: NextRequest) {
     const conflicts = await prisma.concessionEntry.findMany({
       where: { spotId: spot.id, date, status: "ACTIVE", period: { in: takenPeriods } },
     });
-    if (conflicts.length > 0) {
+    const reservationConflicts = await prisma.concessionReservation.findMany({
+      where: { spotId: spot.id, status: "ACTIVE", startDate: { lte: date }, endDate: { gte: date }, period: { in: takenPeriods } },
+    });
+    if (conflicts.length > 0 || reservationConflicts.length > 0) {
       return NextResponse.json({ error: "Spot no longer available for this period" }, { status: 409 });
     }
 

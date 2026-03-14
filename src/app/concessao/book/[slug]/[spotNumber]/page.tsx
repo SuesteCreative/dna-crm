@@ -46,9 +46,9 @@ const T: Record<Lang, Record<string, string>> = {
     activitiesSub: "Jetski · Passeios de barco · Paddleboard · e mais",
     activitiesBtn: "Ver atividades →",
     fullyAvailable: "Totalmente livre",
-    availUntil2pm: "Disponível até às 14h",
+    availUntil2pm: "Disponível até às 13h",
     availFrom2pm: "Disponível a partir das 14h",
-    morningOnlyWarning: "Este chapéu só está disponível até às 14h (tarde já reservada). Quer continuar ou prefere chamar o staff?",
+    morningOnlyWarning: "Este chapéu só está disponível até às 13h (tarde já reservada). Quer continuar ou prefere chamar o staff?",
     spotTaken: "Chapéu ocupado! Por favor recarregue a página.",
     allOccupied: "Todos os chapéus estão ocupados. Chame o staff.",
     modeToday: "Hoje",
@@ -97,9 +97,9 @@ const T: Record<Lang, Record<string, string>> = {
     activitiesSub: "Jet ski · Boat tours · Paddleboard · and more",
     activitiesBtn: "View activities →",
     fullyAvailable: "Fully available",
-    availUntil2pm: "Available until 2pm",
+    availUntil2pm: "Available until 1pm",
     availFrom2pm: "Available from 2pm",
-    morningOnlyWarning: "This seat is only available until 2pm (afternoon already booked). Continue or call staff?",
+    morningOnlyWarning: "This seat is only available until 1pm (afternoon already booked). Continue or call staff?",
     spotTaken: "Seat taken! Please reload the page.",
     allOccupied: "All seats are occupied. Please call staff.",
     modeToday: "Today",
@@ -148,9 +148,9 @@ const T: Record<Lang, Record<string, string>> = {
     activitiesSub: "Jet ski · Paseos en barco · Paddleboard · y más",
     activitiesBtn: "Ver actividades →",
     fullyAvailable: "Totalmente libre",
-    availUntil2pm: "Disponible hasta las 14h",
+    availUntil2pm: "Disponible hasta las 13h",
     availFrom2pm: "Disponible a partir de las 14h",
-    morningOnlyWarning: "Esta sombrilla solo está disponible hasta las 14h (tarde ya reservada). ¿Continuar o llamar al personal?",
+    morningOnlyWarning: "Esta sombrilla solo está disponible hasta las 13h (tarde ya reservada). ¿Continuar o llamar al personal?",
     spotTaken: "¡Sombrilla ocupada! Por favor, recargue la página.",
     allOccupied: "Todas las sombrillas están ocupadas. Llame al personal.",
     modeToday: "Hoy",
@@ -199,9 +199,9 @@ const T: Record<Lang, Record<string, string>> = {
     activitiesSub: "Jet ski · Sorties en bateau · Paddleboard · et plus",
     activitiesBtn: "Voir les activités →",
     fullyAvailable: "Entièrement disponible",
-    availUntil2pm: "Disponible jusqu'à 14h",
+    availUntil2pm: "Disponible jusqu'à 13h",
     availFrom2pm: "Disponible à partir de 14h",
-    morningOnlyWarning: "Ce parasol n'est disponible que jusqu'à 14h (après-midi déjà réservé). Continuer ou appeler le staff ?",
+    morningOnlyWarning: "Ce parasol n'est disponible que jusqu'à 13h (après-midi déjà réservé). Continuer ou appeler le staff ?",
     spotTaken: "Parasol occupé ! Veuillez recharger la page.",
     allOccupied: "Tous les parasols sont occupés. Appelez le personnel.",
     modeToday: "Aujourd'hui",
@@ -250,9 +250,9 @@ const T: Record<Lang, Record<string, string>> = {
     activitiesSub: "Jet Ski · Bootsfahrten · Paddleboard · und mehr",
     activitiesBtn: "Aktivitäten ansehen →",
     fullyAvailable: "Vollständig verfügbar",
-    availUntil2pm: "Verfügbar bis 14:00 Uhr",
+    availUntil2pm: "Verfügbar bis 13:00 Uhr",
     availFrom2pm: "Verfügbar ab 14:00 Uhr",
-    morningOnlyWarning: "Dieser Sonnenschirm ist nur bis 14:00 Uhr verfügbar (Nachmittag bereits gebucht). Fortfahren oder Personal rufen?",
+    morningOnlyWarning: "Dieser Sonnenschirm ist nur bis 13:00 Uhr verfügbar (Nachmittag bereits gebucht). Fortfahren oder Personal rufen?",
     spotTaken: "Sonnenschirm belegt! Bitte laden Sie die Seite neu.",
     allOccupied: "Alle Sonnenschirme sind belegt. Rufen Sie das Personal.",
     modeToday: "Heute",
@@ -406,7 +406,7 @@ export default function BookingPage() {
     const h = lisbonHour();
     if (p === "MORNING") return h >= 13; // close 1h before 14h end
     if (p === "FULL_DAY") return h >= 13; // can't buy full day if morning is closing
-    if (p === "AFTERNOON") return h >= 19;
+    if (p === "AFTERNOON") return h >= 18; // close 1h before 19h end
     return false;
   };
 
@@ -609,7 +609,7 @@ export default function BookingPage() {
         <Icon size={28} className="book-header-icon" />
         <div>
           <div className="book-header-title">{concession?.name ?? (slug === "subnauta" ? "Subnauta" : "Trópico")}</div>
-          <div className="book-header-sub">Chapéu {spotNum}</div>
+          <div className="book-header-sub">{t.spotLabel} {spotNum}</div>
         </div>
       </div>
 
