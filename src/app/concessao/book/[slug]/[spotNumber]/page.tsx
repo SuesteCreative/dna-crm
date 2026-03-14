@@ -45,6 +45,7 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Reservar Atividade",
     activitiesSub: "Jetski · Passeios de barco · Paddleboard · e mais",
     activitiesBtn: "Ver atividades →",
+    fullyAvailable: "Totalmente livre",
     availUntil2pm: "Disponível até às 14h",
     availFrom2pm: "Disponível a partir das 14h",
     morningOnlyWarning: "Este chapéu só está disponível até às 14h (tarde já reservada). Quer continuar ou prefere chamar o staff?",
@@ -95,6 +96,7 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Book an Activity",
     activitiesSub: "Jet ski · Boat tours · Paddleboard · and more",
     activitiesBtn: "View activities →",
+    fullyAvailable: "Fully available",
     availUntil2pm: "Available until 2pm",
     availFrom2pm: "Available from 2pm",
     morningOnlyWarning: "This seat is only available until 2pm (afternoon already booked). Continue or call staff?",
@@ -145,6 +147,7 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Reservar Actividad",
     activitiesSub: "Jet ski · Paseos en barco · Paddleboard · y más",
     activitiesBtn: "Ver actividades →",
+    fullyAvailable: "Totalmente libre",
     availUntil2pm: "Disponible hasta las 14h",
     availFrom2pm: "Disponible a partir de las 14h",
     morningOnlyWarning: "Esta sombrilla solo está disponible hasta las 14h (tarde ya reservada). ¿Continuar o llamar al personal?",
@@ -195,6 +198,7 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Réserver une Activité",
     activitiesSub: "Jet ski · Sorties en bateau · Paddleboard · et plus",
     activitiesBtn: "Voir les activités →",
+    fullyAvailable: "Entièrement disponible",
     availUntil2pm: "Disponible jusqu'à 14h",
     availFrom2pm: "Disponible à partir de 14h",
     morningOnlyWarning: "Ce parasol n'est disponible que jusqu'à 14h (après-midi déjà réservé). Continuer ou appeler le staff ?",
@@ -245,6 +249,7 @@ const T: Record<Lang, Record<string, string>> = {
     activities: "Aktivität buchen",
     activitiesSub: "Jet Ski · Bootsfahrten · Paddleboard · und mehr",
     activitiesBtn: "Aktivitäten ansehen →",
+    fullyAvailable: "Vollständig verfügbar",
     availUntil2pm: "Verfügbar bis 14:00 Uhr",
     availFrom2pm: "Verfügbar ab 14:00 Uhr",
     morningOnlyWarning: "Dieser Sonnenschirm ist nur bis 14:00 Uhr verfügbar (Nachmittag bereits gebucht). Fortfahren oder Personal rufen?",
@@ -321,7 +326,11 @@ export default function BookingPage() {
   const { slug, spotNumber } = useParams<{ slug: string; spotNumber: string }>();
   const spotNum = Number(spotNumber);
 
-  const [lang, setLang] = useState<Lang>("pt");
+  const [lang, setLang] = useState<Lang>(() => {
+    if (typeof window === "undefined") return "pt";
+    const l = navigator.language.slice(0, 2).toLowerCase() as Lang;
+    return LANGS.includes(l) ? l : "pt";
+  });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [concession, setConcession] = useState<ConcessionInfo | null>(null);
@@ -351,20 +360,17 @@ export default function BookingPage() {
   const [resNearbySpots, setResNearbySpots] = useState<number[]>([]);
 
   // Phone prefix
-  const [phonePrefix, setPhonePrefix] = useState("+351");
+  const [phonePrefix, setPhonePrefix] = useState(() => {
+    if (typeof window === "undefined") return "+351";
+    const l = navigator.language.slice(0, 2).toLowerCase();
+    return LANG_TO_PREFIX[l] ?? "+351";
+  });
 
   // Staff request state
   const [staffSentType, setStaffSentType] = useState<null | "payment" | "assist">(null);
   const [staffSubmitting, setStaffSubmitting] = useState(false);
 
   const t = T[lang];
-
-  // Auto-detect language and phone prefix once on mount
-  useEffect(() => {
-    const l = navigator.language.slice(0, 2).toLowerCase() as Lang;
-    if (LANGS.includes(l)) setLang(l);
-    if (LANG_TO_PREFIX[l]) setPhonePrefix(LANG_TO_PREFIX[l]);
-  }, []);
 
   // Load all data from a single public endpoint
   useEffect(() => {
@@ -438,15 +444,15 @@ export default function BookingPage() {
     return available.every((p) => periodTaken(p));
   };
 
-  /** Returns an availability label for a nearby spot tile, or "" if fully available. */
-  const getSpotAvailLabel = (spot: SpotInfo): string => {
+  /** Returns an availability label for a nearby spot tile. */
+  const getSpotAvailLabel = (spot: SpotInfo): { label: string; partial: boolean } => {
     const morningFree = !isPeriodBlocked(spot, "MORNING") && !isPastCutoff("MORNING");
     const afternoonFree = !isPeriodBlocked(spot, "AFTERNOON") && !isPastCutoff("AFTERNOON");
     const fullDayFree = !isPeriodBlocked(spot, "FULL_DAY") && !isPastCutoff("FULL_DAY");
-    if (fullDayFree) return "";
-    if (morningFree && !afternoonFree) return t.availUntil2pm;
-    if (!morningFree && afternoonFree) return t.availFrom2pm;
-    return "";
+    if (fullDayFree) return { label: t.fullyAvailable, partial: false };
+    if (morningFree && !afternoonFree) return { label: t.availUntil2pm, partial: true };
+    if (!morningFree && afternoonFree) return { label: t.availFrom2pm, partial: true };
+    return { label: "", partial: false };
   };
 
   // Nearby free spots for daily occupied state
@@ -673,11 +679,11 @@ export default function BookingPage() {
                       <div className="book-alternatives-label">{t.availableNearby}</div>
                       <div className="book-alt-spots">
                         {nearbyFree.map((s) => {
-                          const lbl = getSpotAvailLabel(s);
+                          const { label, partial } = getSpotAvailLabel(s);
                           return (
-                            <div key={s.spotId} className="book-alt-spot">
+                            <div key={s.spotId} className={`book-alt-spot${partial ? " partial" : ""}`}>
                               <span>{s.spotNumber}</span>
-                              {lbl && <span className="book-alt-avail">{lbl}</span>}
+                              {label && <span className="book-alt-avail">{label}</span>}
                             </div>
                           );
                         })}

@@ -37,7 +37,7 @@
   box-shadow: 0 4px 24px rgba(0,0,0,0.10);
   width: calc(100% - 32px);
   max-width: 440px;
-  margin: -12px 16px 0;
+  margin: 16px 16px 0;
   overflow: hidden;
 }
 
@@ -404,6 +404,12 @@
   text-align: center; line-height: 1.2;
   white-space: nowrap;
 }
+.book-alt-spot.partial {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+.book-alt-spot.partial .book-alt-avail { color: #b45309; }
 .book-alt-walk { font-size: 12px; color: #777; margin-top: 10px; line-height: 1.5; }
 
 /* ── Morning-only warning ────────────────────────────────────────────────── */
