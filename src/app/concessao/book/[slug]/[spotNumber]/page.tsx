@@ -404,8 +404,8 @@ export default function BookingPage() {
   /** Whether the period has passed (time-based, Lisbon timezone). */
   const isPastCutoff = (p: string): boolean => {
     const h = lisbonHour();
-    if (p === "MORNING") return h >= 14;
-    if (p === "FULL_DAY") return h >= 14; // can't buy full day in the afternoon
+    if (p === "MORNING") return h >= 13; // close 1h before 14h end
+    if (p === "FULL_DAY") return h >= 13; // can't buy full day if morning is closing
     if (p === "AFTERNOON") return h >= 19;
     return false;
   };
@@ -577,7 +577,7 @@ export default function BookingPage() {
   // True when: 12h–14h, this spot's afternoon is already taken, morning still free
   // → warn customer they only have until 2pm
   const showMorningWarning = !beachClosed && !occupied && !!thisSpot &&
-    lisbonHour() >= 12 && lisbonHour() < 14 &&
+    lisbonHour() >= 12 && lisbonHour() < 13 &&
     thisSpot.takenPeriods.includes("AFTERNOON") &&
     !thisSpot.takenPeriods.includes("FULL_DAY");
   const { total: resTotal, days: resDays, freeDays, dayPrice, bedExtra } = calcResPrice();
