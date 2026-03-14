@@ -165,6 +165,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const [conflictDates, setConflictDates] = useState<string[]>([]);
   const [conflictAlts, setConflictAlts] = useState<{ spotId: string; spotNumber: number; blockedDates: string[] }[] | null>(null);
   const [blockedSpotIds, setBlockedSpotIds] = useState<Set<string>>(new Set());
+  const [availabilityError, setAvailabilityError] = useState(false);
   // Prevent auto-calc from overriding a price explicitly set by Calculator
   const skipAutoCalcRef = useRef(false);
   const { showToast } = useToast();
@@ -218,17 +219,18 @@ export default function Reservations({ concession, initialReservation, onInitHan
     if (!showDrawer || !form.startDate || !form.endDate || !form.period) return;
     const params = new URLSearchParams({ start: form.startDate, end: form.endDate, period: form.period });
     if (editing) params.set("excludeReservationId", editing.id);
+    setAvailabilityError(false);
     fetch(`/api/concessions/${concession.slug}/availability?${params}`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("availability fetch failed"); return r.json(); })
       .then((data) => setBlockedSpotIds(new Set(data.blockedSpotIds ?? [])))
-      .catch(() => setBlockedSpotIds(new Set()));
+      .catch(() => { setBlockedSpotIds(new Set()); setAvailabilityError(true); });
   }, [showDrawer, form.startDate, form.endDate, form.period, editing, concession.slug]);
 
   const openNew = () => {
     setEditing(null);
     setForm(emptyForm());
     setExtraSpotIds([]);
-    setFormError(""); setConflictAlts(null); setConflictDates([]); setBlockedSpotIds(new Set());
+    setFormError(""); setConflictAlts(null); setConflictDates([]); setBlockedSpotIds(new Set()); setAvailabilityError(false);
     setShowDrawer(true);
   };
 
@@ -240,7 +242,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
       period: r.period, bedConfig: r.bedConfig,
       totalPrice: String(r.totalPrice), isPaid: r.isPaid, notes: r.notes ?? "",
     });
-    setFormError(""); setConflictAlts(null); setConflictDates([]); setBlockedSpotIds(new Set());
+    setFormError(""); setConflictAlts(null); setConflictDates([]); setBlockedSpotIds(new Set()); setAvailabilityError(false);
     setShowDrawer(true);
   };
 
@@ -632,6 +634,11 @@ export default function Reservations({ concession, initialReservation, onInitHan
                 <div style={{ fontSize: "0.8rem", color: "#888", background: "rgba(255,255,255,0.04)", padding: "0.5rem 0.7rem", borderRadius: 6 }}>
                   {calcDays(form.startDate, form.endDate)} dia(s) × {periodLabel(form.period)} — {bedLabel(form.bedConfig)}
                 </div>
+              )}
+              {availabilityError && (
+                <p style={{ color: "#f97316", fontSize: "0.82rem", margin: 0, background: "rgba(249,115,22,0.08)", padding: "0.5rem 0.7rem", borderRadius: 6 }}>
+                  ⚠ Não foi possível verificar disponibilidade. Os lugares podem não estar actualizados.
+                </p>
               )}
               {formError && <p style={{ color: "#ef4444", fontSize: "0.82rem", margin: 0 }}>{formError}</p>}
               {conflictAlts && conflictAlts.length > 0 && (

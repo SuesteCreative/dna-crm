@@ -84,6 +84,7 @@ export default function DailyControl({ concession }: { concession: Concession })
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockReason, setBlockReason] = useState<string | null>(null);
   const [blockingAction, setBlockingAction] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [weather, setWeather] = useState<{
     temp: number; code: number;
     windSpeed: number; windDir: number;
@@ -99,8 +100,10 @@ export default function DailyControl({ concession }: { concession: Concession })
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
+    setFetchError(false);
     try {
       const res = await fetch(`/api/concessions/${concession.slug}/daily-summary?date=${date}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const newEntries: Entry[] = Array.isArray(data.entries) ? data.entries : [];
       setEntries(newEntries);
@@ -110,6 +113,8 @@ export default function DailyControl({ concession }: { concession: Concession })
       setSelectedSpot((prev) =>
         prev ? { spot: prev.spot, entries: newEntries.filter((e) => e.spotId === prev.spot.id) } : null
       );
+    } catch {
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -324,6 +329,16 @@ export default function DailyControl({ concession }: { concession: Concession })
           </>
         )}
       </div>
+
+      {/* Fetch error */}
+      {fetchError && (
+        <div style={{ margin: "1rem 0", padding: "0.75rem 1rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, color: "#ef4444", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span>Erro ao carregar dados. Verifica a ligação.</span>
+          <button onClick={fetchEntries} style={{ marginLeft: "auto", padding: "0.3rem 0.7rem", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, color: "#ef4444", cursor: "pointer", fontSize: "0.8rem" }}>
+            Tentar novamente
+          </button>
+        </div>
+      )}
 
       {/* Spot grid */}
       <div className="daily-control-scroll-wrap">

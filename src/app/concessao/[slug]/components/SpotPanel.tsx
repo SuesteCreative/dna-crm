@@ -170,7 +170,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
     const extensionCost = concession.priceFull - concession.priceMorning;
     const newTotal = morningEntry.totalPrice + extensionCost;
     setBusy(true);
-    await fetch(`/api/concessions/${concession.slug}/entries/${morningEntry.id}`, { method: "DELETE" });
+    // POST first — only DELETE the morning entry if the full-day creation succeeds
     const res = await fetch(`/api/concessions/${concession.slug}/entries`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -179,14 +179,18 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
         clientName: morningEntry.clientName, clientPhone: morningEntry.clientPhone,
         bedConfig: morningEntry.bedConfig, totalPrice: newTotal,
         isPaid: morningEntry.isPaid, notes: morningEntry.notes,
+        override: true,
       }),
     });
-    setBusy(false);
-    if (res.ok) {
-      showToast("Extendido para Dia Inteiro.");
-    } else {
-      showToast("Erro ao estender registo.", "error");
+    if (!res.ok) {
+      setBusy(false);
+      const data = await res.json().catch(() => ({}));
+      showToast(data.message || data.error || "Erro ao estender registo.", "error");
+      return;
     }
+    await fetch(`/api/concessions/${concession.slug}/entries/${morningEntry.id}`, { method: "DELETE" });
+    setBusy(false);
+    showToast("Extendido para Dia Inteiro.");
     onRefresh();
   }
 
