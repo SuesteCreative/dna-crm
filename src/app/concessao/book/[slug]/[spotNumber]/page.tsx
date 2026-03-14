@@ -352,10 +352,12 @@ export default function BookingPage() {
 
   const isPeriodBlocked = (spot: SpotInfo, p: string): boolean => {
     if (p === "FULL_DAY") {
-      // Full day is blocked if there's a FULL_DAY entry OR if both MORNING and AFTERNOON are taken
+      // Full day requires the entire day to be free — blocked by ANY existing period
       return spot.takenPeriods.includes("FULL_DAY") ||
-        (spot.takenPeriods.includes("MORNING") && spot.takenPeriods.includes("AFTERNOON"));
+        spot.takenPeriods.includes("MORNING") ||
+        spot.takenPeriods.includes("AFTERNOON");
     }
+    // Morning/Afternoon blocked by same period or by a full-day entry
     return spot.takenPeriods.includes(p) || spot.takenPeriods.includes("FULL_DAY");
   };
 
