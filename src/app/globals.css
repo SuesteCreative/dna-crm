@@ -13,3 +13,72 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* ── Clerk UserProfile / UserButton modal — force dark theme ────────────── */
+/* Targets every text node inside Clerk's modal overlay */
+.cl-modalContent *,
+.cl-userProfile-root *,
+.cl-userButtonPopoverCard * {
+  color: #e2e8f0;
+}
+
+/* Backgrounds */
+.cl-modalContent,
+.cl-card,
+.cl-userProfile-root,
+.cl-pageScrollBox,
+.cl-profilePage,
+.cl-profileSection,
+.cl-profileSectionContent {
+  background: #1e1e2e !important;
+}
+
+.cl-navbar,
+.cl-navbarButtons {
+  background: #16162a !important;
+}
+
+/* Section separator lines */
+.cl-profileSectionTitle {
+  border-bottom-color: #2d2d3d !important;
+}
+
+/* Form inputs */
+.cl-formFieldInput,
+.cl-input {
+  background: #16213e !important;
+  border-color: #2d2d3d !important;
+  color: #f1f5f9 !important;
+}
+
+/* Primary action buttons keep blue */
+.cl-formButtonPrimary {
+  background: #3b82f6 !important;
+  color: #fff !important;
+}
+
+/* Muted / secondary text — lift from near-black to visible gray */
+.cl-headerSubtitle,
+.cl-profileSectionTitleText,
+.cl-formFieldHintText,
+.cl-identityPreviewText {
+  color: #94a3b8 !important;
+}
+
+/* Badge "Primary" */
+.cl-badge {
+  color: #f1f5f9 !important;
+  background: rgba(59,130,246,0.2) !important;
+}
+
+/* Close button */
+.cl-modalCloseButton,
+.cl-modalCloseButton svg {
+  color: #94a3b8 !important;
+}
+
+/* Dividers */
+.cl-dividerLine {
+  background: #2d2d3d !important;
+}
+/* ─────────────────────────────────────────────────────────────────────────── */
