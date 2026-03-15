@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { Resend } from "resend";
 import { getPrisma } from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-/** Generate all YYYY-MM-DD dates from startDate to endDate inclusive. */
+/** Generate all YYYY-MM-DD dates from startDate to endDate inclusive (Lisbon timezone). */
 function generateDates(startDate: string, endDate: string): string[] {
   const dates: string[] = [];
   const cur = new Date(startDate + "T12:00:00Z");
   const end = new Date(endDate + "T12:00:00Z");
   while (cur <= end) {
-    dates.push(cur.toISOString().slice(0, 10));
+    dates.push(cur.toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" }));
     cur.setUTCDate(cur.getUTCDate() + 1);
   }
   return dates;
@@ -51,6 +52,46 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true });
+}
+
+// ── Confirmation email ────────────────────────────────────────────────────────
+
+async function sendConfirmationEmail(params: {
+  toEmail: string;
+  clientName: string;
+  spotNumber: string | number;
+  concessionName: string;
+  dateLabel: string;
+  periodLabel: string;
+  total: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+  try {
+    const resend = new Resend(apiKey);
+    const { toEmail, clientName, spotNumber, concessionName, dateLabel, periodLabel, total } = params;
+    await resend.emails.send({
+      from: "Desportos Náuticos Alvor <nauticos@desportosnauticosalvor.com>",
+      to: toEmail,
+      subject: `Confirmação de Reserva — ${concessionName} · Chapéu ${spotNumber}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1e293b;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0">
+          <h2 style="margin-top:0;color:#0f172a">✅ Reserva Confirmada / Booking Confirmed</h2>
+          <p style="color:#475569">Olá ${clientName} / Hello ${clientName},</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0">
+            <tr><td style="padding:10px 14px;font-size:14px;border-top:1px solid #f1f5f9;color:#64748b">Chapéu / Seat</td><td style="padding:10px 14px;font-size:14px;font-weight:600">${concessionName} · Chapéu ${spotNumber}</td></tr>
+            <tr><td style="padding:10px 14px;font-size:14px;border-top:1px solid #f1f5f9;color:#64748b">Data / Date</td><td style="padding:10px 14px;font-size:14px;font-weight:600">${dateLabel}</td></tr>
+            <tr><td style="padding:10px 14px;font-size:14px;border-top:1px solid #f1f5f9;color:#64748b">Modalidade / Period</td><td style="padding:10px 14px;font-size:14px;font-weight:600">${periodLabel}</td></tr>
+            <tr><td style="padding:10px 14px;font-size:14px;border-top:1px solid #f1f5f9;color:#64748b">Total (IVA 23% incl.)</td><td style="padding:10px 14px;font-size:14px;font-weight:700;color:#0f172a">€${total}</td></tr>
+          </table>
+          <p style="color:#475569;font-size:14px">Pode acomodar-se no seu lugar. / You may take your seat.</p>
+          <p style="font-size:12px;color:#94a3b8;margin-top:20px">Desportos Náuticos de Alvor · Praia de Alvor · <a href="https://desportosnauticosalvor.com" style="color:#3b82f6">desportosnauticosalvor.com</a></p>
+        </div>
+      `,
+    });
+  } catch (e) {
+    console.warn("Confirmation email failed (non-fatal):", e);
+  }
 }
 
 // ── Daily walk-in session ────────────────────────────────────────────────────
@@ -108,6 +149,21 @@ async function handleDailySession(
       stripeSessionId: session.id,
     },
   });
+
+  const email = session.customer_details?.email;
+  if (email) {
+    const periodLabel = period === "MORNING" ? "Manhã · 09h–14h / Morning" : period === "AFTERNOON" ? "Tarde · 14h–19h / Afternoon" : "Dia Inteiro · 09h–19h / Full Day";
+    const dateLabel = new Date(date + "T12:00:00Z").toLocaleDateString("pt-PT", { day: "numeric", month: "long", year: "numeric" });
+    await sendConfirmationEmail({
+      toEmail: email,
+      clientName,
+      spotNumber: meta.spotNumber,
+      concessionName: meta.concessionSlug === "subnauta" ? "Subnauta" : "Trópico",
+      dateLabel,
+      periodLabel,
+      total: ((session.amount_total ?? 0) / 100).toFixed(2),
+    });
+  }
 
   console.log(`Entry created for spot ${spotId} on ${date} (${period}) — session ${session.id}`);
 }
@@ -203,6 +259,22 @@ async function handleReservationSession(
         reservationId: reservation.id,
         status: "ACTIVE",
       },
+    });
+  }
+
+  const email = session.customer_details?.email;
+  if (email) {
+    const periodLabel = period === "MORNING" ? "Manhã · 09h–14h / Morning" : period === "AFTERNOON" ? "Tarde · 14h–19h / Afternoon" : "Dia Inteiro · 09h–19h / Full Day";
+    const startLabel = new Date(startDate + "T12:00:00Z").toLocaleDateString("pt-PT", { day: "numeric", month: "long" });
+    const endLabel = new Date(endDate + "T12:00:00Z").toLocaleDateString("pt-PT", { day: "numeric", month: "long", year: "numeric" });
+    await sendConfirmationEmail({
+      toEmail: email,
+      clientName,
+      spotNumber: meta.spotNumber,
+      concessionName: meta.concessionSlug === "subnauta" ? "Subnauta" : "Trópico",
+      dateLabel: `${startLabel} → ${endLabel} (${dates.length} dias)`,
+      periodLabel,
+      total: ((session.amount_total ?? 0) / 100).toFixed(2),
     });
   }
 

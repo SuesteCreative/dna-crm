@@ -251,31 +251,23 @@ export default function Reservations({ concession, initialReservation, onInitHan
     if (!form.spotId) { setFormError("Selecionar lugar"); return; }
     setFormBusy(true); setFormError("");
 
-    // Pre-validate ALL spots before creating any reservation (Bug 5: avoid partial bookings)
     const filledExtras = extraSpotIds.filter(Boolean);
-    if (!editing && filledExtras.length > 0) {
-      const availParams = new URLSearchParams({ start: form.startDate, end: form.endDate, period: form.period });
-      const availRes = await fetch(`/api/concessions/${concession.slug}/availability?${availParams}`);
-      const availData = await availRes.json();
-      const blocked = new Set<string>(availData.blockedSpotIds ?? []);
-      const unavailableSpots = [form.spotId, ...filledExtras].filter((id) => blocked.has(id));
-      if (unavailableSpots.length > 0) {
-        const nums = unavailableSpots
-          .map((id) => { const s = concession.spots.find((sp) => sp.id === id); return s ? `Lugar ${s.spotNumber}` : id; })
-          .join(", ");
-        setFormBusy(false);
-        setFormError(`Lugares indisponíveis para este período: ${nums}`);
-        return;
-      }
-    }
+    const allSpotIds = [form.spotId, ...filledExtras];
 
     const url = editing
       ? `/api/concessions/${concession.slug}/reservations/${editing.id}`
       : `/api/concessions/${concession.slug}/reservations`;
+
+    // For multi-spot creation: pass all spotIds in one request so the backend
+    // validates and creates everything atomically in a single transaction.
+    const payload = editing
+      ? { ...form, totalPrice: parseFloat(form.totalPrice) }
+      : { ...form, spotIds: allSpotIds, totalPrice: parseFloat(form.totalPrice) };
+
     const res = await fetch(url, {
       method: editing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, totalPrice: parseFloat(form.totalPrice) }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -289,21 +281,6 @@ export default function Reservations({ concession, initialReservation, onInitHan
         setConflictAlts(null);
       }
       return;
-    }
-    // Create additional reservations for extra spots (all pre-validated above)
-    for (const spotId of filledExtras) {
-      const extraRes = await fetch(`/api/concessions/${concession.slug}/reservations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, spotId, totalPrice: parseFloat(form.totalPrice) }),
-      });
-      if (!extraRes.ok) {
-        const extraData = await extraRes.json();
-        setFormBusy(false);
-        setFormError(`Erro ao criar reserva extra: ${extraData.message || extraData.error || "erro desconhecido"}`);
-        fetchReservations(); // show what was created so far
-        return;
-      }
     }
     setFormBusy(false);
     setConflictAlts(null);

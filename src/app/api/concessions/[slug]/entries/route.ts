@@ -45,6 +45,11 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
+  // Override requires SUPER_ADMIN
+  if (override && role !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Override requires SUPER_ADMIN role" }, { status: 403 });
+  }
+
   // Conflict check (skipped when override=true — rare case of re-renting same period)
   if (!override) {
     const existing = await prisma.concessionEntry.findMany({

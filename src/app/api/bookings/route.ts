@@ -45,7 +45,7 @@ export async function GET(req: Request) {
             where,
             include: { activities: true },
             orderBy: { activityDate: "desc" },
-            take: 2000,
+            take: 5000,
         });
         return NextResponse.json(bookings);
     } catch (error) {
