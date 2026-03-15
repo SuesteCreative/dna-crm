@@ -539,6 +539,7 @@ export default function Dashboard() {
       if (res.ok) {
         const updated = await res.json();
         setBookings(prev => prev.map(b => b.id === updated.id ? { ...b, ...updated } : b));
+        setFiltered(prev => prev.map(b => b.id === updated.id ? { ...b, ...updated } : b));
         setEditTarget(null); setOverrideModal(null); setOverrideReason("");
       } else {
         const d = await res.json();
