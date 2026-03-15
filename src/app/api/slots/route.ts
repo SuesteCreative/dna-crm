@@ -99,7 +99,9 @@ export async function GET(req: NextRequest) {
     let gcalStaffIds: string[] = [];
     if (service.gcalEnabled) {
         const gcalStaff = await prisma.gcalStaff.findMany({
-            where: { serviceId: service.id },
+            where: service.capacityGroup
+                ? { capacityGroup: service.capacityGroup }
+                : { serviceId: service.id },
             select: { calendarId: true },
             orderBy: { order: "asc" },
         });
@@ -114,9 +116,10 @@ export async function GET(req: NextRequest) {
     const slotResults = slotTimes.map((slotTime) => {
         const slotStart = timeToMinutes(slotTime);
         const slotDuration = service.durationMinutes!;
-        // Buffer Logic: 10 mins before each appointment (except 1h services)
-        const hasBuffer = service.durationMinutes !== 60;
-        const bufferMins = hasBuffer ? 10 : 0;
+        // Buffer = slotGapMinutes when > 0 (10 min before for jetskis <60min).
+        // slotGapMinutes=0 → no buffer (inflatables).
+        // slotGapMinutes<0 → no buffer (jetski 60min uses negative gap for 30-min intervals).
+        const bufferMins = Math.max(0, service.slotGapMinutes ?? 10);
 
         // CRM-based count (bookings in DB)
         let crmUsed = 0;
@@ -125,11 +128,9 @@ export async function GET(req: NextRequest) {
             const bookingStart = timeToMinutes(booking.activityTime);
             const bService = bookedServices.find(s => s.id === booking.serviceId);
             const bDuration = bService?.durationMinutes ?? slotDuration;
-            
-            // If the other booking has a buffer, it effectively starts 10m earlier
-            const bHasBuffer = bDuration !== 60;
-            const bEffStart = bHasBuffer ? bookingStart - 10 : bookingStart;
-            const bEffDuration = bHasBuffer ? bDuration + 10 : bDuration;
+            const bBuffer = Math.max(0, bService?.slotGapMinutes ?? 10);
+            const bEffStart = bBuffer > 0 ? bookingStart - bBuffer : bookingStart;
+            const bEffDuration = bBuffer > 0 ? bDuration + bBuffer : bDuration;
 
             if (timesOverlap(slotStart, slotDuration, bEffStart, bEffDuration)) {
                 crmUsed += booking.quantity ?? 1;
