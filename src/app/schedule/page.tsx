@@ -55,7 +55,7 @@ export default function SchedulePage() {
     // New staff form state
     const [newStaffName, setNewStaffName] = useState("");
     const [newStaffCalendarId, setNewStaffCalendarId] = useState("");
-    const [newStaffServiceId, setNewStaffServiceId] = useState("");
+    const [newStaffCapacityGroup, setNewStaffCapacityGroup] = useState("");
     const [newStaffOrder, setNewStaffOrder] = useState(0);
     const [staffSaving, setStaffSaving] = useState(false);
 
@@ -140,7 +140,7 @@ export default function SchedulePage() {
             body: JSON.stringify({
                 name: newStaffName.trim(),
                 calendarId: newStaffCalendarId.trim(),
-                serviceId: newStaffServiceId || null,
+                capacityGroup: newStaffCapacityGroup.trim() || null,
                 order: newStaffOrder,
             }),
         });
@@ -148,7 +148,7 @@ export default function SchedulePage() {
         if (res.ok) {
             setNewStaffName("");
             setNewStaffCalendarId("");
-            setNewStaffServiceId("");
+            setNewStaffCapacityGroup("");
             setNewStaffOrder(0);
             await fetchGcalStaff();
             showToast("Staff de calendário adicionado");
@@ -350,7 +350,7 @@ export default function SchedulePage() {
                             <tr>
                                 <th>Nome</th>
                                 <th>Calendar ID</th>
-                                <th>Serviço</th>
+                                <th>Grupo Capacidade</th>
                                 <th>Ordem</th>
                                 <th></th>
                             </tr>
@@ -364,14 +364,13 @@ export default function SchedulePage() {
                                 </tr>
                             )}
                             {gcalStaff.map(staff => {
-                                const linkedSvc = services.find(s => s.id === staff.serviceId);
                                 return (
                                     <tr key={staff.id}>
                                         <td><div className="svc-name">{staff.name}</div></td>
                                         <td><div className="gcal-id">{staff.calendarId}</div></td>
                                         <td>
-                                            {linkedSvc
-                                                ? <span>{linkedSvc.name}{linkedSvc.variant ? ` - ${linkedSvc.variant}` : ""}</span>
+                                            {(staff as any).capacityGroup
+                                                ? <span>{(staff as any).capacityGroup}</span>
                                                 : <span style={{ color: "var(--muted)" }}>—</span>}
                                         </td>
                                         <td>{staff.order}</td>
@@ -412,19 +411,14 @@ export default function SchedulePage() {
                             />
                         </div>
                         <div className="gcal-field">
-                            <label>Serviço (opcional)</label>
-                            <select
-                                value={newStaffServiceId}
-                                onChange={e => setNewStaffServiceId(e.target.value)}
+                            <label>Grupo Capacidade</label>
+                            <input
+                                type="text"
+                                placeholder="ex: JETSKI_RENTAL"
+                                value={newStaffCapacityGroup}
+                                onChange={e => setNewStaffCapacityGroup(e.target.value)}
                                 className="svc-input wide"
-                            >
-                                <option value="">— Nenhum —</option>
-                                {services.map(s => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.name}{s.variant ? ` - ${s.variant}` : ""}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         </div>
                         <div className="gcal-field">
                             <label>Ordem</label>

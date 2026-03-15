@@ -15,7 +15,7 @@ export async function POST() {
         return NextResponse.json({ error: "GCAL_STAFF_CONFIG env var not set" }, { status: 500 });
     }
 
-    let entries: { name: string; calendarId: string; order: number }[];
+    let entries: { name: string; calendarId: string; capacityGroup?: string; order: number }[];
     try {
         entries = JSON.parse(raw);
     } catch {
@@ -27,7 +27,7 @@ export async function POST() {
     // Wipe existing rows and recreate from config
     await (prisma as any).gcalStaff.deleteMany({});
     await (prisma as any).gcalStaff.createMany({
-        data: entries.map(e => ({ name: e.name, calendarId: e.calendarId, order: e.order })),
+        data: entries.map(e => ({ name: e.name, calendarId: e.calendarId, capacityGroup: e.capacityGroup || null, order: e.order })),
     });
 
     return NextResponse.json({ ok: true, seeded: entries.map(e => e.name) });

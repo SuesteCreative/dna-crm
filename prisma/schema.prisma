@@ -160,13 +160,14 @@ model Schedule {
 }
 
 model GcalStaff {
-  id               String   @id @default(cuid())
-  name             String
-  calendarId       String
-  serviceId        String?
-  order            Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  calendarId    String
+  capacityGroup String?  // preferred: matches Service.capacityGroup (covers all variants in the group)
+  serviceId     String?  // fallback: for services without a capacityGroup
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Webhook synchronization fields
   resourceId String?

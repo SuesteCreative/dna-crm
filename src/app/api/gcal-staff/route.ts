@@ -25,14 +25,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { name, calendarId, serviceId, order } = await req.json();
+    const { name, calendarId, capacityGroup, serviceId, order } = await req.json();
     if (!name || !calendarId) {
         return NextResponse.json({ error: "name and calendarId required" }, { status: 400 });
     }
 
     const prisma = await getPrisma();
     const staff = await prisma.gcalStaff.create({
-        data: { name, calendarId, serviceId: serviceId || null, order: order ?? 0 },
+        data: { name, calendarId, capacityGroup: capacityGroup || null, serviceId: serviceId || null, order: order ?? 0 },
     });
     return NextResponse.json(staff);
 }

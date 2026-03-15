@@ -235,8 +235,12 @@ export async function POST(req: Request) {
                 try {
                     const svc = await prisma.service.findUnique({ where: { id: act.serviceId } });
                     if (svc?.gcalEnabled && svc.durationMinutes) {
+                        // Use capacityGroup if set (covers all service variants);
+                        // fall back to direct serviceId match.
                         const staffList = await prisma.gcalStaff.findMany({
-                            where: { serviceId: act.serviceId },
+                            where: svc.capacityGroup
+                                ? { capacityGroup: svc.capacityGroup }
+                                : { serviceId: act.serviceId },
                             orderBy: { order: "asc" },
                         });
                         const requestedQty = act.quantity || act.pax || 1;
