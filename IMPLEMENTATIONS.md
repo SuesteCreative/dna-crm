@@ -20,7 +20,7 @@
 
 - [x] **Cancel reservation marks past entries as RELEASED** — when a reservation is cancelled, entries for dates already passed should be marked `COMPLETED` not `RELEASED`. Affects historical reports and accounting. (`b1c3c94`)
 
-- [ ] **Success URL exposes customer name and price** — `?name=João&total=33.00` appears in the browser URL after Stripe payment, logged in browser history. Should be fetched server-side using session ID instead.
+- [x] **Success URL exposes customer name and price** — `?name=João&total=33.00` appears in the browser URL after Stripe payment, logged in browser history. Should be fetched server-side using session ID instead. (`e31ae0e`)
 
 ---
 
