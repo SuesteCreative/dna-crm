@@ -708,20 +708,22 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                   </div>
                 </div>
 
-                <div className="field discount-row-main">
-                  <label>Desconto Global</label>
-                  <div className="discount-wrap">
-                    <input
-                      type="number" min="0" step="0.01" placeholder="0"
-                      value={editForm.discountAmount}
-                      onChange={e => setEditForm({ ...editForm, discountAmount: e.target.value })}
-                    />
-                    <div className="discount-type-toggle">
-                      <button type="button" className={editForm.discountType === "%" ? "active" : ""} onClick={() => setEditForm({ ...editForm, discountType: "%" })}>%</button>
-                      <button type="button" className={editForm.discountType === "€" ? "active" : ""} onClick={() => setEditForm({ ...editForm, discountType: "€" })}>€</button>
+                {!isPartner && (
+                  <div className="field discount-row-main">
+                    <label>Desconto Global</label>
+                    <div className="discount-wrap">
+                      <input
+                        type="number" min="0" step="0.01" placeholder="0"
+                        value={editForm.discountAmount}
+                        onChange={e => setEditForm({ ...editForm, discountAmount: e.target.value })}
+                      />
+                      <div className="discount-type-toggle">
+                        <button type="button" className={editForm.discountType === "%" ? "active" : ""} onClick={() => setEditForm({ ...editForm, discountType: "%" })}>%</button>
+                        <button type="button" className={editForm.discountType === "€" ? "active" : ""} onClick={() => setEditForm({ ...editForm, discountType: "€" })}>€</button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="field">
                   <label>Comissão (Booking Fee)</label>
