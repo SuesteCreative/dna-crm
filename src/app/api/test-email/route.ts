@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import QRCode from "qrcode";
 
 // TEMPORARY — delete after testing
+export const dynamic = "force-dynamic";
 
 const baseUrl = "https://app.desportosnauticosalvor.com";
 
@@ -240,7 +241,7 @@ export async function GET(req: NextRequest) {
   const results: Record<string, any> = {};
 
   for (const lang of langs) {
-    if (langs.indexOf(lang) > 0) await new Promise(r => setTimeout(r, 700));
+    if (langs.indexOf(lang) > 0) await new Promise(r => setTimeout(r, 1200));
     // Alternate between fee/no-fee to test both layouts
     const bk = lang === "pt" ? bookingWithFee : booking;
     const { data, error } = await resend.emails.send({
