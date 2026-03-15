@@ -608,6 +608,15 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                             </>
                           )}
                         </div>
+
+                        <div className="field">
+                          <label>Preço Item (€)</label>
+                          <input
+                            type="number" step="0.01" min="0"
+                            value={act.totalPrice}
+                            onChange={e => updateEditActivity(idx, { totalPrice: parseFloat(e.target.value) || 0 })}
+                          />
+                        </div>
                       </div>
 
                       {svc?.durationMinutes && (
