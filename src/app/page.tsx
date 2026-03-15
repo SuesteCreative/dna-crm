@@ -96,6 +96,8 @@ export default function Dashboard() {
     if (isSignedIn) {
       fetchBookings();
       fetchServices();
+      // Background sync — fire and forget, debounced to once per 2h on the server
+      fetch("/api/background-sync", { method: "POST" }).catch(() => {});
       fetchPartners();
     }
   }, [isSignedIn]);
