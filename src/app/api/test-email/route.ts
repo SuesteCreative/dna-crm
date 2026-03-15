@@ -240,6 +240,7 @@ export async function GET(req: NextRequest) {
   const results: Record<string, any> = {};
 
   for (const lang of langs) {
+    if (langs.indexOf(lang) > 0) await new Promise(r => setTimeout(r, 700));
     // Alternate between fee/no-fee to test both layouts
     const bk = lang === "pt" ? bookingWithFee : booking;
     const { data, error } = await resend.emails.send({
