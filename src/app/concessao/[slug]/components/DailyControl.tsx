@@ -196,12 +196,13 @@ export default function DailyControl({ concession }: { concession: Concession })
     entries: entries.filter((e) => e.spotId === spot.id),
   }));
 
-  // Summary — count entries by period (not spots by status)
+  // Summary — walk-in counts only (reservation spots counted separately)
   const freeCount = spotStates.filter((s) => spotStatus(s.entries) === "free").length;
   const reservedCount = spotStates.filter((s) => spotStatus(s.entries) === "reserved").length;
-  const morningCount = entries.filter((e) => e.period === "MORNING").length;
-  const afternoonCount = entries.filter((e) => e.period === "AFTERNOON").length;
-  const fullDayCount = entries.filter((e) => e.period === "FULL_DAY").length;
+  const walkInEntries = entries.filter((e) => !e.reservationId && (e.status === "ACTIVE" || e.status === "CARRIED_OVER"));
+  const morningCount = walkInEntries.filter((e) => e.period === "MORNING").length;
+  const afternoonCount = walkInEntries.filter((e) => e.period === "AFTERNOON").length;
+  const fullDayCount = walkInEntries.filter((e) => e.period === "FULL_DAY").length;
 
   function triggerDownload(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);

@@ -97,7 +97,8 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
   // Single shared form state
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [fClient, setFClient] = useState("");
-  const [fPhone, setFPhone] = useState("");
+  const [fPhonePrefix, setFPhonePrefix] = useState("+351");
+  const [fPhoneNum, setFPhoneNum] = useState("");
   const [fBeds, setFBeds] = useState<"ONE_BED" | "TWO_BEDS">("TWO_BEDS");
   const [fExtraBed, setFExtraBed] = useState(false);
   const [fPrice, setFPrice] = useState("0");
@@ -117,7 +118,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
   function openForm(mode: FormMode) {
     const period = modeToPeriod(mode);
     setFormMode(mode);
-    setFClient(""); setFPhone(""); setFBeds("TWO_BEDS"); setFExtraBed(false);
+    setFClient(""); setFPhonePrefix("+351"); setFPhoneNum(""); setFBeds("TWO_BEDS"); setFExtraBed(false);
     setFPrice(String(calcPrice(period, "TWO_BEDS", concession)));
     setFPaid(true); setFNotes(""); setFError("");
   }
@@ -135,7 +136,7 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         spotId: spot.id, date, period,
-        clientName: fClient.trim(), clientPhone: fPhone.trim() || null,
+        clientName: fClient.trim(), clientPhone: fPhoneNum.trim() ? (fPhonePrefix + " " + fPhoneNum.trim()) : null,
         bedConfig, totalPrice: parseFloat(fPrice), isPaid: fPaid,
         notes: fNotes.trim() || null, override,
       }),
@@ -261,7 +262,19 @@ export default function SpotPanel({ concession, spotState, date, onClose, onRefr
         </div>
         <div className="field-group">
           <label>Telefone</label>
-          <input value={fPhone} onChange={(e) => setFPhone(e.target.value)} placeholder="+351 9xx xxx xxx" />
+          <div className="phone-row">
+            <select value={fPhonePrefix} onChange={(e) => setFPhonePrefix(e.target.value)} className="phone-prefix-select">
+              <option value="+351">🇵🇹 +351</option>
+              <option value="+34">🇪🇸 +34</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+49">🇩🇪 +49</option>
+              <option value="+31">🇳🇱 +31</option>
+              <option value="+32">🇧🇪 +32</option>
+              <option value="+39">🇮🇹 +39</option>
+            </select>
+            <input value={fPhoneNum} onChange={(e) => setFPhoneNum(e.target.value)} placeholder="9xx xxx xxx" className="phone-num-input" />
+          </div>
         </div>
         <div className="field-row">
           <div className="field-group">

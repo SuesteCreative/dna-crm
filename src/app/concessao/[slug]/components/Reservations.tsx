@@ -141,7 +141,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const [editing, setEditing] = useState<Reservation | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
-  const [filterStatus, setFilterStatus] = useState("ACTIVE");
+  const [filterStatus, setFilterStatus] = useState("");
   const [filterSearch, setFilterSearch] = useState("");
 
   // Body scroll lock
@@ -158,6 +158,16 @@ export default function Reservations({ concession, initialReservation, onInitHan
   });
 
   const [form, setForm] = useState(emptyForm);
+  const [phonePrefix, setPhonePrefix] = useState("+351");
+
+  const PHONE_PREFIXES = ["+351", "+34", "+44", "+33", "+49", "+31", "+32", "+39"];
+  function splitStoredPhone(phone: string): [string, string] {
+    for (const p of PHONE_PREFIXES) {
+      if (phone.startsWith(p)) return [p, phone.slice(p.length).trim()];
+    }
+    return ["+351", phone];
+  }
+
   // Extra spot IDs when booking multiple spots at once (from Calculator)
   const [extraSpotIds, setExtraSpotIds] = useState<string[]>([]);
   const [formBusy, setFormBusy] = useState(false);
@@ -229,6 +239,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const openNew = () => {
     setEditing(null);
     setForm(emptyForm());
+    setPhonePrefix("+351");
     setExtraSpotIds([]);
     setFormError(""); setConflictAlts(null); setConflictDates([]); setBlockedSpotIds(new Set()); setAvailabilityError(false);
     setShowDrawer(true);
@@ -236,8 +247,10 @@ export default function Reservations({ concession, initialReservation, onInitHan
 
   const openEdit = (r: Reservation) => {
     setEditing(r);
+    const [prefix, num] = splitStoredPhone(r.clientPhone ?? "");
+    setPhonePrefix(prefix);
     setForm({
-      clientName: r.clientName, clientPhone: r.clientPhone ?? "", clientEmail: r.clientEmail ?? "",
+      clientName: r.clientName, clientPhone: num, clientEmail: r.clientEmail ?? "",
       spotId: r.spot.id, startDate: r.startDate, endDate: r.endDate,
       period: r.period, bedConfig: r.bedConfig,
       totalPrice: String(r.totalPrice), isPaid: r.isPaid, notes: r.notes ?? "",
@@ -260,9 +273,10 @@ export default function Reservations({ concession, initialReservation, onInitHan
 
     // For multi-spot creation: pass all spotIds in one request so the backend
     // validates and creates everything atomically in a single transaction.
+    const combinedPhone = form.clientPhone.trim() ? (phonePrefix + " " + form.clientPhone.trim()) : "";
     const payload = editing
-      ? { ...form, totalPrice: parseFloat(form.totalPrice) }
-      : { ...form, spotIds: allSpotIds, totalPrice: parseFloat(form.totalPrice) };
+      ? { ...form, clientPhone: combinedPhone, totalPrice: parseFloat(form.totalPrice) }
+      : { ...form, clientPhone: combinedPhone, spotIds: allSpotIds, totalPrice: parseFloat(form.totalPrice) };
 
     const res = await fetch(url, {
       method: editing ? "PUT" : "POST",
@@ -492,7 +506,19 @@ export default function Reservations({ concession, initialReservation, onInitHan
               <div className="field-row">
                 <div className="field-group">
                   <label>Telefone</label>
-                  <input value={form.clientPhone} onChange={(e) => setForm((p) => ({ ...p, clientPhone: e.target.value }))} />
+                  <div className="phone-row">
+                    <select value={phonePrefix} onChange={(e) => setPhonePrefix(e.target.value)} className="phone-prefix-select">
+                      <option value="+351">🇵🇹 +351</option>
+                      <option value="+34">🇪🇸 +34</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+33">🇫🇷 +33</option>
+                      <option value="+49">🇩🇪 +49</option>
+                      <option value="+31">🇳🇱 +31</option>
+                      <option value="+32">🇧🇪 +32</option>
+                      <option value="+39">🇮🇹 +39</option>
+                    </select>
+                    <input value={form.clientPhone} onChange={(e) => setForm((p) => ({ ...p, clientPhone: e.target.value }))} placeholder="9xx xxx xxx" className="phone-num-input" />
+                  </div>
                 </div>
                 <div className="field-group">
                   <label>Email</label>

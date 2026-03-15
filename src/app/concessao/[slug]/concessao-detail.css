@@ -658,6 +658,20 @@
   gap: 0.7rem;
 }
 
+.phone-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.phone-prefix-select {
+  flex: 0 0 auto;
+  width: 7rem;
+}
+
+.phone-num-input {
+  flex: 1;
+}
+
 @media (max-width: 480px) {
   .field-row {
     grid-template-columns: 1fr;

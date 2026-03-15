@@ -22,7 +22,15 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   // Run all 3 queries in parallel — single DB round-trip set
   const [entries, noteRecord, blockRecord] = await Promise.all([
     prisma.concessionEntry.findMany({
-      where: { concessionId: concession.id, date, status: { not: "RELEASED" } },
+      where: {
+        concessionId: concession.id,
+        date,
+        status: { not: "RELEASED" },
+        OR: [
+          { reservationId: null },
+          { reservation: { status: { not: "CANCELLED" } } },
+        ],
+      },
       include: { spot: true, reservation: true },
       orderBy: { spot: { spotNumber: "asc" } },
     }),
