@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getPrisma } from "@/lib/prisma";
+import { isRateLimited, getClientIp } from "@/lib/rate-limit";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -29,12 +30,22 @@ function conflictingPeriods(period: string): string[] {
 }
 
 export async function POST(req: NextRequest) {
+  if (isRateLimited(getClientIp(req), "reservation-checkout", 5, 10 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many requests. Please wait a few minutes." }, { status: 429 });
+  }
+
   try {
     const { slug, spotNumber, startDate, endDate, period, extraBed, clientName, clientPhone } =
       await req.json();
 
     if (!slug || !spotNumber || !startDate || !endDate || !period || !clientName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+    if (!["MORNING", "AFTERNOON", "FULL_DAY"].includes(period)) {
+      return NextResponse.json({ error: "Invalid period" }, { status: 400 });
+    }
+    if (typeof clientName !== "string" || clientName.trim().length === 0 || clientName.length > 100) {
+      return NextResponse.json({ error: "Invalid client name" }, { status: 400 });
     }
 
     const today = todayLisbon();

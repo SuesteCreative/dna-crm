@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
+import { isRateLimited, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  if (isRateLimited(getClientIp(req), "staff-request", 10, 5 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many requests. Please wait a few minutes." }, { status: 429 });
+  }
+
   try {
     const { slug, spotNumber, clientName, requestType } = await req.json();
     if (!slug || !spotNumber) {
       return NextResponse.json({ error: "Missing slug or spotNumber" }, { status: 400 });
+    }
+    if (clientName !== undefined && (typeof clientName !== "string" || clientName.length > 100)) {
+      return NextResponse.json({ error: "Invalid client name" }, { status: 400 });
     }
 
     const date = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" });
