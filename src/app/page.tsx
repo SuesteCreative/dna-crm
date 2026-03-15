@@ -574,11 +574,13 @@ export default function Dashboard() {
       });
       if (res.ok) {
         const data = await res.json();
-        setBookings(prev => prev.map(b =>
+        const updater = (prev: Booking[]) => prev.map(b =>
           b.id === booking.id
             ? { ...b, showedUp: data.showedUp, totalPrice: data.totalPrice ?? b.totalPrice }
             : b
-        ));
+        );
+        setBookings(updater);
+        setFiltered(updater);
       }
     } catch { }
     finally { setAttendanceSaving(false); setAttendanceTarget(null); }
