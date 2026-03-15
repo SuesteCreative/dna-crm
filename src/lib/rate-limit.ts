@@ -12,9 +12,9 @@ const store = new Map<string, RateLimitEntry>();
 // Prune stale entries every 10 minutes to avoid memory leaks
 setInterval(() => {
     const now = Date.now();
-    for (const [key, entry] of store.entries()) {
+    store.forEach((entry, key) => {
         if (entry.resetAt < now) store.delete(key);
-    }
+    });
 }, 10 * 60 * 1000);
 
 /**
