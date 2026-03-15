@@ -72,9 +72,9 @@ function bedLabel(b: string) {
 }
 
 function nextDay(date: string) {
-  const d = new Date(date + "T12:00:00Z");
+  const d = new Date(date + "T12:00:00");
   d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return d.toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" });
 }
 
 function modeToPeriod(mode: FormMode): string {

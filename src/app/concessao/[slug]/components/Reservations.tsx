@@ -342,7 +342,7 @@ export default function Reservations({ concession, initialReservation, onInitHan
   const activeCount = reservations.filter((r) => r.status === "ACTIVE").length;
   const unpaidCount = reservations.filter((r) => r.status === "ACTIVE" && !r.isPaid).length;
   const revenueTotal = reservations.filter((r) => r.status === "ACTIVE").reduce((s, r) => s + r.totalPrice, 0);
-  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().slice(0, 10); })();
+  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" }); })();
   const upcomingCount = reservations.filter((r) => r.status === "ACTIVE" && r.startDate >= today() && r.startDate <= tomorrowStr).length;
 
   const filtered = reservations.filter((r) => {
