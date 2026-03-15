@@ -7,11 +7,11 @@ export const dynamic = "force-dynamic";
 
 function dateRange(start: string, end: string): string[] {
   const dates: string[] = [];
-  const cur = new Date(start + "T12:00:00");
-  const endD = new Date(end + "T12:00:00");
+  const cur = new Date(start + "T12:00:00Z");
+  const endD = new Date(end + "T12:00:00Z");
   while (cur <= endD) {
-    dates.push(cur.toISOString().slice(0, 10));
-    cur.setDate(cur.getDate() + 1);
+    dates.push(cur.toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" }));
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
   return dates;
 }
@@ -133,9 +133,15 @@ export async function DELETE(_req: NextRequest, { params }: { params: { slug: st
   }
   const prisma = await getPrisma();
 
-  // Release ALL entries linked to this reservation (past and future)
+  const todayStr = todayLisbon();
+
+  // Past entries → COMPLETED (they happened); future entries → RELEASED (free the slot)
   await prisma.concessionEntry.updateMany({
-    where: { reservationId: params.id },
+    where: { reservationId: params.id, date: { lt: todayStr } },
+    data: { status: "COMPLETED" },
+  });
+  await prisma.concessionEntry.updateMany({
+    where: { reservationId: params.id, date: { gte: todayStr } },
     data: { status: "RELEASED" },
   });
 

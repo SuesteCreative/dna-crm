@@ -9,13 +9,13 @@ function todayLisbon() {
   return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" });
 }
 
-/** Generate all YYYY-MM-DD dates from startDate to endDate inclusive. */
+/** Generate all YYYY-MM-DD dates from startDate to endDate inclusive (Lisbon timezone). */
 function generateDates(startDate: string, endDate: string): string[] {
   const dates: string[] = [];
   const cur = new Date(startDate + "T12:00:00Z");
   const end = new Date(endDate + "T12:00:00Z");
   while (cur <= end) {
-    dates.push(cur.toISOString().slice(0, 10));
+    dates.push(cur.toLocaleDateString("sv-SE", { timeZone: "Europe/Lisbon" }));
     cur.setUTCDate(cur.getUTCDate() + 1);
   }
   return dates;
