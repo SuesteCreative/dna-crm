@@ -13,6 +13,7 @@ const isPublicRoute = createRouteMatcher([
     "/api/concessions/staff-request",
     "/api/concessions/staff-request/(.*)",
     "/api/concessions/(.*)/spot-availability",
+    "/api/concessions/session-details",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

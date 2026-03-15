@@ -1,6 +1,6 @@
 "use client";
 import { useParams, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import "../../../book.css";
 
@@ -105,6 +105,18 @@ function formatDate(iso: string, lang: Lang): string {
   return new Date(iso + "T12:00:00Z").toLocaleDateString(locale, { day: "numeric", month: "long" });
 }
 
+interface SessionDetails {
+  type: string;
+  name: string;
+  period: string;
+  date: string;
+  startDate: string;
+  endDate: string;
+  days: string;
+  freeDays: string;
+  total: string;
+}
+
 export default function SuccessPage() {
   const { slug, spotNumber } = useParams<{ slug: string; spotNumber: string }>();
   const params = useSearchParams();
@@ -115,18 +127,29 @@ export default function SuccessPage() {
     return LANGS.includes(l) ? l : "pt";
   });
 
+  const [details, setDetails] = useState<SessionDetails | null>(null);
+
+  useEffect(() => {
+    const sessionId = params.get("session_id");
+    if (!sessionId) return;
+    fetch(`/api/concessions/session-details?session_id=${sessionId}`)
+      .then((r) => r.json())
+      .then((d) => { if (!d.error) setDetails(d); })
+      .catch(() => {});
+  }, [params]);
+
   const t = T[lang];
   const theme = slug === "subnauta" ? "subnauta" : "tropico";
 
-  const type = params.get("type") ?? "daily";
-  const name = params.get("name") ?? "";
-  const period = params.get("period") ?? "";
-  const total = params.get("total") ?? "";
-  const date = params.get("date") ?? "";
-  const start = params.get("start") ?? "";
-  const end = params.get("end") ?? "";
-  const days = Number(params.get("days") ?? 0);
-  const freeDays = Number(params.get("freeDays") ?? 0);
+  const type = params.get("type") ?? details?.type ?? "daily";
+  const name = details?.name ?? "";
+  const period = details?.period ?? "";
+  const total = details?.total ?? "";
+  const date = details?.date ?? "";
+  const start = details?.startDate ?? "";
+  const end = details?.endDate ?? "";
+  const days = Number(details?.days ?? 0);
+  const freeDays = Number(details?.freeDays ?? 0);
   const periodLabel =
     period === "MORNING" ? t.morning :
     period === "AFTERNOON" ? t.afternoon : t.fullDay;

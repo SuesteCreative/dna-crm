@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
           concessionName: concession.name,
         },
       },
-      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}&type=daily&date=${date}&period=${period}&total=${grossPrice.toFixed(2)}&name=${encodeURIComponent(clientName)}`,
+      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}&type=daily`,
       cancel_url: `${base}/concessao/book/${slug}/${spotNumber}/cancel`,
     });
 

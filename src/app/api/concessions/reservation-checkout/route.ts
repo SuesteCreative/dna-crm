@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
           concessionName: concession.name,
         },
       },
-      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}&type=reservation&start=${startDate}&end=${endDate}&period=${period}&days=${days}&freeDays=${freeDays}&total=${grossPrice.toFixed(2)}&name=${encodeURIComponent(clientName)}`,
+      success_url: `${base}/concessao/book/${slug}/${spotNumber}/success?session_id={CHECKOUT_SESSION_ID}&type=reservation`,
       cancel_url: `${base}/concessao/book/${slug}/${spotNumber}/cancel`,
     });
 
