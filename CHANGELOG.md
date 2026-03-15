@@ -657,6 +657,7 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `a7a25be` | Fix: update Stripe redirect fallback domain to `app.desportosnauticosalvor.com` |
 | `f921c29` | Perf: merge 3 DailyControl API calls into single `/daily-summary` endpoint (Promise.all); lazy-load Statistics with next/dynamic |
 | `7d2638d` | Fix: beach-closed message when all periods past cutoff; hardcode base URL in both checkout routes |
+| `ea6b07c` | Feat: auto background-sync GCal + Shopify on dashboard open (debounced 2h) |
 | `e220427` | Debug: add `/api/admin/test-gcal` diagnostic endpoint (SUPER_ADMIN only) |
 | `2226b6a` | Feat: auto-restore GcalStaff from `GCAL_STAFF_CONFIG` on startup if table is empty |
 
@@ -840,7 +841,79 @@ If the key ever needs to be rotated:
 - If empty and `GCAL_STAFF_CONFIG` env var is set, automatically seeds all rows — no manual intervention needed after any DB reset.
 - Non-fatal: if seed fails, app continues normally and a warning is logged.
 
-#### End-to-End Verified
+#### GCal Cache Window Extended to 365 Days
+- `syncGcalToCache()` in `src/lib/gcal-cache.ts` was defaulting to `days=30`. Bookings more than 30 days in the future (e.g. a June booking checked in March) were outside the sync window and would never appear in the cache.
+- **Fix**: changed default from `30` to `365` — covers the full season from any sync point.
+
+#### Disponibilidade Page Now Reads GCal Cache
+- `GET /api/availability` (used by the Disponibilidade / slot picker page) was checking CRM bookings only — it had no GCal integration at all.
+- `GET /api/slots` (used by Nova Reserva form) already had the GCal check.
+- **Fix**: added the same GCal busy-map logic to `/api/availability`. Pre-fetches all calendar data in a `for` loop before the synchronous `services.map()` call (cannot use `await` inside `.map()`).
+- Result: Disponibilidade now correctly shows reduced capacity when Meety bookings have blocked calendars.
+
+#### End-to-End Verified (2026-03-15)
 - Test booking (Jetski Rental 30min, qty=3) → created GCal events on Jetski 1, 2, 3 calendars.
 - Meety booking page shows 13:00–13:30 slot as unavailable with "3 left" on other slots.
 - `recentGcalActivities` in test endpoint confirms `gcalEventIds` are being stored on `BookingActivity` records.
+- Disponibilidade page shows correct reduced capacity (1/3 at 12:00) after Meety bookings cached via "Sincronizar GCal".
+- Dashboard Nova Reserva form shows same reduced capacity.
+
+---
+
+## GCal Integration — Maintenance Reference
+
+**This is a stable setup. You should not need to redo any of this unless you rotate the Google key.**
+
+### What keeps itself working automatically
+
+| Concern | How it's handled |
+|---|---|
+| GcalStaff rows lost (DB reset) | Auto-restored from `GCAL_STAFF_CONFIG` env var on first request after deploy |
+| New CRM bookings → GCal | `POST /api/bookings/create` calls `createBusyEvent()` automatically |
+| Meety bookings → CRM slots | **Auto-synced** when any staff member opens the dashboard (see below) |
+| Shopify orders missed by webhook | **Auto-synced** when any staff member opens the dashboard (see below) |
+| Far-future bookings in cache | `syncGcalToCache()` pulls 365 days ahead — covers the full season |
+| Slot availability (Nova Reserva) | `GET /api/slots` reads GCal cache |
+| Disponibilidade page | `GET /api/availability` reads GCal cache (fixed 2026-03-15) |
+
+#### Auto background-sync on dashboard open (`ea6b07c`)
+- `src/app/page.tsx` fires `POST /api/background-sync` on every mount (fire-and-forget, no await).
+- The server debounces to **at most once per 2 hours per process** — repeated refreshes are ignored.
+- On each sync: all GcalStaff calendars are synced (365 days), and Shopify orders are pulled.
+- Staff never need to click "Sincronizar GCal" or "Sincronizar Shopify" manually.
+- The manual sync buttons still exist as an override if needed (e.g. after a key rotation).
+- Debounce resets on Vercel cold start — fine, since a cold start means a fresh sync is needed anyway.
+
+### Things that would break this (and how to fix them)
+
+**1. Google Service Account key is rotated or regenerated**
+- Symptom: `invalid_grant: Invalid JWT Signature` in Vercel logs; GCal events stop being created; Meety bookings no longer affect CRM slots.
+- Fix:
+  1. Google Cloud Console → IAM → Service Accounts → `dna-crm-calendar@...` → Chaves → Adicionar chave → JSON → Download
+  2. Vercel Dashboard → Project → Settings → Environment Variables → `GOOGLE_SERVICE_ACCOUNT_JSON` → paste raw file contents (all on one line or with line breaks — Vercel handles both)
+  3. Redeploy
+  4. Verify: visit `/api/admin/test-gcal` (SUPER_ADMIN) — `calendarReadOk` and `createEventOk` must both be `true`
+  5. Click "Sincronizar GCal" to repopulate cache
+
+**2. GcalStaff table is empty (after DB wipe)**
+- Symptom: bookings create no GCal events; "Sincronizar GCal" produces no cache entries.
+- Fix: automatic — `getPrisma()` auto-seeds from `GCAL_STAFF_CONFIG` on first request. If it doesn't:
+  ```js
+  // Browser console (as SUPER_ADMIN):
+  fetch('/api/admin/seed-gcal-staff', { method: 'POST' }).then(r => r.json()).then(console.log)
+  ```
+
+**3. GCal cache is stale (Meety bookings not reflected in CRM slots)**
+- Symptom: Disponibilidade shows full capacity even though Meety has bookings on that day.
+- Fix: click **"Sincronizar GCal"** on the Horário page. This calls `syncGcalToCache()` for all calendars, 365 days ahead.
+- No code change needed — this is a manual operation whenever you notice discrepancy.
+
+**4. Service account loses calendar permission**
+- Symptom: `calendarReadOk: false` on test-gcal endpoint; error "insufficientPermissions" in logs.
+- Fix: Google Calendar → each staff calendar → Partilhar com pessoas específicas → `dna-crm-calendar@dna-crm-489518.iam.gserviceaccount.com` → "Fazer alterações nos eventos"
+
+### Routine mid-season checklist (if slots seem wrong)
+1. Visit `/api/admin/test-gcal` — confirm both `calendarReadOk` and `createEventOk` are `true`
+2. Click "Sincronizar GCal" on Horário page
+3. Check Disponibilidade page — slots should reflect current Meety bookings
+4. If still wrong: check Vercel logs for `invalid_grant` or `insufficientPermissions`
