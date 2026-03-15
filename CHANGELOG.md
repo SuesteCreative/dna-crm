@@ -93,8 +93,8 @@ CLERK_WEBHOOK_SECRET          # For /api/webhooks/clerk
 SHOPIFY_STORE_DOMAIN          # e.g. store.myshopify.com
 SHOPIFY_ADMIN_ACCESS_TOKEN
 SHOPIFY_WEBHOOK_SECRET
-GOOGLE_SERVICE_ACCOUNT_EMAIL  # For GCal sync
-GOOGLE_PRIVATE_KEY
+GOOGLE_SERVICE_ACCOUNT_JSON   # Full service account JSON (paste raw file content from Google Cloud Console)
+GCAL_STAFF_CONFIG             # JSON array of GcalStaff entries — never in git repo, stored in Vercel only
 RESEND_API_KEY                # Bug report emails
 RESEND_FROM_EMAIL
 RESEND_TO_EMAIL
@@ -640,7 +640,7 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 
 14. **Stripe base URL is hardcoded** — both `checkout/route.ts` and `reservation-checkout/route.ts` use `"https://app.desportosnauticosalvor.com"` directly (not `NEXT_PUBLIC_BASE_URL`) to ensure `success_url` and `cancel_url` never redirect to the Shopify domain.
 
-15. **GcalStaff rows are not protected from DB resets** — if `prisma migrate reset` or `prisma db push --force-reset` is ever run, this table is wiped. Recovery: run `fetch('/api/admin/seed-gcal-staff', {method:'POST'})` from the browser console (SUPER_ADMIN). The calendar IDs live in the `GCAL_STAFF_CONFIG` Vercel env var — never in the repo.
+15. **GcalStaff auto-restores on startup** — `getPrisma()` checks if `GcalStaff` is empty on the first request after deploy. If empty and `GCAL_STAFF_CONFIG` is set, it auto-seeds from the env var. No manual recovery needed after DB resets. If the auto-seed fails for any reason, run `fetch('/api/admin/seed-gcal-staff', {method:'POST'})` from the browser console (SUPER_ADMIN).
 
 16. **Beach time cutoffs** — `isPastCutoff()` on the public booking page locks MORNING and FULL_DAY at **13:00** Lisbon time, AFTERNOON at **18:00** (1-hour buffer before each period ends). When all periods are past cutoff, the page shows a "beach closed" message and suggests switching to the Reserva tab.
 
@@ -657,6 +657,8 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `a7a25be` | Fix: update Stripe redirect fallback domain to `app.desportosnauticosalvor.com` |
 | `f921c29` | Perf: merge 3 DailyControl API calls into single `/daily-summary` endpoint (Promise.all); lazy-load Statistics with next/dynamic |
 | `7d2638d` | Fix: beach-closed message when all periods past cutoff; hardcode base URL in both checkout routes |
+| `e220427` | Debug: add `/api/admin/test-gcal` diagnostic endpoint (SUPER_ADMIN only) |
+| `2226b6a` | Feat: auto-restore GcalStaff from `GCAL_STAFF_CONFIG` on startup if table is empty |
 
 ### Booking Page Cutoffs, Clerk Production & Auth Styling (2026-03-14)
 
@@ -765,8 +767,8 @@ Services configuration (Horário → Configuração de Serviços):
 | Jetski Rental 10/15/30min | `JETSKI_RENTAL` | 0 | ON |
 | Jetski Rental 20min | `JETSKI_RENTAL` | 10 | ON |
 | Jetski Rental 60min | `JETSKI_RENTAL` | -30 | ON |
-| Crazy Sofa | `INSUFLAVEIS` | 0 | ON |
-| Banana Slider | `INSUFLAVEIS` | 0 | ON |
+| Crazy Sofa | `INSUFLAVEIS` | 10 | ON |
+| Banana Slider | `INSUFLAVEIS` | 10 | ON |
 
 #### Buffer Logic (slotGapMinutes drives pre-buffer)
 - `bufferMins = Math.max(0, slotGapMinutes)` — used as pre-booking buffer in both CRM and GCal availability checks.
@@ -792,10 +794,19 @@ Booking created (Jetski 1hr @ 10:00, qty=1)
 ```
 
 #### Prerequisites for GCal to Work
-1. `GOOGLE_SERVICE_ACCOUNT_JSON` env var set in Vercel (confirmed ✓)
-2. Service account (`dna-crm-calendar@dna-crm-489518.iam.gserviceaccount.com`) has "Make changes to events" on all 4 Google Calendars (confirmed ✓)
-3. Services have `gcalEnabled = ON` and correct `capacityGroup` in Horário (confirmed ✓)
-4. GcalStaff rows populated via seed endpoint (confirmed ✓)
+1. `GOOGLE_SERVICE_ACCOUNT_JSON` env var set in Vercel — paste the raw JSON file from Google Cloud Console → IAM → Service Accounts → Keys → Create new key (JSON). **Do not minify or escape manually.**
+2. Service account (`dna-crm-calendar@dna-crm-489518.iam.gserviceaccount.com`) has "Make changes to events" on all 4 Google Calendars.
+3. Services have `gcalEnabled = ON` and correct `capacityGroup` in Horário.
+4. GcalStaff rows populated — auto-restored on first request from `GCAL_STAFF_CONFIG` env var.
+
+#### Rotating the Google Service Account Key
+If the key ever needs to be rotated:
+1. Google Cloud Console → IAM → Contas de serviço → `dna-crm-calendar@...` → Chaves → Adicionar chave → JSON → Download
+2. Vercel → Environment Variables → `GOOGLE_SERVICE_ACCOUNT_JSON` → Edit → paste full file contents → Save → Redeploy
+3. Delete the old key from Google Cloud Console
+4. Verify: visit `/api/admin/test-gcal` as SUPER_ADMIN → should show `calendarReadOk: true`, `createEventOk: true`
+
+**Symptom of an invalid key**: `invalid_grant: Invalid JWT Signature` in Vercel logs or `/api/admin/test-gcal` response.
 
 ---
 
@@ -810,3 +821,26 @@ Booking created (Jetski 1hr @ 10:00, qty=1)
 - **Staff requests**: Customer can call staff (cash payment) — creates `StaffRequest` → CRM bell badge shows count, auto-refreshes every 10s.
 - **Statistics tab**: Added to concession detail page. KPIs (revenue paid/unpaid, occupancy, reservations, discounts), area chart by month, bar charts by day-of-week, walk-in vs reservation, bed config breakdown, top clients. Period selector (7d/30d/90d/1y/all/custom). Lazy-loaded with `next/dynamic`.
 - **DailyControl**: Date navigation ← → arrows; export button fixed (DOM append before click); merged 3 API calls into single `/daily-summary` endpoint.
+
+---
+
+### GCal Integration — Key Fix & Auto-Recovery (2026-03-15)
+
+#### Root Cause: Invalid Service Account Key
+- GCal sync was silently failing since day one — `createBusyEvent()` returned `null` on every call.
+- Error: `invalid_grant: Invalid JWT Signature` — the `GOOGLE_SERVICE_ACCOUNT_JSON` stored in Vercel had a corrupted or mismatched private key (likely pasted incorrectly when originally set up).
+- **Fix**: Regenerated a new JSON key in Google Cloud Console (IAM → Service Accounts → Chaves → Adicionar chave) and pasted raw file contents into Vercel env var → Redeploy.
+- Deleted the old (invalid) key from Google Cloud Console.
+
+#### Diagnostic Endpoint
+- Added `GET /api/admin/test-gcal` (SUPER_ADMIN only): checks env var presence, parses service account JSON, attempts calendar read, creates+deletes a test event, lists recent activities with `gcalEventIds`. Use this to verify GCal is working after any key rotation or infra change.
+
+#### Auto-Restore GcalStaff on Startup
+- `getPrisma()` in `src/lib/prisma.ts` now checks on first call per process whether `GcalStaff` table is empty.
+- If empty and `GCAL_STAFF_CONFIG` env var is set, automatically seeds all rows — no manual intervention needed after any DB reset.
+- Non-fatal: if seed fails, app continues normally and a warning is logged.
+
+#### End-to-End Verified
+- Test booking (Jetski Rental 30min, qty=3) → created GCal events on Jetski 1, 2, 3 calendars.
+- Meety booking page shows 13:00–13:30 slot as unavailable with "3 left" on other slots.
+- `recentGcalActivities` in test endpoint confirms `gcalEventIds` are being stored on `BookingActivity` records.
