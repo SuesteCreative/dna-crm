@@ -299,9 +299,11 @@ src/
 - `id`, `dayOfWeek` (0=Sun…6=Sat, unique), `openTime`, `closeTime`, `isOpen`
 
 **GcalStaff**
-- `id`, `name`, `calendarId`, `serviceId?`, `order`
+- `id`, `name`, `calendarId`, `capacityGroup?`, `serviceId?`, `order`
 - `channelId`, `resourceId`, `expiration` (for Webhook watch)
-- Maps staff/resource to a Google Calendar
+- Maps a physical resource (e.g. "Jetski 1") to a Google Calendar
+- `capacityGroup` is preferred over `serviceId` — covers all service variants in the group with one row
+- Rows are seeded via `POST /api/admin/seed-gcal-staff` from `GCAL_STAFF_CONFIG` env var
 
 **OverrideLog**
 - `id`, `bookingId`, `clerkUserId`, `userName`, `reason`, `serviceId?`, `serviceName?`, `slotTime`, `date`, `createdAt`
@@ -638,7 +640,9 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 
 14. **Stripe base URL is hardcoded** — both `checkout/route.ts` and `reservation-checkout/route.ts` use `"https://app.desportosnauticosalvor.com"` directly (not `NEXT_PUBLIC_BASE_URL`) to ensure `success_url` and `cancel_url` never redirect to the Shopify domain.
 
-15. **Beach time cutoffs** — `isPastCutoff()` on the public booking page locks MORNING and FULL_DAY at **13:00** Lisbon time, AFTERNOON at **18:00** (1-hour buffer before each period ends). When all periods are past cutoff, the page shows a "beach closed" message and suggests switching to the Reserva tab.
+15. **GcalStaff rows are not protected from DB resets** — if `prisma migrate reset` or `prisma db push --force-reset` is ever run, this table is wiped. Recovery: run `fetch('/api/admin/seed-gcal-staff', {method:'POST'})` from the browser console (SUPER_ADMIN). The calendar IDs live in the `GCAL_STAFF_CONFIG` Vercel env var — never in the repo.
+
+16. **Beach time cutoffs** — `isPastCutoff()` on the public booking page locks MORNING and FULL_DAY at **13:00** Lisbon time, AFTERNOON at **18:00** (1-hour buffer before each period ends). When all periods are past cutoff, the page shows a "beach closed" message and suggests switching to the Reserva tab.
 
 ---
 
@@ -691,6 +695,109 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
   - Amber warning: "⚠️ Ferramenta interna. Se não é parceiro, não faça login."
   - Copyright line with Sueste Creative Agency credit and link.
 - Added `src/app/auth.css` with `.auth-root` (dark background + glow effect), `.auth-logo`, `.auth-footer`, `.auth-footer-warning`, `.auth-footer-copy` styles.
+
+### Security, GDPR & Auth Fixes (2026-03-15)
+
+#### Clerk UserProfile Modal — Dark Theme (Final Fix)
+- Previous per-element `appearance.elements` API only covered known Clerk keys and left several text nodes gray.
+- Replaced with blanket global CSS rules in `globals.css` targeting `.cl-modalContent *` and `.cl-userProfile-root *` with `color: #e2e8f0`. Covers every text node regardless of internal Clerk class name.
+- Fixed: "Account / Manage your account info." subtitle, email address text, "First name / Last name" labels, section titles, dividers, form inputs, close button.
+
+#### Attendance Toggle — Optimistic UI Fix
+- `handleAttendance` on the Dashboard was updating only `showedUp` in local state after the API call.
+- The attendance API also updates `totalPrice` (sets to 0 for no-show, restores from activities when re-marking present). UI now reads both `showedUp` and `totalPrice` from the API response so the price column updates immediately without a page refresh.
+
+#### Security — Removed Debug Endpoint
+- `src/app/api/debug-db/route.ts` deleted entirely. This endpoint exposed database schema and row counts without meaningful auth protection. No production value.
+- Removed `/api/debug-(.*)` from middleware public patterns.
+
+#### GDPR — Privacy Policy & Data Erasure Tool
+- **Privacy policy page** (`/privacidade`, public): Portuguese GDPR-compliant page listing data collected, legal basis (Art. 6(1)(b)), third-party processors (Stripe, Supabase, Vercel, Google, Shopify, Resend), retention periods (7 years for financial records), and data subject rights. Contact: `booking@desportosnauticosalvor.com`.
+- **Data erasure tool** (`/admin/gdpr`, SUPER_ADMIN only): Search by name/email/phone. Preview shows all records grouped by table type with anonymize vs delete label. Double-confirm before erasing.
+- **API** (`GET/POST /api/admin/gdpr`): Financial records (Booking, ConcessionEntry, ConcessionReservation) are **anonymized** (`"ELIMINADO (RGPD)"`) — never deleted — to comply with Portuguese 7-year tax retention law. StaffRequest records are hard-deleted. Customer records anonymized + soft-deleted.
+- **Sidebar**: "Apagar Dados (RGPD)" nav item added under Administração (SUPER_ADMIN only).
+- **Consent notice**: Privacy policy link added to sign-in/sign-up page footers and to the public booking page (above pay button, all 5 languages).
+
+#### Daily Database Backup (Free — via Resend)
+- Vercel Cron job at `0 2 * * *` (02:00 UTC) calls `GET /api/cron/backup`.
+- Route is read-only: queries all tables (Bookings, Customers, ConcessionEntries, ConcessionReservations, Partners, Services, StaffRequests) and emails a JSON attachment via Resend to `RESEND_TO_EMAIL`.
+- Protected by `CRON_SECRET` header (set as Vercel env var).
+- `vercel.json` added (force-added with `git add -f` — `.gitignore` contained `.vercel` pattern that was matching `vercel.json`).
+
+#### Auth — Mobile Login Fix
+- `overflow: hidden` on `.auth-root` was clipping the Clerk SignIn card vertically on small viewports (only logo and footer visible). Changed to `overflow-x: hidden` so horizontal glow stays clipped but vertical scroll is allowed.
+
+#### Auth — Google OAuth on Production Clerk
+- Production Clerk instance requires its own Google OAuth credentials (cannot reuse Development credentials).
+- Created OAuth 2.0 client in Google Cloud Console → DNA CRM project. Added Client ID + Secret to Clerk Dashboard → SSO Connections → Google.
+- **Note**: Google OAuth app must be **published** (not Testing mode) to allow all Google accounts to sign in. Testing mode restricts to explicit test users only.
+
+---
+
+### GCal / Meety Integration — Capacity Group Routing (2026-03-15)
+
+#### Problem
+`GcalStaff` rows were repeatedly lost (wiped during `prisma db push --force-reset` or `prisma migrate reset` in previous sessions). The table had no recovery mechanism and kept being re-entered manually.
+
+#### GcalStaff Seed Endpoint
+- `POST /api/admin/seed-gcal-staff` (SUPER_ADMIN only): reads `GCAL_STAFF_CONFIG` env var (JSON array), wipes existing rows, recreates them. One console command restores the full config after any DB reset.
+- `GCAL_STAFF_CONFIG` stored in Vercel environment variables — **calendar IDs never in the git repo**.
+
+#### capacityGroup-Based Calendar Routing
+- Added `capacityGroup String?` field to `GcalStaff` schema.
+- **Before**: GcalStaff was linked via `serviceId` (one row per physical unit per service variant). A Jetski with 5 variants needed 5 rows — and only blocked the calendar for exact variant matches.
+- **After**: GcalStaff linked via `capacityGroup`. One row per physical unit covers all variants in the group automatically.
+- `POST /api/bookings/create`: GcalStaff lookup now uses `capacityGroup` when set, falls back to `serviceId`.
+- `GET /api/slots`: GcalStaff lookup for Google Calendar free/busy check also uses `capacityGroup`.
+- Schedule page: "Serviço (opcional)" dropdown replaced with "Grupo Capacidade" text input.
+
+#### Current Configuration
+| Physical Unit | capacityGroup | Calendar |
+|---|---|---|
+| Jetski 1 | `JETSKI_RENTAL` | Jetski 1 Google Calendar |
+| Jetski 2 | `JETSKI_RENTAL` | Jetski 2 Google Calendar |
+| Jetski 3 | `JETSKI_RENTAL` | Jetski 3 Google Calendar |
+| Insufláveis 4 | `INSUFLAVEIS` | Insufláveis 4 Google Calendar |
+
+Services configuration (Horário → Configuração de Serviços):
+| Service | capacityGroup | slotGapMinutes | gcalEnabled |
+|---|---|---|---|
+| Jetski Rental 10/15/30min | `JETSKI_RENTAL` | 0 | ON |
+| Jetski Rental 20min | `JETSKI_RENTAL` | 10 | ON |
+| Jetski Rental 60min | `JETSKI_RENTAL` | -30 | ON |
+| Crazy Sofa | `INSUFLAVEIS` | 0 | ON |
+| Banana Slider | `INSUFLAVEIS` | 0 | ON |
+
+#### Buffer Logic (slotGapMinutes drives pre-buffer)
+- `bufferMins = Math.max(0, slotGapMinutes)` — used as pre-booking buffer in both CRM and GCal availability checks.
+- `slotGapMinutes = 10` → 10 min pre-buffer (Jetski 20min)
+- `slotGapMinutes = 0` → no buffer (inflatables, Jetski 10/15/30min)
+- `slotGapMinutes = -30` → no buffer, 30-min slot intervals (Jetski 60min)
+
+#### How It Works End-to-End
+```
+Booking created in CRM (e.g. Jetski 30min @ 10:00, qty=1)
+→ svc.capacityGroup = "JETSKI_RENTAL"
+→ GcalStaff.findMany({ capacityGroup: "JETSKI_RENTAL" }) → [Jetski1, Jetski2, Jetski3]
+→ filter out already-used calendars → assign Jetski1 (order=1)
+→ createBusyEvent(Jetski1.calendarId, 10:00, 10:30, "CRM Booking - Name")
+→ Google Calendar event created → Meety reads it → slot appears blocked
+→ 2 remaining Jetski slots still available at 10:00
+
+Booking created (Jetski 1hr @ 10:00, qty=1)
+→ Jetski1 busy → assign Jetski2
+→ 1 slot remaining at 10:00
+
+@ 10:30 → Jetski1 event ends → 2 slots free again
+```
+
+#### Prerequisites for GCal to Work
+1. `GOOGLE_SERVICE_ACCOUNT_JSON` env var set in Vercel (confirmed ✓)
+2. Service account (`dna-crm-calendar@dna-crm-489518.iam.gserviceaccount.com`) has "Make changes to events" on all 4 Google Calendars (confirmed ✓)
+3. Services have `gcalEnabled = ON` and correct `capacityGroup` in Horário (confirmed ✓)
+4. GcalStaff rows populated via seed endpoint (confirmed ✓)
+
+---
 
 ### Concessão Stripe Self-Service (2026-03-13)
 
