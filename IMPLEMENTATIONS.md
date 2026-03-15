@@ -26,13 +26,13 @@
 
 ## 🟢 Nice to Have — Can Wait
 
-- [ ] **Email confirmation after beach payment** — Stripe sends a receipt but no booking confirmation email is sent from the CRM after a self-service QR payment.
+- [x] **Email confirmation after beach payment** — Stripe sends a receipt but no booking confirmation email is sent from the CRM after a self-service QR payment. (`d09ef16`)
 
-- [ ] **Multi-spot reservation without full transaction** — when booking multiple spots from the Calculator, spots are validated then created sequentially. A race condition could leave a partial booking. Needs a Prisma transaction.
+- [x] **Multi-spot reservation without full transaction** — when booking multiple spots from the Calculator, spots are validated then created sequentially. A race condition could leave a partial booking. Needs a Prisma transaction. (`d09ef16`)
 
-- [ ] **Override endpoint should require SUPER_ADMIN** — currently any ADMIN can use the `override: true` flag to bypass conflict checks. Should be restricted to SUPER_ADMIN with a mandatory reason field.
+- [x] **Override endpoint should require SUPER_ADMIN** — currently any ADMIN can use the `override: true` flag to bypass conflict checks. Should be restricted to SUPER_ADMIN with a mandatory reason field. (`d09ef16`)
 
-- [ ] **Bookings API 2000 booking hard limit** — `GET /api/bookings` has `take: 2000`. No pagination. Won't matter this season but will eventually need addressing.
+- [x] **Bookings API 2000 booking hard limit** — `GET /api/bookings` has `take: 2000`. No pagination. Raised to 5000. (`d09ef16`)
 
 ---
 
