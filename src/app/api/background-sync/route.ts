@@ -44,7 +44,8 @@ async function syncGcal() {
         orderBy: { order: "asc" },
     });
 
-    const calendarIds: string[] = [...new Set(staffRows.map((s: any) => s.calendarId as string))];
+    const seen = new Set<string>();
+    const calendarIds: string[] = staffRows.map((s: any) => s.calendarId as string).filter((id: string) => seen.has(id) ? false : (seen.add(id), true));
     if (calendarIds.length === 0) return { synced: 0 };
 
     const results = await Promise.allSettled(
