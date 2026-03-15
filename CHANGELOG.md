@@ -406,6 +406,23 @@ everything else                                              → must have role 
 - Staff/resources managed via `GcalStaff` table
 - Calendar IDs stored per booking in `gcalEventIds`/`gcalCalendarIds` (JSON arrays)
 
+### Booking Pricing Rules (by Service Category)
+
+**This is fixed business logic. Do not change it without the owner's explicit instruction.**
+
+The `Service.category` field drives how quantity and pax interact with price in the booking form (both create modal and edit drawer). The rules are:
+
+| Category | `quantity` field | `pax` field | Price formula |
+|---|---|---|---|
+| `"Jetski"` | Number of jetskis (1/2/3) — **drives price** | People on the jetskis (1–2 per moto, informational only) | `quantity × unitPrice` |
+| `"Towable"` | Fixed at 1 (disabled) | Number of seats/people (2–6 or 2–8) — **drives price** | `pax × unitPrice` |
+| Other (minPax set) | Always 1 | Number of people — drives price | `pax × unitPrice` |
+| Other (no minPax) | Number of units — drives price | Number of people (informational) | `quantity × unitPrice` |
+
+**Why:** A jetski costs €40 per moto regardless of how many people ride it (1 or 2). A towable costs €18 per seat. Changing pax on a jetski booking must never change the price; changing pax on a towable always changes the price.
+
+**Where this logic lives:** `src/components/dashboard/BookingModals.tsx` — both `handleServiceSelectForEditActivity()` (initial price on service switch) and the activity card render block in both create and edit forms. The `isTowable = svc?.category === "Towable"` and `isJetski = svc?.category === "Jetski"` checks must be present in both forms identically.
+
 ### Partner System
 - Partners see only their own bookings (filtered by `partnerId` from Clerk JWT)
 - Commission tracked as percentage on Partner record
@@ -547,6 +564,41 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 
 ### Feature Details (Recent)
 
+#### Bug Fixes & UX Improvements (2026-03-15)
+
+**Concessão — Phone prefix in forms:**
+- `SpotPanel` and `Reservations` forms now show a prefix `<select>` (+351, +34, +44, +33, +49, +31, +32, +39) alongside the phone number input, matching the dashboard booking form. Stored format: `"+351 912345678"`. On edit, existing stored phone is split back into prefix + number automatically.
+
+**Concessão — Period counts in daily summary bar:**
+- The Manhã/Tarde/Dia Inteiro chips in `DailyControl` were counting reservation-linked entries (purple cells) in the period totals, inflating the numbers. Fixed: period counts now only include walk-in entries (`reservationId === null`).
+
+**Concessão — Cancelled reservations showing as purple:**
+- Entries from cancelled reservations were still showing as purple in the daily grid and counting as occupied in `spot-availability`. Fixed by adding an `OR` filter in both `daily-summary` and `spot-availability` API routes: entries from `CANCELLED` reservations are excluded even if their own status is still `ACTIVE`.
+
+**Concessão — Reservations tab defaulting to "Ativas":**
+- The Reservas tab now defaults to showing all statuses (no filter pre-selected) instead of "Ativas". This ensures cancelled reservations are visible without an extra click.
+
+**Dashboard — Multilingual booking QR emails:**
+- `sendBookingQRCode` in `src/lib/email.ts` now detects the customer's country ISO code (`booking.country`) and sends the confirmation email in the appropriate language: PT → Portuguese, ES + LatAm → Spanish, FR + Francophone Africa → French, DE/AT/LI → German, everything else → English. Full translations for all 5 languages including subject line, date locale, and all labels.
+
+**Dashboard — Edit booking changes not visible after save:**
+- `handleEditSave` in `page.tsx` was updating the `bookings` state but the dashboard renders from `filtered`. Both `setBookings` and `setFiltered` are now updated together so edits appear immediately without a page reload.
+
+**Dashboard — Edit modal price not updating when activity changes:**
+- Added a `Preço Item (€)` input to the edit activity card (was present in create modal, missing in edit drawer). Price now recalculates live when the service is changed.
+
+**Dashboard — Partners cannot apply discounts:**
+- The "Desconto Global" field in the edit drawer is now hidden from users with the `PARTNER` role, matching the existing behaviour in the create modal.
+
+**Dashboard — Edit booking time slot UX:**
+- When opening the edit drawer for a booking that already has a time (e.g. `11:30`), the time now shows as a green chip — no slot grid is loaded. An "Alterar horário" button fetches available slots on demand. Selecting a new slot collapses back to chip view. Changing the date clears the time and auto-opens the picker (old time may be invalid for new date).
+
+**Dashboard — Jetski / Towable pricing logic in edit drawer:**
+- The edit drawer activity card now mirrors the create modal's category-aware pricing:
+  - **Jetski**: "Quantidade (Motos)" select (1/2/3) drives price; "Nº Pessoas" select (1–2 per moto) is informational only.
+  - **Towable**: Quantity fixed at 1 (disabled); "Nº Pessoas" select (2–6 or 2–8) drives price.
+  - Previously the edit drawer used a generic `minPax != null → pax control` check, which incorrectly changed the Jetski price when pax changed.
+
 #### Multi-Activity Booking System (2026-03-12)
 - **Multi-Product Transactions**: Bookings can now contain multiple independent activities (e.g., Jetski 20min + Jetski 30min).
 - **Independent Capacity Management**: Each activity within a booking undergoes its own slot availability check across all relevant services.
@@ -657,6 +709,17 @@ Conflict rule: `existingPeriod === "FULL_DAY" || existingPeriod === newPeriod ||
 | `a7a25be` | Fix: update Stripe redirect fallback domain to `app.desportosnauticosalvor.com` |
 | `f921c29` | Perf: merge 3 DailyControl API calls into single `/daily-summary` endpoint (Promise.all); lazy-load Statistics with next/dynamic |
 | `7d2638d` | Fix: beach-closed message when all periods past cutoff; hardcode base URL in both checkout routes |
+| `adceb2b` | Docs: all implementation items complete |
+| `d09ef16` | Feat: email confirmation, transactional multi-spot, override guard, bookings limit 5000 |
+| `1363004` | Docs: mark success URL fix as done |
+| `e31ae0e` | Fix: remove customer name and price from Stripe success URL (fetched server-side) |
+| `2eff9ed` | Docs: mark GDPR notice as done |
+| `5817147` | Fix: expand GDPR inline notice on public booking page (all 5 languages) |
+| `bac4a90` | Fix: Map.forEach for TS downlevelIteration compatibility in rate-limit.ts |
+| `b1c3c94` | Fix: Lisbon timezone in dateRange/generateDates; cancel marks past entries COMPLETED |
+| `4afb052` | Feat: rate limiting + input validation on public payment endpoints |
+| `75fb73d` | Docs: add IMPLEMENTATIONS.md pre-launch audit checklist |
+| `a6d7c5e` | Fix: Lisbon timezone in SpotPanel nextDay() and Reservations 7-day lookahead |
 | `ea6b07c` | Feat: auto background-sync GCal + Shopify on dashboard open (debounced 2h) |
 | `e220427` | Debug: add `/api/admin/test-gcal` diagnostic endpoint (SUPER_ADMIN only) |
 | `2226b6a` | Feat: auto-restore GcalStaff from `GCAL_STAFF_CONFIG` on startup if table is empty |

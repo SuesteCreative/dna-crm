@@ -141,14 +141,20 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
         acts[index] = { ...current, serviceId: "", activityType: "", totalPrice: 0, activityTime: "", slots: [] };
       } else {
         const label = svc.variant ? `${svc.name} — ${svc.variant}` : svc.name;
-        const multiplier = svc.minPax != null ? (current.pax || svc.minPax) : (current.quantity || 1);
+        const isJetskiSvc = svc.category === "Jetski";
+        const isTowableSvc = svc.category === "Towable";
+        const multiplier = isJetskiSvc
+          ? (current.quantity || 1)
+          : isTowableSvc
+            ? (current.pax || svc.minPax || 1)
+            : svc.minPax != null ? (current.pax || svc.minPax) : (current.quantity || 1);
         acts[index] = {
           ...current,
           serviceId: svc.id,
           activityType: label,
           activityTime: svc.durationMinutes ? "" : current.activityTime,
           pax: svc.minPax ?? current.pax,
-          quantity: svc.minPax != null ? 1 : current.quantity,
+          quantity: isJetskiSvc ? (current.quantity || 1) : isTowableSvc ? 1 : svc.minPax != null ? 1 : current.quantity,
           createUnitPrice: svc.price ?? null,
           totalPrice: (svc.price || 0) * multiplier
         };
@@ -571,43 +577,103 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                             value={act.activityDate}
                             onChange={e => {
                               const newDate = e.target.value;
-                              updateEditActivity(idx, { activityDate: newDate });
+                              updateEditActivity(idx, { activityDate: newDate, activityTime: "", showSlotPicker: true });
                               if (svc?.durationMinutes) fetchEditSlotsForActivity(idx, act.serviceId, newDate, act.quantity, editTarget?.id);
                             }}
                           />
                         </div>
 
-                        <div className="field">
-                          {svc?.minPax != null ? (
-                            <>
-                              <label>Pax</label>
-                              <div className="pax-control">
-                                <button type="button" onClick={() => {
-                                  const val = Math.max(1, act.pax - 1);
-                                  updateEditActivity(idx, { pax: val, totalPrice: (act.createUnitPrice || 0) * val });
-                                }}>-</button>
-                                <span>{act.pax}</span>
-                                <button type="button" onClick={() => {
-                                  const val = act.pax + 1;
-                                  updateEditActivity(idx, { pax: val, totalPrice: (act.createUnitPrice || 0) * val });
-                                }}>+</button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <label>Quantidade</label>
-                              <input
-                                type="number" min="1"
-                                value={act.quantity}
-                                onChange={e => {
-                                  const val = parseInt(e.target.value) || 1;
-                                  updateEditActivity(idx, { quantity: val, totalPrice: (act.createUnitPrice || 0) * val });
-                                  if (svc?.durationMinutes) fetchEditSlotsForActivity(idx, act.serviceId, act.activityDate, val, editTarget?.id);
-                                }}
-                              />
-                            </>
-                          )}
-                        </div>
+                        {(() => {
+                          const isJetski = svc?.category === "Jetski";
+                          const isTowable = svc?.category === "Towable";
+
+                          if (isJetski) {
+                            const qtyOptions = [1, 2, 3];
+                            const minP = act.quantity || 1;
+                            const maxP = (act.quantity || 1) * 2;
+                            const paxOptions = Array.from({ length: maxP - minP + 1 }, (_, i) => minP + i);
+                            return (
+                              <>
+                                <div className="field">
+                                  <label>Quantidade (Motos)</label>
+                                  <select className="field-select" value={act.quantity} onChange={e => {
+                                    const qty = parseInt(e.target.value);
+                                    const newPax = Math.max(qty, Math.min(act.pax, qty * 2));
+                                    updateEditActivity(idx, { quantity: qty, pax: newPax, totalPrice: (act.createUnitPrice || 0) * qty });
+                                    if (svc?.durationMinutes) fetchEditSlotsForActivity(idx, act.serviceId, act.activityDate, qty, editTarget?.id);
+                                  }}>
+                                    {qtyOptions.map(q => <option key={q} value={q}>{q}</option>)}
+                                  </select>
+                                </div>
+                                <div className="field">
+                                  <label>Nº Pessoas</label>
+                                  <select className="field-select" value={act.pax} onChange={e => {
+                                    updateEditActivity(idx, { pax: parseInt(e.target.value) });
+                                  }}>
+                                    {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                                  </select>
+                                </div>
+                              </>
+                            );
+                          }
+
+                          if (isTowable) {
+                            const minP = svc.minPax ?? 2;
+                            const maxP = svc.maxPax ?? 8;
+                            const paxOptions = Array.from({ length: maxP - minP + 1 }, (_, i) => minP + i);
+                            return (
+                              <>
+                                <div className="field">
+                                  <label>Quantidade</label>
+                                  <input type="number" value="1" disabled style={{ opacity: 0.6 }} />
+                                </div>
+                                <div className="field">
+                                  <label>Nº Pessoas</label>
+                                  <select className="field-select" value={act.pax} onChange={e => {
+                                    const p = parseInt(e.target.value);
+                                    updateEditActivity(idx, { quantity: 1, pax: p, totalPrice: (act.createUnitPrice || 0) * p });
+                                  }}>
+                                    {paxOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                                  </select>
+                                </div>
+                              </>
+                            );
+                          }
+
+                          return (
+                            <div className="field">
+                              {svc?.minPax != null ? (
+                                <>
+                                  <label>Pax</label>
+                                  <div className="pax-control">
+                                    <button type="button" onClick={() => {
+                                      const val = Math.max(1, act.pax - 1);
+                                      updateEditActivity(idx, { pax: val, totalPrice: (act.createUnitPrice || 0) * val });
+                                    }}>-</button>
+                                    <span>{act.pax}</span>
+                                    <button type="button" onClick={() => {
+                                      const val = act.pax + 1;
+                                      updateEditActivity(idx, { pax: val, totalPrice: (act.createUnitPrice || 0) * val });
+                                    }}>+</button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <label>Quantidade</label>
+                                  <input
+                                    type="number" min="1"
+                                    value={act.quantity}
+                                    onChange={e => {
+                                      const val = parseInt(e.target.value) || 1;
+                                      updateEditActivity(idx, { quantity: val, totalPrice: (act.createUnitPrice || 0) * val });
+                                      if (svc?.durationMinutes) fetchEditSlotsForActivity(idx, act.serviceId, act.activityDate, val, editTarget?.id);
+                                    }}
+                                  />
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         <div className="field">
                           <label>Preço Item (€)</label>
@@ -621,8 +687,22 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
 
                       {svc?.durationMinutes && (
                         <div className="field full">
-                          <label>Horários Disponíveis {act.activityTime && <span className="slot-selected-label">— {act.activityTime}</span>}</label>
-                          {act.slotsLoading ? (
+                          <label>Horário</label>
+                          {act.activityTime && !act.showSlotPicker ? (
+                            <div className="slot-current-row">
+                              <span className="slot-current-chip">{act.activityTime}</span>
+                              <button
+                                type="button"
+                                className="btn-change-slot"
+                                onClick={() => {
+                                  updateEditActivity(idx, { showSlotPicker: true });
+                                  fetchEditSlotsForActivity(idx, act.serviceId, act.activityDate, act.quantity, editTarget?.id);
+                                }}
+                              >
+                                Alterar horário
+                              </button>
+                            </div>
+                          ) : act.slotsLoading ? (
                             <div className="slots-loading"><div className="loader-sm" /></div>
                           ) : act.slotsClosed ? (
                             <div className="slots-closed">Sem horários disponíveis para este dia.</div>
@@ -636,7 +716,7 @@ export const BookingModals: React.FC<BookingModalsProps> = ({
                                     type="button"
                                     className={`slot-btn ${isSelected ? "slot-selected" : slot.blocked ? "slot-blocked" : "slot-free"}`}
                                     disabled={slot.past || (slot.blocked && (!canOverride || isPartner))}
-                                    onClick={() => updateEditActivity(idx, { activityTime: slot.time })}
+                                    onClick={() => updateEditActivity(idx, { activityTime: slot.time, showSlotPicker: false })}
                                   >
                                     {slot.time}
                                   </button>

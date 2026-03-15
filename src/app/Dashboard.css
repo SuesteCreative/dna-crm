@@ -2483,6 +2483,40 @@ body {
     margin-left: 4px;
 }
 
+.slot-current-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 4px;
+}
+
+.slot-current-chip {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #10b981;
+    color: #fff;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.btn-change-slot {
+    background: none;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #64748b;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-change-slot:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
 .slot-loading,
 .slot-closed {
     font-size: 13px;
