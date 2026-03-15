@@ -6,9 +6,9 @@
 
 ## 🔴 Critical — Fix Before Going Live
 
-- [ ] **Rate limiting on public payment endpoints** — `/api/concessions/checkout`, `/api/concessions/reservation-checkout`, `/api/concessions/staff-request` have no rate limiting. Basic in-memory guard to prevent spam/abuse.
+- [x] **Rate limiting on public payment endpoints** — `/api/concessions/checkout`, `/api/concessions/reservation-checkout`, `/api/concessions/staff-request` have no rate limiting. Basic in-memory guard to prevent spam/abuse. (`4afb052`)
 
-- [ ] **Input validation on public endpoints** — `clientName` has no max length, `period` is not validated against enum (`MORNING`/`AFTERNOON`/`FULL_DAY`). Quick fix in checkout and reservation-checkout routes.
+- [x] **Input validation on public endpoints** — `clientName` has no max length, `period` is not validated against enum (`MORNING`/`AFTERNOON`/`FULL_DAY`). Quick fix in checkout and reservation-checkout routes. (`4afb052`)
 
 - [ ] **Date timezone in reservations API** — `dateRange()` function in `src/app/api/concessions/[slug]/reservations/[id]/route.ts` generates daily entries using UTC, not Lisbon time. Can create entries on wrong dates during DST transitions.
 
