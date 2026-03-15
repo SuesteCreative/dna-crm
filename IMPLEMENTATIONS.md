@@ -36,6 +36,12 @@
 
 ---
 
+## 🔁 Recheck After More Testing
+
+- [ ] **Edit booking price not dynamic** — when changing the activity in the edit modal the price field now shows (added `Preço Item` field), but full end-to-end behaviour under real usage should be retested. (`1edde6e`)
+
+---
+
 ## ✅ Switch to Production (your side — no code changes)
 
 - [ ] **Switch Stripe to live keys** — Vercel → `STRIPE_SECRET_KEY=sk_live_...` + `STRIPE_WEBHOOK_SECRET=whsec_live_...` → redeploy

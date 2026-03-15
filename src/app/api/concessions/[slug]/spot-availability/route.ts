@@ -16,9 +16,17 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   });
   if (!concession) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Source 1: active entries
+  // Source 1: active entries (exclude entries from cancelled reservations)
   const entries = await prisma.concessionEntry.findMany({
-    where: { concessionId: concession.id, date, status: "ACTIVE" },
+    where: {
+      concessionId: concession.id,
+      date,
+      status: "ACTIVE",
+      OR: [
+        { reservationId: null },
+        { reservation: { status: { not: "CANCELLED" } } },
+      ],
+    },
     select: { spotId: true, period: true },
   });
 
