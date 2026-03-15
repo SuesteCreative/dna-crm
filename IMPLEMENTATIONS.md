@@ -10,15 +10,15 @@
 
 - [x] **Input validation on public endpoints** — `clientName` has no max length, `period` is not validated against enum (`MORNING`/`AFTERNOON`/`FULL_DAY`). Quick fix in checkout and reservation-checkout routes. (`4afb052`)
 
-- [ ] **Date timezone in reservations API** — `dateRange()` function in `src/app/api/concessions/[slug]/reservations/[id]/route.ts` generates daily entries using UTC, not Lisbon time. Can create entries on wrong dates during DST transitions.
+- [x] **Date timezone in reservations API** — `dateRange()` function in `src/app/api/concessions/[slug]/reservations/[id]/route.ts` generates daily entries using UTC, not Lisbon time. Can create entries on wrong dates during DST transitions. (`b1c3c94`)
 
 ---
 
 ## 🟡 Important — Before High Season
 
-- [ ] **GDPR privacy notice** — current notice on public booking page is too vague for Portuguese law. Needs to include: who collects data, why, retention period, who it's shared with (Stripe, Google Calendar), and a contact for deletion requests.
+- [x] **GDPR privacy notice** — current notice on public booking page is too vague for Portuguese law. Needs to include: who collects data, why, retention period, who it's shared with (Stripe, Google Calendar), and a contact for deletion requests. (`5817147`)
 
-- [ ] **Cancel reservation marks past entries as RELEASED** — when a reservation is cancelled, entries for dates already passed should be marked `COMPLETED` not `RELEASED`. Affects historical reports and accounting.
+- [x] **Cancel reservation marks past entries as RELEASED** — when a reservation is cancelled, entries for dates already passed should be marked `COMPLETED` not `RELEASED`. Affects historical reports and accounting. (`b1c3c94`)
 
 - [ ] **Success URL exposes customer name and price** — `?name=João&total=33.00` appears in the browser URL after Stripe payment, logged in browser history. Should be fetched server-side using session ID instead.
 
