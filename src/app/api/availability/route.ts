@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getPrisma } from "@/lib/prisma";
 import { generateSlots, timeToMinutes, timesOverlap } from "@/lib/slots";
+import { getCachedFreeBusy } from "@/lib/gcal-cache";
+import { toGcalTimes } from "@/lib/gcal";
 
 export const dynamic = "force-dynamic";
 
@@ -92,21 +94,57 @@ export async function GET(req: NextRequest) {
             (svc.capacityGroup && services.find((s) => s.id === u.serviceId)?.capacityGroup === svc.capacityGroup)
         );
 
+        // Load GCal busy map for this service's capacity group (once per service)
+        let gcalBusyMap: Map<string, { start: string; end: string }[]> = new Map();
+        let gcalCalendarIds: string[] = [];
+        if (svc.gcalEnabled) {
+            const gcalStaff = await prisma.gcalStaff.findMany({
+                where: svc.capacityGroup
+                    ? { capacityGroup: svc.capacityGroup }
+                    : { serviceId: svc.id },
+                select: { calendarId: true },
+                orderBy: { order: "asc" },
+            });
+            gcalCalendarIds = gcalStaff.map(s => s.calendarId);
+            if (gcalCalendarIds.length > 0) {
+                gcalBusyMap = await getCachedFreeBusy(gcalCalendarIds, date);
+            }
+        }
+
         const slots = slotTimes.map((slotTime) => {
             const slotStart = timeToMinutes(slotTime);
 
-            let used = 0;
+            // CRM-based usage
+            let crmUsed = 0;
             for (const u of relevantUnits) {
                 if (!u.activityTime) continue;
                 const bkStart = timeToMinutes(u.activityTime);
                 const bkService = services.find(s => s.id === u.serviceId);
                 const bkDuration = bkService?.durationMinutes ?? svc.durationMinutes!;
-
                 if (timesOverlap(slotStart, svc.durationMinutes!, bkStart, bkDuration)) {
-                    used += u.quantity;
+                    crmUsed += u.quantity;
                 }
             }
 
+            // GCal-based usage (Meety bookings)
+            let gcalUsed = 0;
+            if (gcalCalendarIds.length > 0) {
+                const { startISO, endISO } = toGcalTimes(date, slotTime, svc.durationMinutes!);
+                const slotStartMs = new Date(startISO).getTime();
+                const slotEndMs = new Date(endISO).getTime();
+                const bufferMins = Math.max(0, svc.slotGapMinutes ?? 10);
+                const checkStartMs = slotStartMs - bufferMins * 60_000;
+                for (const calId of gcalCalendarIds) {
+                    const busy = gcalBusyMap.get(calId) ?? [];
+                    const isBusy = busy.some(b =>
+                        new Date(b.start).getTime() < slotEndMs &&
+                        new Date(b.end).getTime() > checkStartMs
+                    );
+                    if (isBusy) gcalUsed++;
+                }
+            }
+
+            const used = gcalCalendarIds.length > 0 ? Math.max(crmUsed, gcalUsed) : crmUsed;
             const capacity = svc.unitCapacity;
             const available = Math.max(0, capacity - used);
             return { time: slotTime, available, capacity, blocked: available === 0 };
