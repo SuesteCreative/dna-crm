@@ -67,7 +67,7 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "A praia está encerrada para hoje.",
     beachClosedSub: "Use o separador \"Reserva\" para reservar dias futuros.",
     errorReload: "Erro ao carregar. Recarregue a página.",
-    privacyNotice: "Ao prosseguir, aceita que o seu nome e telefone sejam utilizados exclusivamente para gerir esta reserva.",
+    privacyNotice: "Os seus dados (nome, telefone) são tratados por Desportos Náuticos de Alvor para gerir esta reserva e processados pela Stripe para pagamento. Retidos 7 anos por obrigação fiscal.",
     privacyLink: "Política de Privacidade",
   },
   en: {
@@ -120,7 +120,7 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "The beach is closed for today.",
     beachClosedSub: "Use the \"Reserve\" tab to book future dates.",
     errorReload: "Failed to load. Please reload the page.",
-    privacyNotice: "By proceeding, you agree that your name and phone will be used solely to manage this booking.",
+    privacyNotice: "Your data (name, phone) is processed by Desportos Náuticos de Alvor to manage this booking and by Stripe for payment. Retained 7 years for tax compliance.",
     privacyLink: "Privacy Policy",
   },
   es: {
@@ -173,7 +173,7 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "La playa está cerrada por hoy.",
     beachClosedSub: "Use el separador \"Reservar\" para reservar días futuros.",
     errorReload: "Error al cargar. Recargue la página.",
-    privacyNotice: "Al continuar, acepta que su nombre y teléfono se usen exclusivamente para gestionar esta reserva.",
+    privacyNotice: "Sus datos (nombre, teléfono) son tratados por Desportos Náuticos de Alvor para gestionar esta reserva y por Stripe para el pago. Conservados 7 años por obligación fiscal.",
     privacyLink: "Política de Privacidad",
   },
   fr: {
@@ -226,7 +226,7 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "La plage est fermée pour aujourd'hui.",
     beachClosedSub: "Utilisez l'onglet \"Réserver\" pour réserver des dates futures.",
     errorReload: "Échec du chargement. Rechargez la page.",
-    privacyNotice: "En continuant, vous acceptez que votre nom et téléphone soient utilisés uniquement pour gérer cette réservation.",
+    privacyNotice: "Vos données (nom, téléphone) sont traitées par Desportos Náuticos de Alvor pour gérer cette réservation et par Stripe pour le paiement. Conservées 7 ans pour obligations fiscales.",
     privacyLink: "Politique de Confidentialité",
   },
   de: {
@@ -279,7 +279,7 @@ const T: Record<Lang, Record<string, string>> = {
     beachClosed: "Der Strand ist für heute geschlossen.",
     beachClosedSub: "Nutzen Sie den Reiter \"Reservieren\" für zukünftige Daten.",
     errorReload: "Ladefehler. Bitte Seite neu laden.",
-    privacyNotice: "Indem Sie fortfahren, stimmen Sie zu, dass Ihr Name und Telefon ausschließlich zur Verwaltung dieser Buchung verwendet werden.",
+    privacyNotice: "Ihre Daten (Name, Telefon) werden von Desportos Náuticos de Alvor zur Buchungsverwaltung und von Stripe zur Zahlungsabwicklung verarbeitet. Aufbewahrung 7 Jahre (steuerrechtlich).",
     privacyLink: "Datenschutzerklärung",
   },
 };
