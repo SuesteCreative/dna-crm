@@ -15,7 +15,7 @@ function getAuth() {
     }
 }
 
-export async function syncGcalToCache(calendarId: string, days: number = 30) {
+export async function syncGcalToCache(calendarId: string, days: number = 365) {
     const auth = getAuth();
     if (!auth) return { success: false, error: "Auth failed" };
 
